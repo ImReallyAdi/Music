@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -12,83 +12,73 @@
 
 <style>
 :root {
-  --bg: #141218;
-  --card: #1e1b24;
-  --accent: #d0bcff;
-  --text: #e6e1e5;
-  --muted: #a6a1ad;
+  --bg:#141218;
+  --card:#1e1b24;
+  --accent:#d0bcff;
+  --text:#e6e1e5;
+  --muted:#a6a1ad;
 }
-
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  height: 100dvh;
-  overflow: hidden;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif;
+  height:100dvh;
+  overflow:hidden;
 }
-
-main {
-  padding: 20px;
-  overflow-y: auto;
-  height: calc(100dvh - 90px);
+main{
+  padding:20px;
+  height:calc(100dvh - 90px);
+  overflow-y:auto;
 }
-
-.track {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--card);
-  padding: 12px;
-  border-radius: 14px;
-  margin-bottom: 10px;
+.track{
+  display:flex;
+  gap:12px;
+  padding:12px;
+  border-radius:14px;
+  background:var(--card);
+  margin-bottom:10px;
 }
-
-.track i { font-size: 1.4rem; color: var(--accent); }
-.track-title { font-weight: 600; }
-.track-artist { font-size: .85rem; color: var(--muted); }
-
-.fab {
-  position: fixed;
-  bottom: 100px;
-  right: 20px;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  font-size: 1.6rem;
+.track i{font-size:1.4rem;color:var(--accent)}
+.track-title{font-weight:600}
+.track-artist{font-size:.85rem;color:var(--muted)}
+.fab{
+  position:fixed;
+  right:20px;
+  bottom:110px;
+  width:56px;
+  height:56px;
+  border:none;
+  border-radius:16px;
+  background:var(--accent);
+  font-size:1.6rem;
 }
-
-.mini {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 90px;
-  background: var(--card);
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+.mini{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:90px;
+  background:var(--card);
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  gap:12px;
 }
-
-.mini button {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 1.6rem;
+.mini button{
+  background:none;
+  border:none;
+  color:var(--accent);
+  font-size:1.6rem;
 }
-
-.hidden { display: none; }
+.hidden{display:none}
 </style>
 </head>
 
 <body>
 
-<main id="library">
+<main>
   <h1>Library</h1>
   <div id="list"></div>
 </main>
@@ -97,7 +87,7 @@ main {
   <i class="ph ph-plus"></i>
 </button>
 
-<input type="file" id="fileInput" accept="audio/*" multiple hidden>
+<input id="fileInput" type="file" accept="audio/*" multiple hidden>
 
 <div class="mini hidden" id="mini">
   <div style="flex:1">
@@ -108,105 +98,132 @@ main {
 </div>
 
 <script>
-const DB_NAME = 'adi-music';
-const STORE = 'tracks';
-const VERSION = 2;
-
+/* ---------- SAFARI-SAFE AUDIO ---------- */
 const audio = new Audio();
-let db, tracks = [], current = -1;
+audio.setAttribute('playsinline','');
+audio.setAttribute('webkit-playsinline','');
 
-function openDB() {
-  return new Promise(res => {
-    const req = indexedDB.open(DB_NAME, VERSION);
-    req.onupgradeneeded = e => {
+let audioUnlocked = false;
+function unlockAudio(){
+  if(audioUnlocked) return;
+  audio.play().then(()=>{
+    audio.pause();
+    audioUnlocked = true;
+  }).catch(()=>{});
+}
+
+/* ---------- INDEXEDDB ---------- */
+const DB = 'adi-music-db';
+const STORE = 'tracks';
+const VERSION = 3;
+
+let db;
+let tracks = [];
+let current = -1;
+
+function openDB(){
+  return new Promise(res=>{
+    const req = indexedDB.open(DB, VERSION);
+    req.onupgradeneeded = e=>{
       const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
       }
     };
-    req.onsuccess = e => res(e.target.result);
+    req.onsuccess = e=>res(e.target.result);
   });
 }
 
-function saveFiles(files) {
-  const tx = db.transaction(STORE, 'readwrite');
+function saveFiles(files){
+  const tx = db.transaction(STORE,'readwrite');
   const store = tx.objectStore(STORE);
 
-  [...files].forEach(f => {
+  [...files].forEach(f=>{
     store.add({
-      name: f.name.replace(/\.[^/.]+$/, ''),
+      name: f.name.replace(/\.[^/.]+$/,''),
       artist: 'Unknown',
-      blob: new Blob([f], { type: f.type })
+      blob: new Blob([f],{type:f.type})
     });
   });
 
   tx.oncomplete = loadTracks;
 }
 
-function loadTracks() {
-  const tx = db.transaction(STORE, 'readonly');
+function loadTracks(){
+  const tx = db.transaction(STORE,'readonly');
   const store = tx.objectStore(STORE);
-  store.getAll().onsuccess = e => {
+  store.getAll().onsuccess = e=>{
     tracks = e.target.result;
     render();
   };
 }
 
-function render() {
+/* ---------- UI ---------- */
+function render(){
   const list = document.getElementById('list');
   list.innerHTML = '';
 
-  if (!tracks.length) {
+  if(!tracks.length){
     list.innerHTML = '<p style="opacity:.6">no music yet. tap +</p>';
     return;
   }
 
-  tracks.forEach((t, i) => {
-    const div = document.createElement('div');
-    div.className = 'track';
-    div.innerHTML = `
+  tracks.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'track';
+    d.innerHTML = `
       <i class="ph ph-music-note"></i>
       <div>
         <div class="track-title">${t.name}</div>
         <div class="track-artist">${t.artist}</div>
       </div>
     `;
-    div.onclick = () => play(i);
-    list.appendChild(div);
+    d.onclick = ()=>{
+      unlockAudio();
+      play(i);
+    };
+    list.appendChild(d);
   });
 }
 
-function play(i) {
+function play(i){
   current = i;
   const t = tracks[i];
   audio.src = URL.createObjectURL(t.blob);
   audio.play();
 
-  document.getElementById('nowTitle').textContent = t.name;
-  document.getElementById('nowArtist').textContent = t.artist;
-  document.getElementById('mini').classList.remove('hidden');
-  document.getElementById('playBtn').innerHTML = '<i class="ph ph-pause-fill"></i>';
+  nowTitle.textContent = t.name;
+  nowArtist.textContent = t.artist;
+  mini.classList.remove('hidden');
+  playBtn.innerHTML = '<i class="ph ph-pause-fill"></i>';
 }
 
-document.getElementById('playBtn').onclick = () => {
-  if (audio.paused) {
+playBtn.onclick = ()=>{
+  unlockAudio();
+  if(audio.paused){
     audio.play();
     playBtn.innerHTML = '<i class="ph ph-pause-fill"></i>';
-  } else {
+  }else{
     audio.pause();
     playBtn.innerHTML = '<i class="ph ph-play-fill"></i>';
   }
 };
 
-document.getElementById('addBtn').onclick = () =>
-  document.getElementById('fileInput').click();
-
-document.getElementById('fileInput').onchange = e => {
-  if (e.target.files.length) saveFiles(e.target.files);
-  e.target.value = '';
+/* ---------- EVENTS ---------- */
+addBtn.onclick = ()=>{
+  unlockAudio();
+  fileInput.click();
 };
 
-openDB().then(d => {
+fileInput.onchange = e=>{
+  if(e.target.files.length){
+    saveFiles(e.target.files);
+  }
+  fileInput.value = '';
+};
+
+/* ---------- START ---------- */
+openDB().then(d=>{
   db = d;
   loadTracks();
 });
