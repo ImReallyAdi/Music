@@ -100,7 +100,7 @@ const QueueList: React.FC<QueueListProps> = ({ queue, currentTrackId, tracks, on
         axis="y"
         values={queue}
         onReorder={onReorder}
-        className="flex-1 overflow-y-auto px-4 pb-24 scrollbar-hide"
+        className="flex-1 overflow-y-auto px-4 pb-24 scrollbar-hide touch-pan-y"
       >
         <AnimatePresence mode="popLayout">
           {queue.map((trackId) => (

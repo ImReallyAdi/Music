@@ -45,10 +45,10 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
         /**
          * STYLING FIXES:
          * 1. z-[100] ensures it is above the Nav Bar.
-         * 2. bottom-[calc(80px+env(safe-area-inset-bottom))] pushes it above 
-         * a standard 64-80px nav bar + mobile safe areas.
+         * 2. bottom-[calc(96px+env(safe-area-inset-bottom))] pushes it above
+         * the 88px nav bar + mobile safe areas.
          */
-        className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] left-4 right-4 h-16 bg-surface/80 backdrop-blur-xl rounded-2xl flex items-center px-2 shadow-2xl z-[100] cursor-pointer md:left-auto md:right-8 md:w-[380px] md:bottom-8 overflow-hidden border border-white/10"
+        className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] left-4 right-4 h-16 bg-surface/80 backdrop-blur-xl rounded-2xl flex items-center px-2 shadow-2xl z-[100] cursor-pointer md:left-auto md:right-8 md:w-[380px] md:bottom-[calc(96px+env(safe-area-inset-bottom))] overflow-hidden border border-white/10"
         role="button"
         tabIndex={0}
         aria-label={`Now playing: ${currentTrack.title} by ${currentTrack.artist}`}
