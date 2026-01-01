@@ -37,19 +37,16 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   const [tracks, setTracks] = useState<Record<string, Track>>({});
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
 
-  // Drag to close logic
   const dragControls = useDragControls();
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
 
-  // Handle Resize for responsive layout
   useEffect(() => {
     const handleResize = () => setIsLargeScreen(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Load tracks for the QueueList to display metadata
   useEffect(() => {
     const loadTracks = async () => {
       try {
@@ -66,7 +63,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     if (isPlayerOpen) loadTracks();
   }, [isPlayerOpen]);
 
-  // Media Session API (Lockscreen controls)
+  // Media Session API (Updated to disable seeking)
   useEffect(() => {
     if ('mediaSession' in navigator && currentTrack) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -79,6 +76,11 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
       navigator.mediaSession.setActionHandler('pause', togglePlay);
       navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
       navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+
+      // --- DISABLE LOCKSCREEN SEEKING ---
+      navigator.mediaSession.setActionHandler('seekto', null);
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
     }
   }, [currentTrack, togglePlay, prevTrack, nextTrack]);
 
@@ -95,15 +97,13 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           drag="y"
           dragControls={dragControls}
-          dragListener={!showQueue} // Disable default drag on container when queue is open
+          dragListener={!showQueue}
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.1}
           onDragEnd={(_, info) => { if (info.offset.y > 150) onClose(); }}
           style={{ y: dragY, opacity }}
-          // Removed touch-none to allow scrolling, using md:flex-row for landscape
           className="fixed inset-0 z-[100] flex flex-col bg-black overflow-hidden"
         >
-          {/* Background Blur */}
           <div className="absolute inset-0 z-0 pointer-events-none">
             <motion.img 
               src={currentTrack.coverArt} 
@@ -111,7 +111,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
             />
           </div>
 
-          {/* Header/Grabber - Always drag handle */}
           <div
             className="relative z-10 flex flex-col items-center pt-2 pb-6 cursor-grab active:cursor-grabbing"
             onPointerDown={(e) => dragControls.start(e)}
@@ -121,11 +120,8 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
             </button>
           </div>
 
-          {/* Main Content: Responsive Layout */}
-          {/* Mobile: flex-col, iPad/Desktop: flex-row */}
           <main className="relative z-10 flex-1 flex flex-col md:flex-row md:items-center md:gap-12 md:px-12 px-8 max-w-7xl mx-auto w-full h-full pb-8 md:pb-12">
 
-            {/* Artwork Section */}
             <AnimatePresence mode="wait">
               {(!showQueue || isLargeScreen) && (
                  <motion.div
@@ -138,7 +134,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                    <div className="aspect-square w-full max-w-md mx-auto rounded-[2rem] overflow-hidden shadow-2xl mb-8 md:mb-0">
                      <img src={currentTrack.coverArt} className="w-full h-full object-cover" alt="Cover" />
                    </div>
-                   {/* Title hidden on desktop since it's on the right side controls often, but let's keep it consistent or move it */}
                    <div className="mt-8 md:hidden">
                      <h1 className="text-3xl font-bold text-white truncate">{currentTrack.title}</h1>
                      <p className="text-xl text-white/50 truncate">{currentTrack.artist}</p>
@@ -147,7 +142,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
               )}
             </AnimatePresence>
 
-            {/* Queue View (Mobile Only Alternative to Art) */}
             <AnimatePresence mode="wait">
               {showQueue && (
                 <motion.div 
@@ -168,10 +162,8 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
               )}
             </AnimatePresence>
 
-            {/* Right Side: Controls & Info (Desktop) / Just Controls (Mobile) */}
             <div className={`flex flex-col justify-center w-full md:w-1/2 md:max-w-md ${showQueue ? 'md:hidden' : ''} md:flex`}>
 
-               {/* Desktop Title/Artist */}
                <div className="hidden md:block mb-8">
                   <h1 className="text-4xl font-bold text-white truncate">{currentTrack.title}</h1>
                   <p className="text-2xl text-white/50 truncate mt-2">{currentTrack.artist}</p>
@@ -180,28 +172,29 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
               {/* Slider & Controls */}
               <div className="pb-12 md:pb-0">
                 <div className="relative w-full h-1.5 bg-white/10 rounded-full mb-8">
-                  {/* Visual Progress */}
                   <div
                     className="absolute h-full bg-white rounded-full z-0"
                     style={{ width: `${(currentTime / duration) * 100}%` }}
                   />
-                  {/* Interactive Input */}
+                  
+                  {/* --- DISABLED INTERACTIVE INPUT --- */}
                   <input
                     type="range"
                     step="0.1"
                     min="0"
                     max={duration || 0}
                     value={currentTime}
-                    onChange={handleSeek}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={() => {}} // Remove handleSeek
+                    readOnly           // Prevent keyboard adjustments
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-default z-10 pointer-events-none"
                   />
+
                   <div className="flex justify-between mt-4 text-xs text-white/40 font-mono">
                     <span>{formatTime(currentTime)}</span>
                     <span>{formatTime(duration)}</span>
                   </div>
                 </div>
 
-                {/* Playback Buttons */}
                 <div className="flex items-center justify-between">
                   <Shuffle size={20} className="text-white/40 cursor-pointer hover:text-white" />
                   <div className="flex items-center gap-8">
@@ -214,7 +207,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                   <Repeat size={20} className="text-white/40 cursor-pointer hover:text-white" />
                 </div>
 
-                {/* Secondary Actions (Queue Toggle) */}
                 <div className="flex justify-center mt-10">
                   <button
                     onClick={() => setShowQueue(!showQueue)}
