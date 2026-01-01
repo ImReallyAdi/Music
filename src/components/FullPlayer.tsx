@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from 'framer-motion';
-import { Shuffle, SkipBack, Play, Pause, SkipForward, Repeat, ListMusic, Trash2 } from 'lucide-react';
+import { Shuffle, SkipBack, Play, Pause, SkipForward, Repeat, ListMusic } from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import QueueList from './QueueList';
 import { dbService } from '../db';
-import { extractDominantColor } from '../utils/colors';
 
 interface FullPlayerProps {
   currentTrack: Track | null;
@@ -40,6 +39,10 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   const [tracks, setTracks] = useState<Record<string, Track>>({});
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
 
+  // -- NEW: Local state for smooth seeking --
+  const [isDragging, setIsDragging] = useState(false);
+  const [localSeekValue, setLocalSeekValue] = useState(0);
+
   const dragControls = useDragControls();
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
@@ -49,6 +52,13 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Sync local seek value with actual time ONLY when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalSeekValue(currentTime);
+    }
+  }, [currentTime, isDragging]);
 
   useEffect(() => {
     const loadTracks = async () => {
@@ -66,9 +76,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     if (isPlayerOpen) loadTracks();
   }, [isPlayerOpen]);
 
-  // Media Session API should be handled by useAudioPlayer hook, not here.
-  // Removing redundant Media Session Logic from view component to avoid conflicts.
-
   if (!currentTrack) return null;
 
   const toggleRepeat = () => {
@@ -78,6 +85,22 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
 
       setPlayerState(prev => ({...prev, repeat: nextMode}));
       dbService.setSetting('repeat', nextMode);
+  };
+
+  // -- NEW: Seek Handlers --
+  const onSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsDragging(true);
+    setLocalSeekValue(parseFloat(e.target.value));
+  };
+
+  const onSeekEnd = (e: any) => {
+    setIsDragging(false);
+    // Create a synthetic event to pass back to parent's handleSeek
+    const syntheticEvent = {
+        target: { value: localSeekValue }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    handleSeek(syntheticEvent);
   };
 
   return (
@@ -131,12 +154,19 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                    exit={{ opacity: 0, scale: 0.9 }}
                    className={`flex-1 flex flex-col justify-center ${showQueue ? 'hidden md:flex' : ''}`}
                  >
+                   {/* -- NEW: Apple Music Style Scale Animation -- */}
                    <motion.div
                      layoutId={`cover-${currentTrack.id}`}
+                     animate={{ 
+                       scale: playerState.isPlaying ? 1 : 0.85,
+                       opacity: 1 
+                     }}
+                     transition={{ type: "spring", stiffness: 100, damping: 20 }}
                      className="aspect-square w-full max-w-md mx-auto rounded-[2rem] overflow-hidden shadow-2xl mb-8 md:mb-0"
                    >
                      <img src={currentTrack.coverArt} className="w-full h-full object-cover" alt="Cover" />
                    </motion.div>
+                   
                    <div className="mt-8 md:hidden text-center">
                      <h1 className="text-3xl font-bold text-white truncate">{currentTrack.title}</h1>
                      <p className="text-xl text-white/50 truncate">{currentTrack.artist}</p>
@@ -175,24 +205,27 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
 
               {/* Slider & Controls */}
               <div className="pb-12 md:pb-0">
-                <div className="relative w-full h-1.5 bg-white/10 rounded-full mb-8 group">
+                <div className="relative w-full h-1.5 bg-white/10 rounded-full mb-8 group touch-none">
                   <div
-                    className="absolute h-full bg-white rounded-full z-0 transition-all duration-100 ease-linear"
-                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                    className="absolute h-full bg-white rounded-full z-0 pointer-events-none"
+                    style={{ width: `${(localSeekValue / duration) * 100}%` }}
                   />
                   
+                  {/* -- NEW: Fixed Input Logic -- */}
                   <input
                     type="range"
-                    step="0.1"
+                    step="0.01" // Smoother sliding
                     min="0"
                     max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
+                    value={localSeekValue}
+                    onChange={onSeekChange}
+                    onMouseUp={onSeekEnd}
+                    onTouchEnd={onSeekEnd}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
 
                   <div className="flex justify-between mt-4 text-xs text-white/40 font-mono">
-                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(localSeekValue)}</span>
                     <span>{formatTime(duration)}</span>
                   </div>
                 </div>
@@ -204,9 +237,11 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
 
                   <div className="flex items-center gap-8">
                     <SkipBack size={32} fill="white" className="cursor-pointer hover:scale-110 transition-transform active:scale-95" onClick={prevTrack} />
+                    
                     <button onClick={togglePlay} className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-white/20">
                       {playerState.isPlaying ? <Pause size={32} fill="black" /> : <Play size={32} fill="black" className="ml-1" />}
                     </button>
+                    
                     <SkipForward size={32} fill="white" className="cursor-pointer hover:scale-110 transition-transform active:scale-95" onClick={nextTrack} />
                   </div>
 
