@@ -27,8 +27,10 @@ function MusicApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [library, setLibrary] = useState<LibraryState>({ tracks: {}, playlists: {} });
-  const [themeColor, setThemeColor] = useState('#6750A4'); // Default primary color
-  const [loading, setLoading] = useState<{ active: boolean, progress: number, message: string }>({ active: false, progress: 0, message: '' });
+  const [themeColor, setThemeColor] = useState('#6750A4'); 
+  const [loading, setLoading] = useState<{ active: boolean, progress: number, message: string }>({ 
+    active: false, progress: 0, message: '' 
+  });
 
   const refreshLibrary = useCallback(async () => {
     const tracksArr = await dbService.getAllTracks();
@@ -57,14 +59,22 @@ function MusicApp() {
     setPlayer,
     currentTime,
     duration,
-    audioRef,
-    playTrack,
     togglePlay,
     nextTrack,
     prevTrack,
     handleSeek,
-    toggleShuffle
+    toggleShuffle,
+    playTrack
   } = useAudioPlayer(library.tracks, updateMediaSession);
+
+  // --- NEW: Handle Queue Item Removal ---
+  const handleRemoveFromQueue = useCallback((trackId: string) => {
+    setPlayer(prev => ({
+      ...prev,
+      queue: prev.queue.filter(id => id !== trackId)
+    }));
+    addToast("Removed from queue", "success");
+  }, [setPlayer, addToast]);
 
   // Initial Load
   useEffect(() => {
@@ -75,15 +85,19 @@ function MusicApp() {
       const savedRepeat = await dbService.getSetting<RepeatMode>('repeat');
 
       if (lastId) {
-          setPlayer(prev => ({
-              ...prev,
-              currentTrackId: lastId,
-              shuffle: !!savedShuffle,
-              repeat: savedRepeat || RepeatMode.OFF
-          }));
+        setPlayer(prev => ({
+          ...prev,
+          currentTrackId: lastId,
+          shuffle: !!savedShuffle,
+          repeat: savedRepeat || RepeatMode.OFF
+        }));
       }
     });
   }, [refreshLibrary, setPlayer]);
+
+  const currentTrack = useMemo(() =>
+    player.currentTrackId ? library.tracks[player.currentTrackId] : null
+  , [player.currentTrackId, library.tracks]);
 
   const filteredTracks = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -93,28 +107,19 @@ function MusicApp() {
     return tracks.sort((a: Track, b: Track) => b.addedAt - a.addedAt);
   }, [library.tracks, searchQuery]);
 
-  const currentTrack = useMemo(() =>
-    player.currentTrackId ? library.tracks[player.currentTrackId] : null
-  , [player.currentTrackId, library.tracks]);
-
-  // Update Theme based on current track
+  // Sync Theme Color
   useEffect(() => {
-      if (currentTrack?.coverArt) {
-          extractDominantColor(currentTrack.coverArt).then(color => {
-              if (color) {
-                  // Set CSS variable
-                  const rgb = color.match(/\d+, \d+, \d+/)?.[0];
-                  if (rgb) {
-                      document.documentElement.style.setProperty('--color-primary', rgb);
-                      setThemeColor(color);
-                  }
-              }
-          });
-      } else {
-           // Default Orange #FFB74D -> 255, 183, 77
-           document.documentElement.style.setProperty('--color-primary', '255, 183, 77');
-           setThemeColor('#FFB74D');
-      }
+    if (currentTrack?.coverArt) {
+      extractDominantColor(currentTrack.coverArt).then(color => {
+        if (color) {
+          const rgb = color.match(/\d+, \d+, \d+/)?.[0];
+          if (rgb) {
+            document.documentElement.style.setProperty('--color-primary', rgb);
+            setThemeColor(color);
+          }
+        }
+      });
+    }
   }, [currentTrack]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,40 +128,28 @@ function MusicApp() {
     setLoading({ active: true, progress: 0, message: 'Warming up the deck...' });
 
     try {
-      // @ts-ignore
       const fileList = Array.from(files);
       const existingTitles = new Set(Object.values(library.tracks).map((t: any) => t.title));
       let addedCount = 0;
 
       for (let fIdx = 0; fIdx < fileList.length; fIdx++) {
-        // @ts-ignore
         const file = fileList[fIdx];
-        // @ts-ignore
         if (file.name.toLowerCase().endsWith('.zip')) {
-          // @ts-ignore
-          setLoading(l => ({ ...l, message: `Extracting ${file.name}...` }));
-          // @ts-ignore
           const zip = await JSZip.loadAsync(file);
-          // @ts-ignore
           const entries = Object.values(zip.files).filter((f: any) => !f.dir && f.name.match(/\.(mp3|wav|flac|m4a|ogg)$/i));
 
           for (let i = 0; i < entries.length; i++) {
-            // @ts-ignore
             const entry = entries[i];
-            // @ts-ignore
             if (entry.name.includes('__MACOSX') || entry.name.split('/').pop()?.startsWith('._')) continue;
-            // @ts-ignore
             const rawTitle = entry.name.split('/').pop()!.replace(/\.[^/.]+$/, "");
-            // @ts-ignore
             const blob = await entry.async('blob');
             const meta = await parseTrackMetadata(blob, rawTitle);
 
             if (existingTitles.has(meta.title)) continue;
             existingTitles.add(meta.title);
 
-            const id = crypto.randomUUID();
             await dbService.saveTrack({
-              id,
+              id: crypto.randomUUID(),
               title: meta.title,
               artist: meta.artist,
               album: meta.album,
@@ -165,56 +158,52 @@ function MusicApp() {
               addedAt: Date.now()
             }, blob);
             addedCount++;
-            setLoading(l => ({ ...l, progress: ((fIdx / fileList.length) * 100) + (((i + 1) / entries.length) * (100 / fileList.length)) }));
           }
         } else {
-          // @ts-ignore
           const rawTitle = file.name.replace(/\.[^/.]+$/, "");
-          // @ts-ignore
           const meta = await parseTrackMetadata(file, rawTitle);
-
           if (existingTitles.has(meta.title)) continue;
           existingTitles.add(meta.title);
 
-          const id = crypto.randomUUID();
           await dbService.saveTrack({
-            id,
+            id: crypto.randomUUID(),
             title: meta.title,
             artist: meta.artist,
             album: meta.album,
             coverArt: meta.coverArt,
             duration: meta.duration,
             addedAt: Date.now()
-            // @ts-ignore
           }, file);
           addedCount++;
         }
         setLoading(l => ({ ...l, progress: ((fIdx + 1) / fileList.length) * 100 }));
       }
       await refreshLibrary();
-      addToast(`Added ${addedCount} tracks to your library`, 'success');
+      addToast(`Added ${addedCount} tracks`, 'success');
     } catch (err) {
-      console.error("Critical upload error:", err);
-      addToast("Failed to process files. Ensure they are valid audio or ZIP archives.", 'error');
+      addToast("Failed to process files", 'error');
     } finally {
       setLoading({ active: false, progress: 0, message: '' });
     }
   };
 
-  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleSeek(Number(e.target.value));
-  };
-
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} currentTrack={currentTrack}>
+    /* LAYOUT IMPROVEMENT: 
+       We pass isVisible={!isPlayerOpen} to the Layout so the BottomNav 
+       hides when the full player is active.
+    */
+    <Layout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
+      currentTrack={currentTrack}
+      isVisible={!isPlayerOpen} 
+    >
       <AnimatePresence>{loading.active && <LoadingOverlay {...loading} />}</AnimatePresence>
 
-      <header className="pt-4 pb-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md">
-        <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
-            <h1 className="text-display-small text-on-background">
-            {activeTab === 'home' ? metadata.name.split(' - ')[0] : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-          </h1>
-        </motion.div>
+      <header className="pt-4 pb-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md px-4">
+        <motion.h1 className="text-display-small text-on-background">
+          {activeTab === 'home' ? 'Home' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+        </motion.h1>
 
         <label className="h-12 w-12 rounded-xl bg-primary-container text-primary flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all">
           <Plus className="w-6 h-6" strokeWidth={2.5} />
@@ -222,34 +211,44 @@ function MusicApp() {
         </label>
       </header>
 
-      <div className="w-full">
+      <main className="w-full pb-32">
         <AnimatePresence mode="wait">
-          <Home filteredTracks={filteredTracks} playTrack={playTrack} activeTab={activeTab} />
-          <Library
-            activeTab={activeTab}
-            libraryTab={libraryTab}
-            setLibraryTab={setLibraryTab}
-            filteredTracks={filteredTracks}
-            playerState={player}
-            playTrack={playTrack}
-            refreshLibrary={refreshLibrary}
-          />
-          <Search
-            activeTab={activeTab}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filteredTracks={filteredTracks}
-            playTrack={playTrack}
-          />
+          {activeTab === 'home' && <Home key="home" filteredTracks={filteredTracks} playTrack={playTrack} activeTab={activeTab} />}
+          {activeTab === 'library' && (
+            <Library
+              key="library"
+              activeTab={activeTab}
+              libraryTab={libraryTab}
+              setLibraryTab={setLibraryTab}
+              filteredTracks={filteredTracks}
+              playerState={player}
+              playTrack={playTrack}
+              refreshLibrary={refreshLibrary}
+            />
+          )}
+          {activeTab === 'search' && (
+            <Search
+              key="search"
+              activeTab={activeTab}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filteredTracks={filteredTracks}
+              playTrack={playTrack}
+            />
+          )}
         </AnimatePresence>
-      </div>
+      </main>
 
+      {/* MINI PLAYER POSITIONS ABOVE NAV: 
+          The CSS in MiniPlayer handles its own offset from the bottom.
+      */}
       <MiniPlayer
         currentTrack={currentTrack}
         playerState={player}
         isPlayerOpen={isPlayerOpen}
         onOpen={() => setIsPlayerOpen(true)}
         togglePlay={togglePlay}
+        progress={currentTime / (duration || 1)}
       />
 
       <FullPlayer
@@ -263,9 +262,10 @@ function MusicApp() {
         setPlayerState={setPlayer}
         currentTime={currentTime}
         duration={duration}
-        handleSeek={handleSeekChange}
+        handleSeek={(e) => handleSeek(Number(e.target.value))}
         themeColor={themeColor}
         toggleShuffle={toggleShuffle}
+        onRemoveTrack={handleRemoveFromQueue} // Pass the new remove handler
       />
     </Layout>
   );
