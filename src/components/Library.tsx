@@ -218,9 +218,10 @@ const SettingsTab = ({ playerState }: { playerState: PlayerState }) => {
 
            <h2 className="text-xl font-bold text-on-surface mt-4">About</h2>
            <div className="bg-surface-variant/30 rounded-2xl p-4">
-               <p className="text-on-surface/80">Vibe Music v1.0</p>
+               <p className="text-on-surface/80">Adi Music v1.0</p>
                <p className="text-sm text-on-surface/60 mt-1">
-                   A high-performance, glassmorphic music player built with React, Framer Motion, and Tailwind.
+                   A high-performance, music player built with React, Framer Motion, and Tailwind.
+                 Built with love & a lot of AI 😞❤️‍🔥
                </p>
            </div>
         </div>
