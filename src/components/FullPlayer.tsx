@@ -39,7 +39,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   const [tracks, setTracks] = useState<Record<string, Track>>({});
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
 
-  // Local state for smooth seeking
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
 
@@ -53,7 +52,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Sync scrubValue with actual time ONLY when NOT scrubbing
   useEffect(() => {
     if (!isScrubbing) {
       setScrubValue(currentTime);
@@ -89,13 +87,11 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
 
   // -- HANDLERS --
   
-  // 1. Slider Logic
   const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScrubValue(parseFloat(e.target.value));
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // CRITICAL: Stop the modal drag so the slider works
     e.stopPropagation();
     setIsScrubbing(true);
   };
@@ -109,9 +105,8 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     handleSeek(syntheticEvent);
   };
 
-  // 2. Button Logic (Stop Propagation)
   const handleButtonPress = (e: React.PointerEvent, action: () => void) => {
-    e.stopPropagation(); // Stop the modal from dragging when clicking buttons
+    e.stopPropagation();
     action();
   };
 
@@ -126,6 +121,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           drag="y"
           dragControls={dragControls}
+          // Disable main drag when queue is open so you can scroll freely
           dragListener={!showQueue}
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.1}
@@ -146,6 +142,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
             <div className="absolute inset-0 bg-black/40" />
           </div>
 
+          {/* Drag Handle */}
           <div
             className="relative z-10 flex flex-col items-center pt-safe pb-6 cursor-grab active:cursor-grabbing"
             onPointerDown={(e) => dragControls.start(e)}
@@ -166,7 +163,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                    exit={{ opacity: 0, scale: 0.9 }}
                    className={`flex-1 flex flex-col justify-center ${showQueue ? 'hidden md:flex' : ''}`}
                  >
-                   {/* Apple Music Style Animation */}
                    <motion.div
                      animate={{ scale: playerState.isPlaying ? 1 : 0.85 }}
                      transition={{ type: "spring", stiffness: 80, damping: 15 }}
@@ -183,7 +179,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
               )}
             </AnimatePresence>
 
-            {/* Queue UI (unchanged) */}
+            {/* QUEUE UI -- FIXED */}
             <AnimatePresence mode="wait">
               {showQueue && (
                 <motion.div 
@@ -191,7 +187,12 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  className="flex-1 overflow-hidden bg-white/5 rounded-3xl mb-8 p-4 md:order-last w-full h-full backdrop-blur-md"
+                  // 1. Stop Propagation: Prevents clicks here from dragging the modal
+                  onPointerDown={(e) => e.stopPropagation()}
+                  // 2. Touch Action: Ensures standard scrolling works
+                  style={{ touchAction: 'pan-y' }}
+                  // 3. Overflow: Changed from hidden to auto so you can scroll
+                  className="flex-1 overflow-y-auto bg-white/5 rounded-3xl mb-8 p-4 md:order-last w-full h-full backdrop-blur-md"
                 >
                   <QueueList 
                     queue={playerState.queue} 
@@ -220,7 +221,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                     style={{ width: `${(scrubValue / duration) * 100}%` }}
                   />
                   
-                  {/* SLIDER INPUT with StopPropagation */}
                   <input
                     type="range"
                     step="0.01"
@@ -246,7 +246,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                   </button>
 
                   <div className="flex items-center gap-8">
-                    {/* BUTTON WRAPPERS with StopPropagation */}
                     <button 
                         onPointerDown={(e) => handleButtonPress(e, prevTrack)}
                         className="p-2 hover:scale-110 active:scale-95 transition-transform"
