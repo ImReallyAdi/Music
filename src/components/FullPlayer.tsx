@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -62,6 +62,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 }) => {
   const [showQueue, setShowQueue] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
+  
+  // -- Seek State --
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
 
@@ -76,6 +78,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dragY.set(0);
   }, [isPlayerOpen]);
 
+  // Only sync external time when NOT scrubbing
   useEffect(() => {
     if (!isScrubbing) {
       setScrubValue(currentTime);
@@ -102,10 +105,26 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dbService.setSetting('repeat', next);
   };
 
+  // 1. Update UI immediately while dragging (no seek yet)
   const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     setScrubValue(value);
-    handleSeek({ target: { value } });
+  };
+
+  // 2. Start scrubbing (pauses external updates)
+  const handleScrubStart = () => {
+    setIsScrubbing(true);
+  };
+
+  // 3. End scrubbing (commits the seek)
+  const handleScrubEnd = () => {
+    // Commit the seek operation only once
+    handleSeek({ target: { value: scrubValue } });
+    
+    // Small delay to prevent jitter from old time update arriving late
+    setTimeout(() => {
+        setIsScrubbing(false);
+    }, 50);
   };
 
   return (
@@ -150,37 +169,68 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           {/* drag handle */}
           <div
             onPointerDown={e => dragControls.start(e)}
-            className="h-14 flex items-center justify-center cursor-grab active:cursor-grabbing"
+            className="h-14 flex items-center justify-center cursor-grab active:cursor-grabbing flex-shrink-0"
           >
             <div className="w-12 h-1.5 bg-white/30 rounded-full" />
           </div>
 
-          <main className="flex-1 px-6 pb-10 flex flex-col">
-            <AnimatePresence mode="wait">
-              {!showQueue ? (
-                <motion.div
-                  key="main-view"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex-1 flex flex-col"
-                >
-                  <div className="flex-1 flex items-center justify-center py-8">
+          <main className="flex-1 px-6 pb-10 flex flex-col landscape:flex-row landscape:items-center landscape:justify-center landscape:gap-12 landscape:px-12">
+            
+            {/* LEFT SIDE: Art or Queue */}
+            <div className="flex-1 flex flex-col landscape:h-full landscape:justify-center landscape:w-1/2 landscape:max-w-lg relative">
+              <AnimatePresence mode="wait">
+                {!showQueue ? (
+                  <motion.div
+                    key="art-view"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 flex items-center justify-center py-8 landscape:py-0"
+                  >
                     <motion.div
                       key={currentTrack.id}
                       initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
                       animate={{ opacity: 1, scale: 1, rotate: 0 }}
                       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                      className="w-full flex justify-center"
                     >
                       <img
                         src={currentTrack.coverArt}
-                        className="w-full max-w-[85vw] aspect-square rounded-3xl shadow-2xl object-cover"
+                        className="w-full max-w-[85vw] aspect-square rounded-3xl shadow-2xl object-cover landscape:max-w-full landscape:h-auto landscape:max-h-[70vh]"
                       />
                     </motion.div>
-                  </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="queue-view"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 overflow-y-auto bg-white/5 rounded-3xl p-4 backdrop-blur scrollbar-hide h-full max-h-[70vh] landscape:max-h-full"
+                  >
+                    <QueueList
+                      queue={playerState.queue}
+                      currentTrackId={currentTrack.id}
+                      tracks={tracks}
+                      onPlay={id => playTrack(id, { fromQueue: true })}
+                      onRemove={onRemoveTrack}
+                      onReorder={q =>
+                        setPlayerState(p => ({ ...p, queue: q }))
+                      }
+                      onClose={() => setShowQueue(false)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  <div className="text-center mt-6 mb-2">
+            {/* RIGHT SIDE: Controls & Info */}
+            <div className="flex flex-col landscape:w-1/2 landscape:max-w-md landscape:justify-center">
+              
+              {!showQueue && (
+                  <div className="text-center mt-6 mb-2 landscape:mt-0 landscape:mb-8 landscape:text-left">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={currentTrack.title}
@@ -189,164 +239,148 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         exit={{ y: -20, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <h1 className="text-2xl font-bold text-white truncate px-4">
+                        <h1 className="text-2xl font-bold text-white truncate px-4 landscape:px-0 landscape:text-4xl">
                           {currentTrack.title}
                         </h1>
-                        <p className="text-white/50 truncate px-4 text-lg">
+                        <p className="text-white/50 truncate px-4 text-lg landscape:px-0 landscape:text-xl">
                           {currentTrack.artist}
                         </p>
                       </motion.div>
                     </AnimatePresence>
                   </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="queue-view"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 50 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex-1 overflow-y-auto bg-white/5 rounded-3xl p-4 backdrop-blur scrollbar-hide"
-                >
-                  <QueueList
-                    queue={playerState.queue}
-                    currentTrackId={currentTrack.id}
-                    tracks={tracks}
-                    onPlay={id => playTrack(id, { fromQueue: true })}
-                    onRemove={onRemoveTrack}
-                    onReorder={q =>
-                      setPlayerState(p => ({ ...p, queue: q }))
-                    }
-                    onClose={() => setShowQueue(false)}
-                  />
-                </motion.div>
               )}
-            </AnimatePresence>
 
-            {/* Slider */}
-            <div className="mt-8">
-              <div className="relative h-1.5 bg-white/10 rounded-full group">
-                <motion.div
-                  className="absolute h-full bg-white rounded-full"
-                  style={{
-                    width: `${(scrubValue / Math.max(duration, 0.01)) * 100}%`,
-                  }}
-                  layoutId="progressBar"
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(duration, 0.01)}
-                  step={0.01}
-                  value={scrubValue}
-                  onChange={handleScrubChange}
-                  onPointerDown={() => setIsScrubbing(true)}
-                  onPointerUp={() => setIsScrubbing(false)}
-                  onTouchEnd={() => setIsScrubbing(false)}
-                  className="absolute inset-0 opacity-0 w-full cursor-pointer h-4 -top-1.5"
-                />
+              {/* Slider */}
+              <div className="mt-8 landscape:mt-4">
+                <div className="relative h-1.5 bg-white/10 rounded-full group cursor-pointer">
+                  {/* Visual Progress Bar */}
+                  <motion.div
+                    className="absolute h-full bg-white rounded-full pointer-events-none"
+                    style={{
+                      width: `${(scrubValue / Math.max(duration, 0.01)) * 100}%`,
+                    }}
+                    layoutId="progressBar"
+                  />
+                  
+                  {/* Interactive Slider Input */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={Math.max(duration, 0.01)}
+                    step={0.01}
+                    value={scrubValue}
+                    onChange={handleScrubChange}
+                    onPointerDown={handleScrubStart}
+                    onMouseDown={handleScrubStart}
+                    onTouchStart={handleScrubStart}
+                    onPointerUp={handleScrubEnd}
+                    onMouseUp={handleScrubEnd}
+                    onTouchEnd={handleScrubEnd}
+                    className="absolute inset-0 opacity-0 w-full h-4 -top-1.5 cursor-pointer touch-none"
+                  />
+                </div>
+
+                <div className="flex justify-between text-xs text-white/40 mt-2 font-mono font-medium">
+                  <span>{formatTime(scrubValue)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
               </div>
 
-              <div className="flex justify-between text-xs text-white/40 mt-2 font-mono font-medium">
-                <span>{formatTime(scrubValue)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-between mt-6">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleShuffle}
-                className="p-2"
-              >
-                <Shuffle
-                  className={
-                    playerState.shuffle ? 'text-green-400' : 'text-white/40'
-                  }
-                  size={20}
-                />
-              </motion.button>
-
-              <div className="flex items-center gap-6">
+              {/* Controls */}
+              <div className="flex items-center justify-between mt-6 landscape:mt-8">
                 <motion.button
-                  whileTap={{ scale: 0.8 }}
-                  onClick={prevTrack}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleShuffle}
+                  className="p-2"
                 >
-                  <SkipBack size={32} fill="white" className="text-white" />
+                  <Shuffle
+                    className={
+                      playerState.shuffle ? 'text-green-400' : 'text-white/40'
+                    }
+                    size={20}
+                  />
                 </motion.button>
+
+                <div className="flex items-center gap-6">
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={prevTrack}
+                  >
+                    <SkipBack size={32} fill="white" className="text-white" />
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={togglePlay}
+                    className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg shadow-white/10"
+                  >
+                    <AnimatePresence mode="wait">
+                      {playerState.isPlaying ? (
+                        <motion.div
+                          key="pause"
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.5, opacity: 0 }}
+                          transition={{ duration: 0.1 }}
+                        >
+                          <Pause fill="black" size={32} className="text-black" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="play"
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.5, opacity: 0 }}
+                          transition={{ duration: 0.1 }}
+                        >
+                          <Play fill="black" size={32} className="text-black ml-1" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={nextTrack}
+                  >
+                    <SkipForward size={32} fill="white" className="text-white" />
+                  </motion.button>
+                </div>
 
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={togglePlay}
-                  className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg shadow-white/10"
+                  onClick={toggleRepeat}
+                  className="p-2 relative"
                 >
-                  <AnimatePresence mode="wait">
-                    {playerState.isPlaying ? (
-                      <motion.div
-                        key="pause"
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.5, opacity: 0 }}
-                        transition={{ duration: 0.1 }}
-                      >
-                        <Pause fill="black" size={32} className="text-black" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="play"
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.5, opacity: 0 }}
-                        transition={{ duration: 0.1 }}
-                      >
-                        <Play fill="black" size={32} className="text-black ml-1" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-
-                <motion.button
-                  whileTap={{ scale: 0.8 }}
-                  onClick={nextTrack}
-                >
-                  <SkipForward size={32} fill="white" className="text-white" />
+                  <Repeat
+                    size={20}
+                    className={
+                      playerState.repeat !== 'OFF'
+                        ? 'text-green-400'
+                        : 'text-white/40'
+                    }
+                  />
+                  {playerState.repeat === 'ONE' && (
+                    <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold text-black bg-green-400 rounded-full w-3 h-3 flex items-center justify-center">
+                      1
+                    </span>
+                  )}
                 </motion.button>
               </div>
 
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleRepeat}
-                className="p-2 relative"
-              >
-                <Repeat
-                  size={20}
-                  className={
-                    playerState.repeat !== 'OFF'
-                      ? 'text-green-400'
-                      : 'text-white/40'
-                  }
-                />
-                {playerState.repeat === 'ONE' && (
-                  <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold text-black bg-green-400 rounded-full w-3 h-3 flex items-center justify-center">
-                    1
-                  </span>
-                )}
-              </motion.button>
-            </div>
-
-            <div className="flex justify-center mt-6">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShowQueue(v => !v)}
-                className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"
-              >
-                {showQueue ? (
-                  <ChevronDown className="text-white" />
-                ) : (
-                  <ListMusic className="text-white" />
-                )}
-              </motion.button>
+              <div className="flex justify-center mt-6 landscape:justify-start">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowQueue(v => !v)}
+                  className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  {showQueue ? (
+                    <ChevronDown className="text-white" />
+                  ) : (
+                    <ListMusic className="text-white" />
+                  )}
+                </motion.button>
+              </div>
             </div>
           </main>
         </motion.div>
