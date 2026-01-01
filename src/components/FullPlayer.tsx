@@ -2,7 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MoreVertical, Music, Heart, Shuffle, SkipBack, Play, Pause, SkipForward, Repeat } from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
-import Waveform from './Waveform';
 
 interface FullPlayerProps {
   currentTrack: Track | null;
@@ -76,29 +75,51 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-        className="fixed inset-0 bg-black z-[100] flex flex-col safe-area-top safe-area-bottom overflow-hidden"
+        className="fixed inset-0 bg-neutral-900 z-[100] flex flex-col safe-area-top safe-area-bottom overflow-hidden"
         role="dialog"
         aria-label="Full screen player"
         aria-modal="true"
       >
-        {/* Dynamic Background */}
-        <div className="absolute inset-0 z-0" aria-hidden="true">
-          {currentTrack.coverArt && (
-            <motion.img 
-              key={currentTrack.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              transition={{ duration: 0.3 }}
-              src={currentTrack.coverArt}
-              alt=""
-              className="w-full h-full object-cover blur-[100px] scale-150"
-              loading="lazy"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black" />
+        {/* Dynamic Background (Apple Music Style) */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          {/* Base Dark Layer */}
+          <div className="absolute inset-0 bg-black/60 z-10" />
+          
+          {/* Animated Gradient Orb that "Lights Up" */}
+          <motion.div 
+            animate={{
+              scale: playerState.isPlaying ? [1, 1.2, 1] : 1,
+              opacity: playerState.isPlaying ? [0.4, 0.7, 0.4] : 0.3,
+            }}
+            transition={{
+              duration: 2, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] rounded-full mix-blend-screen blur-[80px]"
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${themeColor || '#555'}, transparent 70%)`
+            }}
+          />
+
+          {/* Secondary ambient Orb for depth */}
+          <motion.div 
+             animate={{
+              scale: playerState.isPlaying ? [1.1, 0.9, 1.1] : 1,
+            }}
+            transition={{
+              duration: 4, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute bottom-[-10%] right-[-10%] w-[100%] h-[100%] rounded-full mix-blend-screen blur-[100px] opacity-20"
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${themeColor || '#555'}, transparent 70%)`
+            }}
+          />
         </div>
 
-        <div className="relative z-10 flex flex-col h-full p-8 md:px-12">
+        <div className="relative z-20 flex flex-col h-full p-8 md:px-12">
           {/* Header */}
           <header className="flex justify-between items-center mb-8">
             <button 
@@ -194,7 +215,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
           </div>
 
           {/* Playback Controls */}
-          <div className="mt-8 mb-4 flex items-center justify-between">
+          <div className="mt-8 mb-12 flex items-center justify-between">
             <button
               onClick={toggleShuffle}
               className={`transition-colors ${playerState.shuffle ? "text-blue-400" : "text-white/40"}`}
@@ -253,16 +274,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                 </span>
               )}
             </button>
-          </div>
-
-          {/* Visualizer Footer */}
-          <div className="mt-auto pt-4 flex justify-center">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 px-8 py-4 rounded-3xl min-w-[200px]">
-              <Waveform 
-                isPlaying={playerState.isPlaying} 
-                color={themeColor || "#FFFFFF"} 
-              />
-            </div>
           </div>
         </div>
       </motion.div>
