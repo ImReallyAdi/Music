@@ -25,6 +25,8 @@ export const useAudioPlayer = (
   // --- AUDIO ARCHITECTURE (SINGLE OWNER) ---
   // Exactly one persistent audio element created once.
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Store the next track's blob to allow synchronous playback on 'ended'
+  const nextTrackBlobRef = useRef<{ id: string; blob: Blob } | null>(null);
 
   const saveState = useCallback((state: PlayerState) => {
     dbService.setSetting('playerState', state);
@@ -101,8 +103,9 @@ export const useAudioPlayer = (
     immediate?: boolean;
     fromQueue?: boolean;
     customQueue?: string[];
+    preloadedBlob?: Blob;
   } = {}) => {
-    const { immediate = true, fromQueue = false, customQueue } = options;
+    const { immediate = true, fromQueue = false, customQueue, preloadedBlob } = options;
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -184,7 +187,11 @@ export const useAudioPlayer = (
 
       // 2. Handle Audio Playback
       if (immediate) {
-        const audioBlob = await dbService.getAudioBlob(trackId);
+        let audioBlob = preloadedBlob;
+        if (!audioBlob) {
+          audioBlob = await dbService.getAudioBlob(trackId);
+        }
+
         if (!audioBlob) {
           console.error(`Audio blob not found for ${trackId}`);
           return;
@@ -235,7 +242,8 @@ export const useAudioPlayer = (
      }
 
      if (nextId) {
-         playTrack(nextId, { immediate: true, fromQueue: true });
+         const preloaded = nextTrackBlobRef.current?.id === nextId ? nextTrackBlobRef.current.blob : undefined;
+         playTrack(nextId, { immediate: true, fromQueue: true, preloadedBlob: preloaded });
      }
   }, [player.queue, player.currentTrackId, player.repeat, playTrack]);
 
@@ -331,6 +339,31 @@ export const useAudioPlayer = (
           audio.removeEventListener('play', onPlay);
       };
   }, [nextTrack, player.repeat]);
+
+  // --- PRELOAD NEXT TRACK ---
+  useEffect(() => {
+      const currentIndex = player.queue.indexOf(player.currentTrackId || '');
+      let nextId: string | null = null;
+
+      if (currentIndex >= 0 && currentIndex < player.queue.length - 1) {
+          nextId = player.queue[currentIndex + 1];
+      } else if (player.repeat === RepeatMode.ALL && player.queue.length > 0) {
+          nextId = player.queue[0];
+      }
+
+      // If we already have this loaded, do nothing
+      if (nextTrackBlobRef.current?.id === nextId) return;
+
+      if (nextId) {
+          dbService.getAudioBlob(nextId).then(blob => {
+              if (blob) {
+                  nextTrackBlobRef.current = { id: nextId, blob };
+              }
+          });
+      } else {
+          nextTrackBlobRef.current = null;
+      }
+  }, [player.currentTrackId, player.queue, player.repeat]);
 
   // --- MEDIA SESSION INTEGRATION ---
   useEffect(() => {
