@@ -33,12 +33,12 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
         exit={{ y: 20, opacity: 0 }}
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         onClick={onOpen}
-        className="fixed bottom-[100px] left-4 right-4 h-[72px] bg-surface-variant text-on-surface rounded-[20px] flex items-center px-4 gap-4 shadow-elevation-3 z-[60] cursor-pointer md:left-auto md:right-8 md:w-96 md:bottom-8 border border-outline/10 overflow-hidden"
+        className="fixed bottom-[100px] left-4 right-4 h-[72px] bg-surface-variant/80 backdrop-blur-xl text-on-surface rounded-[20px] flex items-center px-4 gap-4 shadow-elevation-3 z-[60] cursor-pointer md:left-auto md:right-8 md:w-96 md:bottom-8 border border-outline/10 overflow-hidden"
         role="button"
         tabIndex={0}
         aria-label={`Now playing: ${currentTrack.title} by ${currentTrack.artist}. Click to open full player.`}
       >
-        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
 
         {/* Progress Bar (Background) */}
         {/* We could add a subtle progress bar at the bottom if needed, but M3 usually puts it inside. */}

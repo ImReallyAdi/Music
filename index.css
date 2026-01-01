@@ -59,3 +59,17 @@
 .custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-on-surface/20 rounded-full;
 }
+
+/* Safe Area Utilities */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
