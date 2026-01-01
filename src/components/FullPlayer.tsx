@@ -88,7 +88,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   };
 
   // -- HANDLERS --
-  
+   
   const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScrubValue(parseFloat(e.target.value));
   };
@@ -131,14 +131,24 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
           drag="y"
           dragControls={dragControls}
           
-          // CRITICAL FIX: Disable global drag listener. 
-          // This prevents the modal from stealing clicks from buttons/queue.
+          // CRITICAL FIX: Disable global drag listener so buttons work
           dragListener={false} 
           
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.1}
-          onDragEnd={(_, info) => { if (info.offset.y > 150) onClose(); }}
-          style={{ y: dragY, opacity }}
+
+          // FIX: Do not bind 'y' to style directly to avoid string/number conflict
+          // We manually update dragY for the opacity calculation
+          style={{ opacity }}
+          onDrag={(_, info) => dragY.set(info.offset.y)}
+
+          onDragEnd={(_, info) => { 
+            if (info.offset.y > 150) {
+                onClose();
+            } else {
+                dragY.set(0); // Reset opacity if we bounce back
+            }
+          }}
           className="fixed inset-0 z-[100] flex flex-col bg-black overflow-hidden"
         >
           {/* Dynamic Background */}
@@ -227,9 +237,10 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                 <div className="relative w-full h-1.5 bg-white/10 rounded-full mb-8 group touch-none">
                   <div
                     className="absolute h-full bg-white rounded-full z-0 pointer-events-none"
-                    style={{ width: `${(scrubValue / duration) * 100}%` }}
+                    // Added safety check for NaN duration
+                    style={{ width: `${(scrubValue / (duration || 1)) * 100}%` }}
                   />
-                  
+                   
                   <input
                     type="range"
                     step="0.01"
@@ -258,11 +269,11 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                     <button onClick={prevTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
                         <SkipBack size={32} fill="white" />
                     </button>
-                    
+                     
                     <button onClick={togglePlay} className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-white/20">
                       {playerState.isPlaying ? <Pause size={32} fill="black" /> : <Play size={32} fill="black" className="ml-1" />}
                     </button>
-                    
+                     
                     <button onClick={nextTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
                         <SkipForward size={32} fill="white" />
                     </button>
