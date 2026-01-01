@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from 'framer-motion';
-import { Shuffle, SkipBack, Play, Pause, SkipForward, Repeat, ListMusic } from 'lucide-react';
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+  useDragControls,
+} from 'framer-motion';
+import {
+  Shuffle,
+  SkipBack,
+  Play,
+  Pause,
+  SkipForward,
+  Repeat,
+  ListMusic,
+} from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import QueueList from './QueueList';
 import { dbService } from '../db';
@@ -17,36 +31,36 @@ interface FullPlayerProps {
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>;
   currentTime: number;
   duration: number;
-  handleSeek: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSeek: (e: any) => void;
   toggleShuffle: () => void;
   onRemoveTrack: (trackId: string) => void;
-  themeColor?: string;
 }
 
-const formatTime = (time: number): string => {
-  if (!time || isNaN(time)) return "0:00";
-  const mins = Math.floor(time / 60);
-  const secs = Math.floor(time % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+const formatTime = (time: number) => {
+  if (!time || isNaN(time)) return '0:00';
+  const m = Math.floor(time / 60);
+  const s = Math.floor(time % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
-  currentTrack, playerState, isPlayerOpen, onClose,
-  togglePlay, playTrack, nextTrack, prevTrack, currentTime,
-  duration, handleSeek, toggleShuffle, onRemoveTrack, setPlayerState
+const FullPlayer: React.FC<FullPlayerProps> = ({
+  currentTrack,
+  playerState,
+  isPlayerOpen,
+  onClose,
+  togglePlay,
+  playTrack,
+  nextTrack,
+  prevTrack,
+  setPlayerState,
+  currentTime,
+  duration,
+  handleSeek,
+  toggleShuffle,
+  onRemoveTrack,
 }) => {
   const [showQueue, setShowQueue] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
-  
-  // Safe initial window check
-  const [windowHeight, setWindowHeight] = useState(
-    typeof window !== 'undefined' ? window.innerHeight : 1000
-  );
-  const [isLargeScreen, setIsLargeScreen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : false
-  );
-
-  // Local state for smooth seeking
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
 
@@ -54,261 +68,210 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
 
-  useEffect(() => {
-    // Force update window height on mount to be sure
-    if (typeof window !== 'undefined') {
-      setWindowHeight(window.innerHeight);
-    }
-    const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 768);
-      setWindowHeight(window.innerHeight);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const windowHeight =
+    typeof window !== 'undefined' ? window.innerHeight : 1000;
 
-  // Sync scrubValue with actual time ONLY when NOT scrubbing
+  /* reset drag every open */
   useEffect(() => {
-    if (!isScrubbing) {
-      setScrubValue(currentTime);
-    }
+    dragY.set(0);
+  }, [isPlayerOpen]);
+
+  /* sync scrub */
+  useEffect(() => {
+    if (!isScrubbing) setScrubValue(currentTime);
   }, [currentTime, isScrubbing]);
 
+  /* global pointer up for scrub */
   useEffect(() => {
-    const loadTracks = async () => {
-      try {
-        const allTracks = await dbService.getAllTracks();
-        const trackMap = allTracks.reduce((acc, track) => {
-          acc[track.id] = track;
-          return acc;
-        }, {} as Record<string, Track>);
-        setTracks(trackMap);
-      } catch (err) {
-        console.error("Failed to load tracks for queue", err);
-      }
+    if (!isScrubbing) return;
+
+    const up = () => {
+      setIsScrubbing(false);
+      handleSeek({ target: { value: scrubValue } });
     };
-    if (isPlayerOpen) loadTracks();
+
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => {
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+  }, [isScrubbing, scrubValue, handleSeek]);
+
+  /* load queue tracks */
+  useEffect(() => {
+    if (!isPlayerOpen) return;
+    (async () => {
+      const all = await dbService.getAllTracks();
+      const map: Record<string, Track> = {};
+      all.forEach(t => (map[t.id] = t));
+      setTracks(map);
+    })();
   }, [isPlayerOpen]);
 
   if (!currentTrack) return null;
 
   const toggleRepeat = () => {
-      const modes: RepeatMode[] = ['OFF', 'ALL', 'ONE'];
-      const currentIdx = modes.indexOf(playerState.repeat);
-      const nextMode = modes[(currentIdx + 1) % modes.length];
-
-      setPlayerState(prev => ({...prev, repeat: nextMode}));
-      dbService.setSetting('repeat', nextMode);
+    const modes: RepeatMode[] = ['OFF', 'ALL', 'ONE'];
+    const next =
+      modes[(modes.indexOf(playerState.repeat) + 1) % modes.length];
+    setPlayerState(p => ({ ...p, repeat: next }));
+    dbService.setSetting('repeat', next);
   };
-
-  // -- HANDLERS --
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setScrubValue(parseFloat(e.target.value));
-  };
-
-  const handlePointerDown = () => {
-    setIsScrubbing(true);
-  };
-
-  // Add global pointer up listener when scrubbing
-  useEffect(() => {
-    if (isScrubbing) {
-      const handleGlobalPointerUp = () => {
-        setIsScrubbing(false);
-        const syntheticEvent = {
-          target: { value: scrubValue.toString() },
-          currentTarget: { value: scrubValue.toString() }
-        } as unknown as React.ChangeEvent<HTMLInputElement>;
-        handleSeek(syntheticEvent);
-      };
-
-      window.addEventListener('pointerup', handleGlobalPointerUp);
-      window.addEventListener('pointercancel', handleGlobalPointerUp);
-
-      return () => {
-        window.removeEventListener('pointerup', handleGlobalPointerUp);
-        window.removeEventListener('pointercancel', handleGlobalPointerUp);
-      };
-    }
-  }, [isScrubbing, scrubValue, handleSeek]);
 
   return (
     <AnimatePresence>
       {isPlayerOpen && (
         <motion.div
-          key="full-player"
-          // CRITICAL FIX: Use pixels (numbers) for initial y to avoid crash/conflict issues
-          // We ensure windowHeight is available or default to a safe value.
+          key="player"
           initial={{ y: windowHeight }}
           animate={{ y: 0 }}
           exit={{ y: windowHeight }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          
+          transition={{ type: 'spring', damping: 28, stiffness: 220 }}
           drag="y"
           dragControls={dragControls}
-          dragListener={false} // Disable auto-drag so buttons work
+          dragListener={false}
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.1}
-
-          // We use style for opacity. dragY is manually updated via onDrag
+          dragElastic={0.12}
           style={{ opacity }}
-          
-          // Manually update the motion value for opacity
-          onDrag={(_, info) => dragY.set(info.offset.y)}
-
-          onDragEnd={(_, info) => { 
-            if (info.offset.y > 150) {
-                onClose();
-            } else {
-                dragY.set(0); // Reset opacity if bouncing back
-            }
+          onDrag={(_, i) => dragY.set(i.offset.y)}
+          onDragEnd={(_, i) => {
+            if (i.offset.y > 150) onClose();
+            else dragY.set(0);
           }}
-          className="fixed inset-0 z-[100] flex flex-col bg-black overflow-hidden"
+          className="fixed inset-0 z-[100] bg-black flex flex-col"
         >
-          {/* Dynamic Background */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
-            <motion.img 
-              key={currentTrack.coverArt}
-              src={currentTrack.coverArt} 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              transition={{ duration: 1 }}
-              className="w-full h-full object-cover blur-[100px] scale-125"
+          {/* background */}
+          <div className="absolute inset-0 -z-10">
+            <img
+              src={currentTrack.coverArt}
+              className="w-full h-full object-cover blur-[120px] scale-125 opacity-40"
             />
-            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-black/50" />
           </div>
 
-          {/* DRAG HANDLE - This area initiates the drag */}
+          {/* handle */}
           <div
-            className="relative z-10 flex flex-col items-center pt-safe pb-6 cursor-grab active:cursor-grabbing touch-none"
-            onPointerDown={(e) => dragControls.start(e)}
+            onPointerDown={e => dragControls.start(e)}
+            className="h-14 flex items-center justify-center"
           >
-            <button onClick={onClose} className="w-full h-10 flex items-center justify-center">
-              <div className="w-12 h-1.5 rounded-full bg-white/20" />
-            </button>
+            <div className="w-12 h-1.5 bg-white/30 rounded-full" />
           </div>
 
-          <main className="relative z-10 flex-1 flex flex-col md:flex-row md:items-center md:gap-12 md:px-12 px-8 max-w-7xl mx-auto w-full h-full pb-safe-bottom">
-
-            <AnimatePresence mode="wait">
-              {(!showQueue || isLargeScreen) && (
-                 <motion.div
-                   key="art"
-                   initial={{ opacity: 0, scale: 0.9 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   exit={{ opacity: 0, scale: 0.9 }}
-                   className={`flex-1 flex flex-col justify-center ${showQueue ? 'hidden md:flex' : ''}`}
-                 >
-                   {/* Album Art - Draggable if queue is closed */}
-                   <motion.div
-                     onPointerDown={(e) => !showQueue && dragControls.start(e)}
-                     animate={{ scale: playerState.isPlaying ? 1 : 0.85 }}
-                     transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                     className="aspect-square w-full max-w-md mx-auto rounded-[2rem] overflow-hidden shadow-2xl mb-8 md:mb-0 cursor-grab active:cursor-grabbing"
-                   >
-                     <img src={currentTrack.coverArt} className="w-full h-full object-cover" alt="Cover" />
-                   </motion.div>
-                   
-                   <div className="mt-8 md:hidden text-center">
-                     <h1 className="text-3xl font-bold text-white truncate">{currentTrack.title}</h1>
-                     <p className="text-xl text-white/50 truncate">{currentTrack.artist}</p>
-                   </div>
-                 </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence mode="wait">
-              {showQueue && (
-                <motion.div 
-                  key="queue" 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="flex-1 overflow-y-auto bg-white/5 rounded-3xl mb-8 p-4 md:order-last w-full h-full backdrop-blur-md"
-                >
-                  <QueueList 
-                    queue={playerState.queue} 
-                    currentTrackId={currentTrack.id} 
-                    tracks={tracks} 
-                    onReorder={(newQueue) => setPlayerState(prev => ({ ...prev, queue: newQueue }))}
-                    onPlay={(id) => playTrack(id, { fromQueue: true })}
-                    onRemove={onRemoveTrack}
-                    onClose={() => setShowQueue(false)}
+          <main className="flex-1 px-6 pb-10 flex flex-col">
+            {!showQueue && (
+              <>
+                <div className="flex-1 flex items-center justify-center">
+                  <img
+                    src={currentTrack.coverArt}
+                    className="w-full max-w-sm aspect-square rounded-3xl shadow-2xl"
                   />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex flex-col justify-center w-full md:w-1/2 md:max-w-md md:flex">
-               <div className="hidden md:block mb-8">
-                  <h1 className="text-4xl font-bold text-white truncate">{currentTrack.title}</h1>
-                  <p className="text-2xl text-white/50 truncate mt-2">{currentTrack.artist}</p>
-               </div>
-
-              {/* Slider & Controls */}
-              <div className="pb-12 md:pb-0">
-                <div className="relative w-full h-1.5 bg-white/10 rounded-full mb-8 group touch-none">
-                  <div
-                    className="absolute h-full bg-white rounded-full z-0 pointer-events-none"
-                    style={{ width: `${(scrubValue / (duration || 1)) * 100}%` }}
-                  />
-                  <input
-                    type="range"
-                    step="0.01"
-                    min="0"
-                    max={duration || 0}
-                    value={scrubValue}
-                    onChange={handleScrubChange}
-                    onPointerDown={handlePointerDown}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    style={{ touchAction: 'none' }} 
-                  />
-                  <div className="flex justify-between mt-4 text-xs text-white/40 font-mono">
-                    <span>{formatTime(scrubValue)}</span>
-                    <span>{formatTime(duration)}</span>
-                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <button onClick={toggleShuffle} className={`p-2 transition-colors ${playerState.shuffle ? 'text-primary' : 'text-white/40 hover:text-white'}`}>
-                    <Shuffle size={20} />
-                  </button>
-
-                  <div className="flex items-center gap-8">
-                    <button onClick={prevTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
-                        <SkipBack size={32} fill="white" />
-                    </button>
-                    <button onClick={togglePlay} className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-white/20">
-                      {playerState.isPlaying ? <Pause size={32} fill="black" /> : <Play size={32} fill="black" className="ml-1" />}
-                    </button>
-                    <button onClick={nextTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
-                        <SkipForward size={32} fill="white" />
-                    </button>
-                  </div>
-
-                  <button onClick={toggleRepeat} className={`p-2 transition-colors relative ${playerState.repeat !== 'OFF' ? 'text-primary' : 'text-white/40 hover:text-white'}`}>
-                    <Repeat size={20} />
-                    {playerState.repeat === 'ONE' && (
-                        <span className="absolute text-[8px] font-bold top-2 left-1/2 -translate-x-1/2">1</span>
-                    )}
-                  </button>
+                <div className="text-center mt-6">
+                  <h1 className="text-2xl font-bold text-white truncate">
+                    {currentTrack.title}
+                  </h1>
+                  <p className="text-white/50 truncate">
+                    {currentTrack.artist}
+                  </p>
                 </div>
+              </>
+            )}
 
-                <div className="flex justify-center mt-10">
-                  <button
-                    onClick={() => setShowQueue(!showQueue)}
-                    className={`p-3 rounded-full transition-colors ${showQueue ? 'bg-white/20 text-white' : 'text-white/40'}`}
-                  >
-                    <ListMusic size={24} />
-                  </button>
-                </div>
+            {showQueue && (
+              <div className="flex-1 overflow-y-auto bg-white/5 rounded-3xl p-4 backdrop-blur">
+                <QueueList
+                  queue={playerState.queue}
+                  currentTrackId={currentTrack.id}
+                  tracks={tracks}
+                  onPlay={id => playTrack(id, { fromQueue: true })}
+                  onRemove={onRemoveTrack}
+                  onReorder={q =>
+                    setPlayerState(p => ({ ...p, queue: q }))
+                  }
+                  onClose={() => setShowQueue(false)}
+                />
               </div>
+            )}
+
+            {/* slider */}
+            <div className="mt-8">
+              <div className="relative h-1.5 bg-white/10 rounded-full">
+                <div
+                  className="absolute h-full bg-white rounded-full"
+                  style={{
+                    width: `${(scrubValue / Math.max(duration, 0.01)) * 100}%`,
+                  }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(duration, 0.01)}
+                  step={0.01}
+                  value={scrubValue}
+                  onChange={e => setScrubValue(+e.target.value)}
+                  onPointerDown={() => setIsScrubbing(true)}
+                  className="absolute inset-0 opacity-0 w-full"
+                />
+              </div>
+
+              <div className="flex justify-between text-xs text-white/40 mt-2 font-mono">
+                <span>{formatTime(scrubValue)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* controls */}
+            <div className="flex items-center justify-between mt-6">
+              <button onClick={toggleShuffle}>
+                <Shuffle
+                  className={
+                    playerState.shuffle ? 'text-white' : 'text-white/40'
+                  }
+                />
+              </button>
+
+              <div className="flex items-center gap-8">
+                <button onClick={prevTrack}>
+                  <SkipBack size={32} fill="white" />
+                </button>
+                <button
+                  onClick={togglePlay}
+                  className="w-20 h-20 bg-white rounded-full flex items-center justify-center"
+                >
+                  {playerState.isPlaying ? (
+                    <Pause fill="black" />
+                  ) : (
+                    <Play fill="black" className="ml-1" />
+                  )}
+                </button>
+                <button onClick={nextTrack}>
+                  <SkipForward size={32} fill="white" />
+                </button>
+              </div>
+
+              <button onClick={toggleRepeat}>
+                <Repeat
+                  className={
+                    playerState.repeat !== 'OFF'
+                      ? 'text-white'
+                      : 'text-white/40'
+                  }
+                />
+              </button>
+            </div>
+
+            <div className="flex justify-center mt-6">
+              <button onClick={() => setShowQueue(v => !v)}>
+                <ListMusic className="text-white" />
+              </button>
             </div>
           </main>
         </motion.div>
       )}
     </AnimatePresence>
   );
-});
+};
 
 export default FullPlayer;
