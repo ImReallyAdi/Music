@@ -39,6 +39,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
   const [tracks, setTracks] = useState<Record<string, Track>>({});
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768);
 
+  // Local state for smooth seeking
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
 
@@ -52,6 +53,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Sync scrubValue with actual time ONLY when NOT scrubbing
   useEffect(() => {
     if (!isScrubbing) {
       setScrubValue(currentTime);
@@ -91,23 +93,17 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
     setScrubValue(parseFloat(e.target.value));
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
+  const handlePointerDown = () => {
     setIsScrubbing(true);
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = () => {
      setIsScrubbing(false);
      const syntheticEvent = {
         target: { value: scrubValue.toString() },
         currentTarget: { value: scrubValue.toString() }
     } as unknown as React.ChangeEvent<HTMLInputElement>;
     handleSeek(syntheticEvent);
-  };
-
-  const handleButtonPress = (e: React.PointerEvent, action: () => void) => {
-    e.stopPropagation();
-    action();
   };
 
   return (
@@ -121,8 +117,11 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           drag="y"
           dragControls={dragControls}
-          // Disable main drag when queue is open so you can scroll freely
-          dragListener={!showQueue}
+          
+          // CRITICAL FIX: Disable global drag listener. 
+          // This prevents the modal from stealing clicks from buttons/queue.
+          dragListener={false} 
+          
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.1}
           onDragEnd={(_, info) => { if (info.offset.y > 150) onClose(); }}
@@ -142,9 +141,9 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
             <div className="absolute inset-0 bg-black/40" />
           </div>
 
-          {/* Drag Handle */}
+          {/* DRAG HANDLE - Only this area starts the drag now */}
           <div
-            className="relative z-10 flex flex-col items-center pt-safe pb-6 cursor-grab active:cursor-grabbing"
+            className="relative z-10 flex flex-col items-center pt-safe pb-6 cursor-grab active:cursor-grabbing touch-none"
             onPointerDown={(e) => dragControls.start(e)}
           >
             <button onClick={onClose} className="w-full h-10 flex items-center justify-center">
@@ -163,10 +162,12 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                    exit={{ opacity: 0, scale: 0.9 }}
                    className={`flex-1 flex flex-col justify-center ${showQueue ? 'hidden md:flex' : ''}`}
                  >
+                   {/* Album Art - We allow dragging from here too if queue is closed */}
                    <motion.div
+                     onPointerDown={(e) => !showQueue && dragControls.start(e)}
                      animate={{ scale: playerState.isPlaying ? 1 : 0.85 }}
                      transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                     className="aspect-square w-full max-w-md mx-auto rounded-[2rem] overflow-hidden shadow-2xl mb-8 md:mb-0"
+                     className="aspect-square w-full max-w-md mx-auto rounded-[2rem] overflow-hidden shadow-2xl mb-8 md:mb-0 cursor-grab active:cursor-grabbing"
                    >
                      <img src={currentTrack.coverArt} className="w-full h-full object-cover" alt="Cover" />
                    </motion.div>
@@ -179,7 +180,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
               )}
             </AnimatePresence>
 
-            {/* QUEUE UI -- FIXED */}
             <AnimatePresence mode="wait">
               {showQueue && (
                 <motion.div 
@@ -187,11 +187,7 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
-                  // 1. Stop Propagation: Prevents clicks here from dragging the modal
-                  onPointerDown={(e) => e.stopPropagation()}
-                  // 2. Touch Action: Ensures standard scrolling works
-                  style={{ touchAction: 'pan-y' }}
-                  // 3. Overflow: Changed from hidden to auto so you can scroll
+                  // Ensure scrolling works
                   className="flex-1 overflow-y-auto bg-white/5 rounded-3xl mb-8 p-4 md:order-last w-full h-full backdrop-blur-md"
                 >
                   <QueueList 
@@ -241,29 +237,21 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
                 </div>
 
                 <div className="flex items-center justify-between">
+                  {/* Buttons now use standard onClick because dragListener={false} */}
                   <button onClick={toggleShuffle} className={`p-2 transition-colors ${playerState.shuffle ? 'text-primary' : 'text-white/40 hover:text-white'}`}>
                     <Shuffle size={20} />
                   </button>
 
                   <div className="flex items-center gap-8">
-                    <button 
-                        onPointerDown={(e) => handleButtonPress(e, prevTrack)}
-                        className="p-2 hover:scale-110 active:scale-95 transition-transform"
-                    >
+                    <button onClick={prevTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
                         <SkipBack size={32} fill="white" />
                     </button>
                     
-                    <button 
-                        onPointerDown={(e) => handleButtonPress(e, togglePlay)}
-                        className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-white/20"
-                    >
+                    <button onClick={togglePlay} className="w-20 h-20 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-white/20">
                       {playerState.isPlaying ? <Pause size={32} fill="black" /> : <Play size={32} fill="black" className="ml-1" />}
                     </button>
                     
-                    <button 
-                        onPointerDown={(e) => handleButtonPress(e, nextTrack)}
-                        className="p-2 hover:scale-110 active:scale-95 transition-transform"
-                    >
+                    <button onClick={nextTrack} className="p-2 hover:scale-110 active:scale-95 transition-transform">
                         <SkipForward size={32} fill="white" />
                     </button>
                   </div>
@@ -278,7 +266,6 @@ const FullPlayer: React.FC<FullPlayerProps> = React.memo(({
 
                 <div className="flex justify-center mt-10">
                   <button
-                    onPointerDown={(e) => e.stopPropagation()} 
                     onClick={() => setShowQueue(!showQueue)}
                     className={`p-3 rounded-full transition-colors ${showQueue ? 'bg-white/20 text-white' : 'text-white/40'}`}
                   >
