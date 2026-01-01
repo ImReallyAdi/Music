@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Play, MoreVertical, Shuffle, ListFilter, Settings } from 'lucide-react';
+import { Music, Play, Sparkles } from 'lucide-react';
 import { Track } from '../types';
 
 interface HomeProps {
@@ -10,89 +10,112 @@ interface HomeProps {
   isLoading?: boolean;
 }
 
-// --- M3 LIST SKELETON (Horizontal Row) ---
-const SkeletonRow = () => (
-  <div className="flex items-center gap-4 py-2 animate-pulse px-2">
-    {/* Album Art Skeleton */}
-    <div className="w-14 h-14 rounded-[12px] bg-surface-container-highest/50 flex-shrink-0 relative overflow-hidden">
-       {/* "imreallyadi" Watermark */}
-       <span className="text-[10px] text-surface-on-variant/20 font-bold absolute inset-0 flex items-center justify-center -rotate-12 select-none">
-        imreallyadi
-      </span>
-      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-surface-on/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
-    </div>
-    
-    {/* Text Lines */}
-    <div className="flex-1 space-y-2">
-      <div className="h-4 w-1/2 bg-surface-container-highest/50 rounded-full" />
-      <div className="h-3 w-1/3 bg-surface-container-highest/30 rounded-full" />
-    </div>
+// --- ANIMATION VARIANTS ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1
+    }
+  }
+};
 
-    {/* Kebab Menu Skeleton */}
-    <div className="w-8 h-8 rounded-full bg-surface-container-highest/20" />
+const cardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { type: "spring", stiffness: 400, damping: 30 }
+  },
+  exit: { opacity: 0, scale: 0.9 }
+};
+
+// --- SKELETON LOADER ---
+const SkeletonCard = () => (
+  <div className="flex flex-col gap-4">
+    <div className="aspect-square rounded-[24px] bg-surface-container-highest/40 relative overflow-hidden isolate">
+      {/* Watermark */}
+      <div className="absolute inset-0 flex items-center justify-center z-0 opacity-20">
+        <span className="text-on-surface-variant font-black text-xl tracking-[0.2em] -rotate-12 select-none blur-[1px]">
+          imreallyadi
+        </span>
+      </div>
+      {/* Shimmer */}
+      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-surface-on/10 to-transparent animate-[shimmer_1.5s_infinite] z-10" />
+    </div>
+    <div className="space-y-2 px-1">
+      <div className="h-5 w-3/4 bg-surface-container-highest/60 rounded-full animate-pulse" />
+      <div className="h-4 w-1/2 bg-surface-container-highest/40 rounded-full animate-pulse" />
+    </div>
   </div>
 );
 
-// --- M3 LIST ITEM (Row Style) ---
-const TrackRow = memo(({ track, index, onPlay }: { track: Track; index: number; onPlay: (id: string) => void }) => (
+// --- EXPRESSIVE TRACK CARD ---
+const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) => void }) => (
   <motion.div
-    layout
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ 
-      delay: index * 0.03, 
-      type: "spring", 
-      stiffness: 400, 
-      damping: 30 
-    }}
-    whileTap={{ scale: 0.98, backgroundColor: "rgba(var(--surface-on-variant), 0.08)" }}
+    variants={cardVariants}
+    whileHover="hover"
+    whileTap="tap"
+    className="group cursor-pointer flex flex-col gap-3 relative"
     onClick={() => onPlay(track.id)}
-    className="group relative flex items-center gap-4 p-2 rounded-2xl transition-colors hover:bg-surface-container-highest/30 cursor-pointer"
   >
-    {/* Thumbnail Image */}
-    <div className="relative w-14 h-14 flex-shrink-0">
-      <div className="w-full h-full rounded-[12px] overflow-hidden shadow-sm bg-surface-container-high">
-        {track.coverArt ? (
-          <img 
-            src={track.coverArt} 
-            alt={track.title}
-            className="w-full h-full object-cover" 
-            loading="lazy" 
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-surface-container-highest">
-            <Music className="w-6 h-6 text-surface-on-variant/50" />
-          </div>
-        )}
-      </div>
+    {/* Image Container */}
+    <div className="aspect-square rounded-[24px] bg-surface-container-high overflow-hidden relative shadow-sm transition-shadow duration-500 group-hover:shadow-lg">
+      {track.coverArt ? (
+        <motion.img 
+          src={track.coverArt} 
+          alt={track.title}
+          className="w-full h-full object-cover"
+          variants={{
+            hover: { scale: 1.08 },
+            tap: { scale: 1 }
+          }}
+          transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-surface-container-high">
+          <Music className="w-16 h-16 text-primary/40" />
+        </div>
+      )}
       
-      {/* Playing Indicator / Hover Overlay */}
-      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-[12px] flex items-center justify-center">
-        <Play className="w-6 h-6 fill-white text-white drop-shadow-md" />
-      </div>
+      {/* Play Overlay (M3 Expressive FAB style) */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        variants={{
+          hover: { opacity: 1 },
+          tap: { opacity: 1 }
+        }}
+        className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center"
+      >
+        <motion.div
+          variants={{
+            hover: { scale: 1, y: 0 },
+            hidden: { scale: 0.5, y: 10 }
+          }}
+          className="w-14 h-14 bg-primary-container text-on-primary-container rounded-[18px] flex items-center justify-center shadow-elevation-3"
+        >
+          <Play className="w-6 h-6 fill-current ml-1" />
+        </motion.div>
+      </motion.div>
     </div>
 
-    {/* Text Info */}
-    <div className="flex-1 min-w-0 flex flex-col justify-center">
-      <h3 className="text-title-medium font-semibold text-surface-on truncate leading-tight">
+    {/* Text Content */}
+    <div className="px-1 flex flex-col">
+      <h3 className="text-title-medium font-semibold text-on-surface truncate tracking-tight">
         {track.title}
       </h3>
-      <p className="text-body-medium text-surface-on-variant truncate mt-0.5">
+      <p className="text-body-medium text-on-surface-variant truncate opacity-80 group-hover:opacity-100 transition-opacity">
         {track.artist}
       </p>
     </div>
-
-    {/* Actions (Kebab Menu) */}
-    <button 
-      className="p-2 rounded-full text-surface-on-variant hover:bg-surface-on-variant/10 active:bg-surface-on-variant/20 transition-colors"
-      onClick={(e) => e.stopPropagation()} // Prevent playing when clicking menu
-    >
-      <MoreVertical className="w-5 h-5" />
-    </button>
   </motion.div>
 ));
 
-TrackRow.displayName = 'TrackRow';
+TrackCard.displayName = 'TrackCard';
 
 // --- MAIN COMPONENT ---
 const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoading = false }) => {
@@ -100,76 +123,79 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
   return (
     <motion.div 
-      key="library-screen"
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+      key="home-screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex flex-col h-full pt-4 pb-32 px-4 md:px-6 max-w-4xl mx-auto"
+      className="w-full h-full overflow-y-auto pt-8 pb-32 px-6 scrollbar-hide"
     >
-      {/* Top Header: Library & Settings */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-display-small font-bold text-surface-on">Library</h1>
-        <button className="p-2 rounded-full hover:bg-surface-container-highest/50 transition-colors">
-          <Settings className="w-6 h-6 text-surface-on" />
-        </button>
-      </div>
-
-      {/* Tabs / Pills */}
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
-        {['Songs', 'Albums', 'Artist', 'Playlists'].map((tab, i) => (
-          <button
-            key={tab}
-            className={`px-5 py-2 rounded-full text-label-large font-medium whitespace-nowrap transition-all ${
-              i === 0 
-                ? 'bg-primary-container text-primary-on-container shadow-sm' 
-                : 'bg-surface-container text-surface-on-variant hover:bg-surface-container-high'
-            }`}
+      {/* Expressive Header */}
+      <div className="max-w-7xl mx-auto space-y-8">
+        <header className="flex flex-col md:flex-row justify-between md:items-end gap-6">
+          <div className="space-y-1">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/50 text-on-secondary-container text-label-medium font-medium mb-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Recommended</span>
+            </motion.div>
+            <h2 className="text-headline-large font-bold text-on-surface tracking-tight">
+              Recent Heat
+            </h2>
+            <p className="text-body-large text-on-surface-variant max-w-md">
+              Fresh tracks added to your library.
+            </p>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => filteredTracks[0] && playTrack(filteredTracks[0].id)}
+            disabled={isLoading || filteredTracks.length === 0}
+            className="h-14 px-8 rounded-full bg-primary text-on-primary text-title-medium font-medium shadow-elevation-2 hover:shadow-elevation-4 active:shadow-elevation-1 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {tab}
-          </button>
-        ))}
-      </div>
+            <Play className="w-5 h-5 fill-current" />
+            Play All
+          </motion.button>
+        </header>
 
-      {/* Action Row: Shuffle & Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          onClick={() => filteredTracks[0] && playTrack(filteredTracks[0].id)}
-          disabled={isLoading || filteredTracks.length === 0}
-          className="flex-1 h-12 rounded-full bg-primary-container/40 text-primary hover:bg-primary-container/60 active:scale-[0.99] transition-all flex items-center justify-center gap-2 font-medium"
+        {/* Content Grid */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10"
         >
-          <Shuffle className="w-5 h-5" />
-          <span>Shuffle</span>
-        </button>
-        
-        <button className="h-12 w-12 rounded-full bg-surface-container-high text-surface-on-variant flex items-center justify-center hover:bg-surface-container-highest transition-colors">
-          <ListFilter className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Track List */}
-      <div className="flex flex-col gap-1">
-        {isLoading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <SkeletonRow key={`skel-${i}`} />
-          ))
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {filteredTracks.length > 0 ? (
-              filteredTracks.map((track, i) => (
-                <TrackRow 
+          {isLoading ? (
+            Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonCard key={`skel-${i}`} />
+            ))
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {filteredTracks.slice(0, 15).map((track) => (
+                <TrackCard 
                   key={track.id} 
                   track={track} 
-                  index={i} 
                   onPlay={playTrack} 
                 />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 opacity-60">
-                <Music className="w-16 h-16 mb-4 text-surface-variant stroke-[1.5]" />
-                <p className="text-title-medium text-surface-on-variant">No tracks found</p>
-              </div>
-            )}
-          </AnimatePresence>
+              ))}
+            </AnimatePresence>
+          )}
+        </motion.div>
+
+        {!isLoading && filteredTracks.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-on-surface-variant/60"
+          >
+            <div className="w-24 h-24 rounded-[32px] bg-surface-container-high flex items-center justify-center mb-4">
+              <Music className="w-10 h-10 opacity-50" />
+            </div>
+            <p className="text-title-large font-medium">No tracks found</p>
+          </motion.div>
         )}
       </div>
     </motion.div>
