@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -62,7 +62,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 }) => {
   const [showQueue, setShowQueue] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
-  
+   
   // -- Seek State --
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
@@ -105,19 +105,23 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dbService.setSetting('repeat', next);
   };
 
+  // 1. Update UI immediately while dragging (no seek yet)
   const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     setScrubValue(value);
   };
 
-  const handleScrubStart = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
-    // CRITICAL FIX: Stop the parent motion.div from detecting a drag
-    e.stopPropagation(); 
+  // 2. Start scrubbing (pauses external updates)
+  const handleScrubStart = () => {
     setIsScrubbing(true);
   };
 
+  // 3. End scrubbing (commits the seek)
   const handleScrubEnd = () => {
+    // Commit the seek operation only once
     handleSeek({ target: { value: scrubValue } });
+    
+    // Small delay to prevent jitter from old time update arriving late
     setTimeout(() => {
         setIsScrubbing(false);
     }, 50);
@@ -134,13 +138,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           transition={{ type: 'spring', damping: 28, stiffness: 220 }}
           drag="y"
           dragControls={dragControls}
-          dragListener={false}
-          dragConstraints={{ top: 0, bottom: 0 }}
+          // UPDATED: Removed dragListener={false} so you can drag from anywhere
+          // UPDATED: Changed bottom constraint so you can drag down freely
+          dragConstraints={{ top: 0 }} 
           dragElastic={0.12}
           style={{ opacity }}
           onDrag={(_, i) => dragY.set(i.offset.y)}
           onDragEnd={(_, i) => {
-            if (i.offset.y > 100) onClose(); // Reduced threshold for easier closing
+            // Threshold to close
+            if (i.offset.y > 150) onClose();
             else dragY.set(0);
           }}
           className="fixed inset-0 z-[100] bg-black flex flex-col"
@@ -162,23 +168,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             <div className="absolute inset-0 bg-black/50" />
           </div>
 
-          {/* Header with Close Button and Drag Handle */}
-          <div 
-             className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0"
-             onPointerDown={e => dragControls.start(e)} // Entire header triggers drag
+          {/* drag handle */}
+          <div
+            onPointerDown={e => dragControls.start(e)}
+            className="h-14 flex items-center justify-center cursor-grab active:cursor-grabbing flex-shrink-0"
           >
-             <button 
-               onClick={onClose} 
-               className="p-2 -ml-2 text-white/70 hover:text-white active:scale-90 transition"
-             >
-                <ChevronDown size={32} />
-             </button>
-             
-             {/* Visual Drag Handle */}
-             <div className="w-12 h-1.5 bg-white/30 rounded-full cursor-grab active:cursor-grabbing" />
-             
-             {/* Spacer for symmetry or Menu button */}
-             <div className="w-10" /> 
+            <div className="w-12 h-1.5 bg-white/30 rounded-full" />
           </div>
 
           <main className="flex-1 px-6 pb-10 flex flex-col landscape:flex-row landscape:items-center landscape:justify-center landscape:gap-12 landscape:px-12">
@@ -215,6 +210,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 50 }}
                     transition={{ duration: 0.2 }}
+                    // Stop propagation here so scrolling the list doesn't drag the modal
+                    onPointerDown={(e) => e.stopPropagation()}
                     className="flex-1 overflow-y-auto bg-white/5 rounded-3xl p-4 backdrop-blur scrollbar-hide h-full max-h-[70vh] landscape:max-h-full"
                   >
                     <QueueList
@@ -258,12 +255,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               )}
 
               {/* Slider */}
-              {/* Added pointer-events-auto and onPointerDown stopPropagation */}
               <div 
-                className="mt-8 landscape:mt-4 pointer-events-auto"
-                onPointerDown={(e) => e.stopPropagation()} 
+                className="mt-8 landscape:mt-4"
+                // Stop propagation so seeking doesn't drag the modal
+                onPointerDown={(e) => e.stopPropagation()}
               >
-                <div className="relative h-1.5 bg-white/10 rounded-full group cursor-pointer touch-none">
+                <div className="relative h-1.5 bg-white/10 rounded-full group cursor-pointer">
                   {/* Visual Progress Bar */}
                   <motion.div
                     className="absolute h-full bg-white rounded-full pointer-events-none"
@@ -287,7 +284,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     onPointerUp={handleScrubEnd}
                     onMouseUp={handleScrubEnd}
                     onTouchEnd={handleScrubEnd}
-                    className="absolute inset-0 opacity-0 w-full h-4 -top-1.5 cursor-pointer touch-none z-50"
+                    className="absolute inset-0 opacity-0 w-full h-4 -top-1.5 cursor-pointer touch-none"
                   />
                 </div>
 
@@ -386,7 +383,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                   className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"
                 >
                   {showQueue ? (
-                    <ListMusic className="text-green-400" />
+                    <ChevronDown className="text-white" />
                   ) : (
                     <ListMusic className="text-white" />
                   )}
