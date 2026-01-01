@@ -17,13 +17,13 @@ const QueueList: React.FC<QueueListProps> = ({ queue, currentTrackId, tracks, on
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <h3 className="text-title-medium font-bold text-on-surface mb-4 px-4">Up Next</h3>
+      <h3 className="text-xl font-bold text-on-surface mb-4 px-4 sticky top-0 bg-surface/95 backdrop-blur-md py-2 z-10">Up Next</h3>
 
       <Reorder.Group
         axis="y"
         values={queue}
         onReorder={onReorder}
-        className="flex-1 overflow-y-auto px-2 pb-20 no-scrollbar"
+        className="flex-1 overflow-y-auto px-2 pb-20 scrollbar-hide"
       >
         {queue.map((trackId) => {
           const track = tracks[trackId];

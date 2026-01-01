@@ -206,7 +206,7 @@ function MusicApp() {
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab} currentTrack={currentTrack}>
       <AnimatePresence>{loading.active && <LoadingOverlay {...loading} />}</AnimatePresence>
 
       <header className="pt-4 pb-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md">

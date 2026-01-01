@@ -1,11 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import BottomNav from './BottomNav';
+import { BackgroundAmbience } from './BackgroundAmbience';
+import { Track } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  currentTrack?: Track | null;
   className?: string;
 }
 
@@ -13,16 +16,13 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
   activeTab,
   setActiveTab,
+  currentTrack,
   className = ""
 }) => {
   return (
     <div className={`flex flex-col h-screen w-full bg-background text-on-background overflow-hidden relative ${className}`}>
 
-      {/* Background Ambience */}
-      <div className="fixed inset-0 -z-10 bg-background">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[120px] rounded-full mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 blur-[120px] rounded-full mix-blend-screen animate-pulse" style={{ animationDuration: '7s' }} />
-      </div>
+      <BackgroundAmbience coverArt={currentTrack?.coverArt} />
 
       <main className="flex-1 overflow-y-auto scrollbar-hide w-full max-w-[1200px] mx-auto px-4 pb-36 pt-4 md:px-8 relative z-0">
         {children}
