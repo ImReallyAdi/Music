@@ -22,15 +22,21 @@ type LibraryTab = 'Songs' | 'Albums' | 'Artists' | 'Playlists';
 function MusicApp() {
   const metadata = useMetadata();
   const { addToast } = useToast();
+  
+  // UI State
   const [activeTab, setActiveTab] = useState('home');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('Songs');
   const [searchQuery, setSearchQuery] = useState('');
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-  const [library, setLibrary] = useState<LibraryState>({ tracks: {}, playlists: {} });
   const [themeColor, setThemeColor] = useState('#6750A4'); 
+  
+  // Data State
+  const [library, setLibrary] = useState<LibraryState>({ tracks: {}, playlists: {} });
   const [loading, setLoading] = useState<{ active: boolean, progress: number, message: string }>({ 
     active: false, progress: 0, message: '' 
   });
+
+  // --- LIBRARY MANAGEMENT ---
 
   const refreshLibrary = useCallback(async () => {
     const tracksArr = await dbService.getAllTracks();
@@ -40,6 +46,15 @@ function MusicApp() {
       playlists: playlistsArr.reduce((acc, p) => ({ ...acc, [p.id]: p }), {})
     });
   }, []);
+
+  // Initial Load
+  useEffect(() => {
+    dbService.init().then(async () => {
+      await refreshLibrary();
+    });
+  }, [refreshLibrary]);
+
+  // --- AUDIO PLAYER INTEGRATION ---
 
   const updateMediaSession = useCallback((track: Track) => {
     if ('mediaSession' in navigator) {
@@ -67,7 +82,7 @@ function MusicApp() {
     playTrack
   } = useAudioPlayer(library.tracks, updateMediaSession);
 
-  // --- NEW: Handle Queue Item Removal ---
+  // Queue Management
   const handleRemoveFromQueue = useCallback((trackId: string) => {
     setPlayer(prev => ({
       ...prev,
@@ -76,15 +91,7 @@ function MusicApp() {
     addToast("Removed from queue", "success");
   }, [setPlayer, addToast]);
 
-  // Initial Load
-  useEffect(() => {
-    dbService.init().then(async () => {
-      await refreshLibrary();
-      // Most of the state restoration happens inside useAudioPlayer now via 'playerState' key
-    });
-  }, [refreshLibrary]);
-
-  // Handle Custom Settings Events (Quick bridge for Settings Tab)
+  // Handle Settings Events (Custom Event Bridge)
   useEffect(() => {
       const handleSettingsUpdate = (e: any) => {
           const { detail } = e;
@@ -96,19 +103,21 @@ function MusicApp() {
       return () => window.removeEventListener('update-player-settings', handleSettingsUpdate);
   }, [setPlayer]);
 
-  const currentTrack = useMemo(() =>
+  // --- DERIVED STATE ---
+
+  const currentTrack = useMemo(() => 
     player.currentTrackId ? library.tracks[player.currentTrackId] : null
   , [player.currentTrackId, library.tracks]);
 
   const filteredTracks = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    const tracks = Object.values(library.tracks).filter((t: Track) =>
+    const tracks = Object.values(library.tracks).filter((t: Track) => 
       t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.album.toLowerCase().includes(q)
     );
     return tracks.sort((a: Track, b: Track) => b.addedAt - a.addedAt);
   }, [library.tracks, searchQuery]);
 
-  // Sync Theme Color
+  // Dynamic Theme Color from Cover Art
   useEffect(() => {
     if (currentTrack?.coverArt) {
       extractDominantColor(currentTrack.coverArt).then(color => {
@@ -122,6 +131,8 @@ function MusicApp() {
       });
     }
   }, [currentTrack]);
+
+  // --- FILE UPLOAD LOGIC ---
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -190,12 +201,8 @@ function MusicApp() {
 
   return (
     <>
-      {/*
-        LAYOUT: Contains the core navigation and page content.
-        We pass isVisible={!isPlayerOpen} to hide the BottomNav when full player is active.
-      */}
-      <Layout
-        activeTab={activeTab}
+      <Layout 
+        activeTab={activeTab} 
         setActiveTab={setActiveTab}
         currentTrack={currentTrack}
         isVisible={!isPlayerOpen}
@@ -215,10 +222,10 @@ function MusicApp() {
           <AnimatePresence mode="wait">
             {activeTab === 'home' && <Home key="home" filteredTracks={filteredTracks} playTrack={playTrack} activeTab={activeTab} />}
             {activeTab === 'library' && (
-              <Library
+              <Library 
                 key="library"
                 activeTab={activeTab}
-                libraryTab={libraryTab}
+                libraryTab={libraryTab} 
                 setLibraryTab={setLibraryTab}
                 filteredTracks={filteredTracks}
                 playerState={player}
@@ -227,7 +234,7 @@ function MusicApp() {
               />
             )}
             {activeTab === 'search' && (
-              <Search
+              <Search 
                 key="search"
                 activeTab={activeTab}
                 searchQuery={searchQuery}
@@ -240,7 +247,7 @@ function MusicApp() {
         </main>
       </Layout>
 
-      {/* OVERLAYS: Rendered outside Layout to avoid stacking context issues */}
+      {/* OVERLAYS */}
       <AnimatePresence>{loading.active && <LoadingOverlay {...loading} />}</AnimatePresence>
 
       <MiniPlayer
@@ -264,6 +271,7 @@ function MusicApp() {
         setPlayerState={setPlayer}
         currentTime={currentTime}
         duration={duration}
+        // This bridges the UI Event -> Number conversion for the hook
         handleSeek={(e) => handleSeek(Number(e.target.value))}
         themeColor={themeColor}
         toggleShuffle={toggleShuffle}
