@@ -22,9 +22,12 @@ export const useAudioPlayer = (
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // --- AUDIO ARCHITECTURE (SINGLE OWNER) ---
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // --- AUDIO ARCHITECTURE ---
+  // We use a Ref, but we expect the <audio> element to be rendered in the JSX
+  const audioRef = useRef<HTMLAudioElement>(null);
   const nextTrackBlobRef = useRef<{ id: string; blob: Blob } | null>(null);
+  // NEW: Track the current URL to prevent memory leaks on iOS
+  const currentUrlRef = useRef<string | null>(null);
 
   const saveState = useCallback((state: PlayerState) => {
     dbService.setSetting('playerState', state);
@@ -41,13 +44,6 @@ export const useAudioPlayer = (
 
   // --- INITIALIZATION ---
   useEffect(() => {
-    if (!audioRef.current) {
-      const a = new Audio();
-      a.preload = 'auto';
-      a.playsInline = true;
-      audioRef.current = a;
-    }
-
     // Load persisted state
     dbService.getSetting<PlayerState>('playerState').then(saved => {
       if (saved) {
@@ -57,7 +53,7 @@ export const useAudioPlayer = (
            isPlaying: false
         }));
         
-        // Restore volume
+        // Restore volume if element exists
         if (audioRef.current && saved.volume !== undefined) {
              audioRef.current.volume = Math.max(0, Math.min(1, saved.volume));
         }
@@ -66,9 +62,13 @@ export const useAudioPlayer = (
         if (saved.currentTrackId) {
              dbService.getAudioBlob(saved.currentTrackId).then(blob => {
                  if (blob && audioRef.current) {
+                     // Clean up old URL
+                     if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
+                     
                      const url = URL.createObjectURL(blob);
+                     currentUrlRef.current = url;
                      audioRef.current.src = url;
-                     audioRef.current.currentTime = 0;
+                     // Don't auto-play on restore
                  }
              });
         }
@@ -76,10 +76,8 @@ export const useAudioPlayer = (
     });
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
+      // Cleanup on unmount
+      if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     };
   }, []);
 
@@ -131,7 +129,7 @@ export const useAudioPlayer = (
                  }
 
                  if (!prev.originalQueue.includes(trackId)) {
-                     newOriginalQueue = [...prev.originalQueue, trackId];
+                      newOriginalQueue = [...prev.originalQueue, trackId];
                  }
              }
         }
@@ -161,10 +159,24 @@ export const useAudioPlayer = (
           return;
         }
 
+        // CRITICAL FIX: Revoke old URL to prevent memory leaks/crashes on iOS
+        if (currentUrlRef.current) {
+            URL.revokeObjectURL(currentUrlRef.current);
+        }
+
         const url = URL.createObjectURL(audioBlob);
+        currentUrlRef.current = url;
+        
         audio.src = url;
         audio.currentTime = 0;
-        await audio.play();
+        
+        // Handle the promise to avoid "Uncaught (in promise) DOMException"
+        try {
+            await audio.play();
+        } catch (err) {
+            console.warn("Autoplay prevented:", err);
+            setPlayer(p => ({ ...p, isPlaying: false }));
+        }
       }
 
     } catch (e) {
@@ -261,6 +273,7 @@ export const useAudioPlayer = (
   }, []);
 
   // --- EVENT LISTENERS ---
+  // Note: We attach these to the ref, but the Ref must be in the DOM
   useEffect(() => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -299,7 +312,7 @@ export const useAudioPlayer = (
           audio.removeEventListener('pause', onPause);
           audio.removeEventListener('play', onPlay);
       };
-  }, [nextTrack, player.repeat]);
+  }, [nextTrack, player.repeat, audioRef.current]); // Added audioRef.current dependency
 
   // --- PRELOAD NEXT TRACK ---
   useEffect(() => {
@@ -349,6 +362,7 @@ export const useAudioPlayer = (
     prevTrack,
     handleSeek,
     setVolume,
-    toggleShuffle
+    toggleShuffle,
+    audioRef // <--- EXPOSED: Attach this to <audio> in JSX
   };
 };
