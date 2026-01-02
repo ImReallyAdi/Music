@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import {
-  Shuffle,
-  SkipBack,
   Play,
   Pause,
+  SkipBack,
   SkipForward,
+  Shuffle,
   Repeat,
   ListMusic,
   ChevronDown,
@@ -32,7 +32,6 @@ interface FullPlayerProps {
   onVolumeChange: (volume: number) => void;
   toggleShuffle: () => void;
   onRemoveTrack: (trackId: string) => void;
-  themeColor?: string;
 }
 
 const formatTime = (t: number) => {
@@ -58,39 +57,23 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   onVolumeChange,
   toggleShuffle,
   onRemoveTrack,
-  themeColor,
 }) => {
+  const dragControls = useDragControls();
   const [showQueue, setShowQueue] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
 
-  // --- SEEK ---
-  const [scrubbing, setScrubbing] = useState(false);
-  const scrubRef = useRef(0);
-
-  // --- VOLUME ---
-  const [volumeScrub, setVolumeScrub] = useState(false);
+  const seekRef = useRef(currentTime);
   const volumeRef = useRef(playerState.volume);
-
-  // --- DRAG ---
-  const dragControls = useDragControls();
-  const dragY = useMotionValue(0);
-  const opacity = useTransform(dragY, [0, 200], [1, 0]);
-
-  const windowHeight =
-    typeof window !== 'undefined' ? window.innerHeight : 800;
+  const isSeeking = useRef(false);
+  const isVoluming = useRef(false);
 
   useEffect(() => {
-    if (!isPlayerOpen) return;
-    dragY.set(0);
-  }, [isPlayerOpen, dragY]);
+    if (!isSeeking.current) seekRef.current = currentTime;
+  }, [currentTime]);
 
   useEffect(() => {
-    if (!scrubbing) scrubRef.current = currentTime;
-  }, [currentTime, scrubbing]);
-
-  useEffect(() => {
-    if (!volumeScrub) volumeRef.current = playerState.volume;
-  }, [playerState.volume, volumeScrub]);
+    if (!isVoluming.current) volumeRef.current = playerState.volume;
+  }, [playerState.volume]);
 
   useEffect(() => {
     if (!isPlayerOpen) return;
@@ -111,62 +94,22 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dbService.setSetting('repeat', next);
   };
 
-  // --- SEEK HANDLERS ---
-  const onSeekStart = () => setScrubbing(true);
-
-  const onSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    scrubRef.current = Number(e.target.value);
-  };
-
-  useEffect(() => {
-    if (!scrubbing) return;
-    const up = () => {
-      handleSeek(scrubRef.current);
-      setScrubbing(false);
-    };
-    window.addEventListener('pointerup', up, { once: true });
-    return () => window.removeEventListener('pointerup', up);
-  }, [scrubbing, handleSeek]);
-
-  // --- VOLUME HANDLERS ---
-  const onVolumeStart = () => setVolumeScrub(true);
-
-  const onVolumeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = Number(e.target.value);
-    volumeRef.current = v;
-    onVolumeChange(v);
-  };
-
-  useEffect(() => {
-    if (!volumeScrub) return;
-    const up = () => {
-      onVolumeChange(volumeRef.current);
-      setVolumeScrub(false);
-    };
-    window.addEventListener('pointerup', up, { once: true });
-    return () => window.removeEventListener('pointerup', up);
-  }, [volumeScrub, onVolumeChange]);
-
-  const safeDuration = Math.max(duration, 0.01);
-  const seekValue = scrubbing ? scrubRef.current : currentTime;
-  const volumeValue = volumeScrub ? volumeRef.current : playerState.volume;
+  const durationSafe = Math.max(duration, 0.01);
 
   return (
     <AnimatePresence>
       {isPlayerOpen && (
         <motion.div
-          initial={{ y: windowHeight }}
+          initial={{ y: '100%' }}
           animate={{ y: 0 }}
-          exit={{ y: windowHeight }}
-          transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', stiffness: 220, damping: 28 }}
           drag="y"
           dragControls={dragControls}
           dragConstraints={{ top: 0 }}
-          dragElastic={0.08}
-          style={{ opacity }}
-          onDrag={(_, i) => dragY.set(i.offset.y)}
-          onDragEnd={(_, i) => i.offset.y > 150 ? onClose() : dragY.set(0)}
-          className="fixed inset-0 z-[600] bg-black flex flex-col"
+          dragElastic={0.1}
+          onDragEnd={(_, info) => info.offset.y > 140 && onClose()}
+          className="fixed inset-0 z-[999] bg-black flex flex-col touch-none"
         >
           {/* drag handle */}
           <div
@@ -176,7 +119,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             <div className="w-12 h-1.5 bg-white/30 rounded-full" />
           </div>
 
-          <main className="flex-1 px-6 pb-10 flex flex-col gap-6">
+          <main className="flex-1 px-6 pb-8 flex flex-col gap-6">
             {/* artwork */}
             <img
               src={currentTrack.coverArt}
@@ -194,46 +137,67 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             </div>
 
             {/* seek */}
-            <div onPointerDown={e => e.stopPropagation()}>
+            <div
+              onPointerDown={e => e.stopPropagation()}
+              className="flex flex-col gap-1"
+            >
               <input
                 type="range"
                 min={0}
-                max={safeDuration}
+                max={durationSafe}
                 step={0.01}
-                value={seekValue}
-                onPointerDown={onSeekStart}
-                onChange={onSeekChange}
-                className="w-full"
+                value={seekRef.current}
+                onPointerDown={() => (isSeeking.current = true)}
+                onChange={e => (seekRef.current = Number(e.target.value))}
+                onPointerUp={() => {
+                  handleSeek(seekRef.current);
+                  isSeeking.current = false;
+                }}
+                className="w-full touch-none"
               />
               <div className="flex justify-between text-xs text-white/40">
-                <span>{formatTime(seekValue)}</span>
+                <span>{formatTime(seekRef.current)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
             </div>
 
             {/* volume */}
-            <div className="flex items-center gap-3">
-              <button onClick={() => onVolumeChange(volumeValue === 0 ? 1 : 0)}>
-                {volumeValue === 0 ? <VolumeX /> : <Volume2 />}
+            <div
+              className="flex items-center gap-3"
+              onPointerDown={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() =>
+                  onVolumeChange(volumeRef.current === 0 ? 1 : 0)
+                }
+              >
+                {volumeRef.current === 0 ? <VolumeX /> : <Volume2 />}
               </button>
               <input
                 type="range"
                 min={0}
                 max={1}
                 step={0.01}
-                value={volumeValue}
-                onPointerDown={onVolumeStart}
-                onChange={onVolumeInput}
-                className="flex-1"
+                value={volumeRef.current}
+                onPointerDown={() => (isVoluming.current = true)}
+                onChange={e => {
+                  volumeRef.current = Number(e.target.value);
+                  onVolumeChange(volumeRef.current);
+                }}
+                onPointerUp={() => (isVoluming.current = false)}
+                className="flex-1 touch-none"
               />
             </div>
 
             {/* controls */}
             <div className="flex items-center justify-between">
-              <Shuffle
-                onClick={toggleShuffle}
-                className={playerState.shuffle ? 'text-green-400' : 'text-white/40'}
-              />
+              <button onClick={toggleShuffle}>
+                <Shuffle
+                  className={
+                    playerState.shuffle ? 'text-green-400' : 'text-white/40'
+                  }
+                />
+              </button>
 
               <div className="flex items-center gap-6">
                 <SkipBack onClick={prevTrack} />
@@ -246,10 +210,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 <SkipForward onClick={nextTrack} />
               </div>
 
-              <Repeat
-                onClick={toggleRepeat}
-                className={playerState.repeat !== 'OFF' ? 'text-green-400' : 'text-white/40'}
-              />
+              <button onClick={toggleRepeat}>
+                <Repeat
+                  className={
+                    playerState.repeat !== 'OFF'
+                      ? 'text-green-400'
+                      : 'text-white/40'
+                  }
+                />
+              </button>
             </div>
 
             {/* queue */}
