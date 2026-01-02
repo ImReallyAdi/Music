@@ -82,7 +82,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dragY.set(0);
   }, [isPlayerOpen]);
 
-  // Only sync external time when NOT scrubbing
+  // Sync state only if NOT scrubbing
   useEffect(() => {
     if (!isScrubbing) {
       setScrubValue(currentTime);
@@ -109,27 +109,33 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dbService.setSetting('repeat', next);
   };
 
-  // 1. Update UI immediately while dragging (no seek yet)
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setScrubValue(value);
-  };
+  // --- SEEK LOGIC ---
 
-  // 2. Start scrubbing (pauses external updates)
+  // 1. User starts dragging: lock updates
   const handleScrubStart = () => {
     setIsScrubbing(true);
   };
 
-  // 3. End scrubbing (commits the seek)
-  const handleScrubEnd = () => {
-    // Commit the seek operation only once
-    handleSeek(scrubValue);
-    
-    // Small delay to prevent jitter from old time update arriving late
-    setTimeout(() => {
-        setIsScrubbing(false);
-    }, 50);
+  // 2. User moves slider: update local visual state only
+  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ensure we are in scrubbing mode
+    if (!isScrubbing) setIsScrubbing(true);
+    setScrubValue(Number(e.target.value));
   };
+
+  // 3. User releases slider: commit seek
+  const handleScrubEnd = () => {
+    handleSeek(scrubValue);
+    // Defer releasing lock to ensure next timeupdate doesn't jump back
+    setTimeout(() => {
+      setIsScrubbing(false);
+    }, 100);
+  };
+
+  // Calculate max once to ensure stability
+  const maxDuration = Math.max(duration, 0.01);
+  const sliderValue = isScrubbing ? scrubValue : currentTime;
+  const progressPercent = (sliderValue / maxDuration) * 100;
 
   return (
     <AnimatePresence>
@@ -142,14 +148,11 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           transition={{ type: 'spring', damping: 28, stiffness: 220 }}
           drag="y"
           dragControls={dragControls}
-          // UPDATED: Removed dragListener={false} so you can drag from anywhere
-          // UPDATED: Changed bottom constraint so you can drag down freely
           dragConstraints={{ top: 0 }} 
           dragElastic={0.12}
           style={{ opacity }}
           onDrag={(_, i) => dragY.set(i.offset.y)}
           onDragEnd={(_, i) => {
-            // Threshold to close
             if (i.offset.y > 150) onClose();
             else dragY.set(0);
           }}
@@ -262,7 +265,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               {/* Slider */}
               <div 
                 className="mt-8 landscape:mt-4"
-                // Stop propagation so seeking doesn't drag the modal
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 <div className="relative h-1.5 bg-white/10 rounded-full group cursor-pointer">
@@ -270,7 +272,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                   <motion.div
                     className="absolute h-full bg-white rounded-full pointer-events-none"
                     style={{
-                      width: `${(scrubValue / Math.max(duration, 0.01)) * 100}%`,
+                      width: `${Math.min(100, Math.max(0, progressPercent))}%`,
                     }}
                     layoutId="progressBar"
                   />
@@ -279,9 +281,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                   <input
                     type="range"
                     min={0}
-                    max={Math.max(duration, 0.01)}
+                    max={maxDuration}
                     step={0.01}
-                    value={scrubValue}
+                    value={sliderValue}
                     onChange={handleScrubChange}
                     onPointerDown={handleScrubStart}
                     onMouseDown={handleScrubStart}
@@ -294,7 +296,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 </div>
 
                 <div className="flex justify-between text-xs text-white/40 mt-2 font-mono font-medium">
-                  <span>{formatTime(scrubValue)}</span>
+                  <span>{formatTime(sliderValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
