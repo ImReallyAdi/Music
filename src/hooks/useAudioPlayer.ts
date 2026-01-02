@@ -16,16 +16,14 @@ export const useAudioPlayer = (
     shuffle: false,
     repeat: RepeatMode.OFF,
     volume: 1,
-    crossfadeEnabled: false, // Inert but kept for type compatibility
+    crossfadeEnabled: false,
     crossfadeDuration: 5,
   });
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   // --- AUDIO ARCHITECTURE (SINGLE OWNER) ---
-  // Exactly one persistent audio element created once.
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Store the next track's blob to allow synchronous playback on 'ended'
   const nextTrackBlobRef = useRef<{ id: string; blob: Blob } | null>(null);
 
   const saveState = useCallback((state: PlayerState) => {
@@ -42,13 +40,11 @@ export const useAudioPlayer = (
   };
 
   // --- INITIALIZATION ---
-
-  // Initialize audio element once on mount
   useEffect(() => {
     if (!audioRef.current) {
       const a = new Audio();
       a.preload = 'auto';
-      a.playsInline = true; // iOS Safari Fix
+      a.playsInline = true;
       audioRef.current = a;
     }
 
@@ -58,14 +54,18 @@ export const useAudioPlayer = (
         setPlayer(prev => ({
            ...prev,
            ...saved,
-           isPlaying: false // Always start paused to respect autoplay policies
+           isPlaying: false
         }));
         
-        // Restore last track (Paused)
+        // Restore volume
+        if (audioRef.current && saved.volume !== undefined) {
+             audioRef.current.volume = Math.max(0, Math.min(1, saved.volume));
+        }
+
+        // Restore last track
         if (saved.currentTrackId) {
              dbService.getAudioBlob(saved.currentTrackId).then(blob => {
                  if (blob && audioRef.current) {
-                     // Only set src if not already set (should be empty on init)
                      const url = URL.createObjectURL(blob);
                      audioRef.current.src = url;
                      audioRef.current.currentTime = 0;
@@ -75,7 +75,6 @@ export const useAudioPlayer = (
       }
     });
 
-    // Cleanup on unmount (rarely happens in this app structure)
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -84,20 +83,13 @@ export const useAudioPlayer = (
     };
   }, []);
 
-  // Sync Master Volume (Init & External Changes)
-  useEffect(() => {
-    if (audioRef.current && Math.abs(audioRef.current.volume - player.volume) > 0.01) {
-      audioRef.current.volume = player.volume;
-    }
-  }, [player.volume]);
-
   // Save state on change
   useEffect(() => {
     saveState(player);
   }, [player, saveState]);
 
 
-  // --- CORE LOGIC: PLAY TRACK ---
+  // --- CORE LOGIC ---
 
   const playTrack = useCallback(async (trackId: string, options: {
     immediate?: boolean;
@@ -110,13 +102,11 @@ export const useAudioPlayer = (
     if (!audio) return;
 
     try {
-      // 1. Update Queue State
       setPlayer(prev => {
         let newQueue = prev.queue;
         let newOriginalQueue = prev.originalQueue;
 
         if (customQueue) {
-          // New Playlist/Context
           newQueue = [...customQueue];
           newOriginalQueue = [...customQueue];
           if (prev.shuffle) {
@@ -124,39 +114,15 @@ export const useAudioPlayer = (
              newQueue = [trackId, ...shuffleArray(others)];
           }
         } else if (!fromQueue) {
-             // "Play Next" / Injection Logic
              if (prev.queue.length === 0) {
                  newQueue = [trackId];
                  newOriginalQueue = [trackId];
              } else {
-                 // Note: This logic seems to assume currentTrackId is unique or we are okay with the first match
-                 // If duplicates exist, this might pick the wrong one, but it is consistent with rest of app
-                 const currentIdx = prev.queue.indexOf(prev.currentTrackId || '');
-                 
-                 // If we are just queueing up "Play Next", we don't remove it from elsewhere unless we want to move it.
-                 // The prompt says "move songs to play next", implying move.
-                 const filteredQueue = prev.queue.filter((id, idx) => {
-                     // If we are strictly moving, we should probably remove it.
-                     // But if duplicate, removing all instances might be aggressive.
-                     // For now, removing all instances of trackId to avoid duplicates in queue
-                     return id !== trackId;
-                 });
-
-                 // Re-find current index in filtered queue (it might have shifted)
+                 const filteredQueue = prev.queue.filter(id => id !== trackId);
                  let newCurrentIdx = filteredQueue.indexOf(prev.currentTrackId || '');
-                 if (newCurrentIdx === -1) {
-                     // Should not happen if currentTrackId was not trackId, or if it was, we aren't here if immediate=true usually?
-                     // If we are playing track A, and we say "Play Next A", immediate=false...
-                     // Then we just moved A to be next? But A is current.
-                     // The logic below handles `prev.currentTrackId === trackId`.
-                     newCurrentIdx = 0;
-                 }
+                 if (newCurrentIdx === -1) newCurrentIdx = 0;
 
-                 // If playing same song, keep it; otherwise insert after current
                  if (prev.currentTrackId === trackId) {
-                      // If we are already playing it, and we want to "Play Next", it means nothing usually.
-                      // Or it means play it AGAIN after this one?
-                      // Standard behavior: Play it again.
                       newQueue = [trackId, trackId, ...filteredQueue];
                  } else {
                       const q = [...filteredQueue];
@@ -170,7 +136,6 @@ export const useAudioPlayer = (
              }
         }
 
-        // Update Media Session only if playing immediately
         if (immediate) {
              const track = libraryTracks[trackId];
              if (track) updateMediaSession(track);
@@ -181,11 +146,10 @@ export const useAudioPlayer = (
           currentTrackId: trackId,
           queue: newQueue,
           originalQueue: newOriginalQueue,
-          isPlaying: true // Optimistic UI update
+          isPlaying: true
         };
       });
 
-      // 2. Handle Audio Playback
       if (immediate) {
         let audioBlob = preloadedBlob;
         if (!audioBlob) {
@@ -197,13 +161,7 @@ export const useAudioPlayer = (
           return;
         }
 
-        // Revoke old object URL if possible to avoid leaks?
-        // JS garbage collection handles it eventually, but cleaner to just replace src.
-        // We do NOT use load().
         const url = URL.createObjectURL(audioBlob);
-
-        // Change src only if different or strictly needed
-        // Assuming we always want to restart if playTrack is called, even for same track
         audio.src = url;
         audio.currentTime = 0;
         await audio.play();
@@ -214,8 +172,6 @@ export const useAudioPlayer = (
       setPlayer(p => ({ ...p, isPlaying: false }));
     }
   }, [libraryTracks, updateMediaSession]);
-
-  // --- CONTROLS ---
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -231,7 +187,6 @@ export const useAudioPlayer = (
   }, [player.isPlaying]);
 
   const nextTrack = useCallback(() => {
-     // Determine Next Track
      const currentIndex = player.queue.indexOf(player.currentTrackId || '');
      let nextId: string | null = null;
 
@@ -249,13 +204,11 @@ export const useAudioPlayer = (
 
   const prevTrack = useCallback(() => {
       const audio = audioRef.current;
-      // "Restart Song" logic
       if (audio && audio.currentTime > 3) {
           audio.currentTime = 0;
           return;
       }
       
-      // "Previous Song" logic
       const currentIndex = player.queue.indexOf(player.currentTrackId || '');
       if (currentIndex > 0) {
           playTrack(player.queue[currentIndex - 1], { immediate: true, fromQueue: true });
@@ -264,15 +217,14 @@ export const useAudioPlayer = (
       }
   }, [player.queue, player.currentTrackId, player.repeat, playTrack]);
 
-  // CRITICAL FIX: Seek
   const handleSeek = useCallback((time: number) => {
       const audio = audioRef.current;
       if (audio) {
-          // Clamp time
-          const t = Math.max(0, Math.min(time, audio.duration || 0));
-          // 1. Mutate Audio (Source of Truth)
+          const d = audio.duration;
+          const validDuration = !isNaN(d) && isFinite(d) ? d : 0;
+          const t = Math.max(0, Math.min(time, validDuration));
+
           audio.currentTime = t;
-          // 2. Update React State immediately
           setCurrentTime(t);
       }
   }, []);
@@ -309,18 +261,17 @@ export const useAudioPlayer = (
   }, []);
 
   // --- EVENT LISTENERS ---
-
   useEffect(() => {
       const audio = audioRef.current;
       if (!audio) return;
 
       const onTimeUpdate = () => {
-         // One-way sync: Audio -> UI
          setCurrentTime(audio.currentTime);
       };
 
       const onDurationChange = () => {
-         setDuration(audio.duration);
+         const d = audio.duration;
+         setDuration(!isNaN(d) && isFinite(d) ? d : 0);
       };
       
       const onEnded = () => {
@@ -361,7 +312,6 @@ export const useAudioPlayer = (
           nextId = player.queue[0];
       }
 
-      // If we already have this loaded, do nothing
       if (nextTrackBlobRef.current?.id === nextId) return;
 
       if (nextId) {
@@ -375,7 +325,7 @@ export const useAudioPlayer = (
       }
   }, [player.currentTrackId, player.queue, player.repeat]);
 
-  // --- MEDIA SESSION INTEGRATION ---
+  // --- MEDIA SESSION ---
   useEffect(() => {
       if ('mediaSession' in navigator) {
           navigator.mediaSession.setActionHandler('play', togglePlay);
