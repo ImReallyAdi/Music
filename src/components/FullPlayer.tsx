@@ -285,4 +285,11 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       )}
     </AnimatePresence>
   );
+  // ... (rest of your component code)
+
+  );
+};
+
+// This line is what the error is complaining about:
+export default FullPlayer;
 };
