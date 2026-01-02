@@ -69,6 +69,7 @@ function MusicApp() {
     }
   }, []);
 
+  // 1. EXTRACT audioRef HERE
   const {
     player,
     setPlayer,
@@ -80,7 +81,8 @@ function MusicApp() {
     handleSeek,
     setVolume,
     toggleShuffle,
-    playTrack
+    playTrack,
+    audioRef // <--- CRITICAL: Get the ref from the hook
   } = useAudioPlayer(library.tracks, updateMediaSession);
 
   // Queue Management
@@ -237,12 +239,11 @@ function MusicApp() {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }); // Binding on every render to ensure processFiles is fresh (simplest for this scope)
+  }); 
 
   // --- KEYBOARD SHORTCUTS ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        // Ignore if focus is on input/textarea
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
@@ -280,6 +281,14 @@ function MusicApp() {
 
   return (
     <>
+      {/* 2. THE BACKGROUND PLAY FIX: Render Audio Element Here */}
+      <audio 
+        ref={audioRef} 
+        playsInline 
+        preload="auto"
+        onError={(e) => console.error("Audio tag error:", e)}
+      />
+
       <Layout 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
