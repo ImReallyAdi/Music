@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -38,6 +38,7 @@ interface FullPlayerProps {
   onVolumeChange: (volume: number) => void;
   toggleShuffle: () => void;
   onRemoveTrack: (trackId: string) => void;
+  audioRef: React.RefObject<HTMLAudioElement>; // Required for Web Audio wiring
 }
 
 const formatTime = (time: number) => {
@@ -63,30 +64,97 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   onVolumeChange,
   toggleShuffle,
   onRemoveTrack,
+  audioRef,
 }) => {
   const [showQueue, setShowQueue] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
-  
-  // -- Seek State --
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
+  const [fadeOutEnabled, setFadeOutEnabled] = useState(false);
+
+  // --- 1. SAFE DURATION ANCHOR (iOS RANGE FIX) ---
+  const safeDuration = Math.max(duration, 0.01);
+
+  // --- 2. SINGLETON WEB AUDIO REFS ---
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodes = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map());
+  const gainNodes = useRef<Map<HTMLAudioElement, GainNode>>(new Map());
 
   const dragControls = useDragControls();
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 300], [1, 0]);
-
   const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
 
-  useEffect(() => {
-    dragY.set(0);
-    if (!isPlayerOpen) setShowQueue(false);
-  }, [isPlayerOpen, dragY]);
-
-  // Sync external time only when the user isn't actively moving the slider
-  useEffect(() => {
-    if (!isScrubbing) {
-      setScrubValue(currentTime);
+  // --- 3. HARDENED WEB AUDIO INITIALIZATION ---
+  const initWebAudio = (element: HTMLAudioElement) => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
+    const ctx = audioCtxRef.current;
+
+    // Only create one source node per element to prevent Safari InvalidStateError
+    if (!sourceNodes.current.has(element)) {
+      const source = ctx.createMediaElementSource(element);
+      const gain = ctx.createGain();
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      
+      sourceNodes.current.set(element, source);
+      gainNodes.current.set(element, gain);
+    }
+    return gainNodes.current.get(element);
+  };
+
+  // --- 4. MEDIA SESSION INTEGRATION ---
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !currentTrack) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.title,
+      artist: currentTrack.artist,
+      artwork: [{ src: currentTrack.coverArt, sizes: '512x512', type: 'image/png' }],
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => !playerState.isPlaying && togglePlay());
+    navigator.mediaSession.setActionHandler('pause', () => playerState.isPlaying && togglePlay());
+    navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+    navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (typeof details.seekTime === 'number') handleSeek(details.seekTime);
+    });
+  }, [currentTrack, playerState.isPlaying, togglePlay, prevTrack, nextTrack, handleSeek]);
+
+  // Update Lock-screen Seek Bar Sync
+  useEffect(() => {
+    if ('mediaSession' in navigator && safeDuration > 0.01) {
+      navigator.mediaSession.setPositionState({
+        duration: safeDuration,
+        playbackRate: 1.0,
+        position: currentTime,
+      });
+    }
+  }, [currentTime, safeDuration]);
+
+  // --- 5. FADE-OUT LOGIC (WEB AUDIO) ---
+  useEffect(() => {
+    if (!fadeOutEnabled || !audioRef.current) return;
+    
+    const gain = initWebAudio(audioRef.current);
+    if (!gain || !audioCtxRef.current) return;
+
+    const FADE_TIME = 3; 
+    if (duration > FADE_TIME && currentTime >= duration - FADE_TIME) {
+      const now = audioCtxRef.current.currentTime;
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + FADE_TIME);
+    } else {
+      gain.gain.setTargetAtTime(1.0, audioCtxRef.current.currentTime, 0.1);
+    }
+  }, [currentTime, duration, fadeOutEnabled, audioRef]);
+
+  // UI State Sync
+  useEffect(() => {
+    if (!isScrubbing) setScrubValue(currentTime);
   }, [currentTime, isScrubbing]);
 
   useEffect(() => {
@@ -96,6 +164,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       const map: Record<string, Track> = {};
       all.forEach(t => (map[t.id] = t));
       setTracks(map);
+      
+      const cfSetting = await dbService.getSetting('fadeOutAtEnd');
+      setFadeOutEnabled(!!cfSetting);
     })();
   }, [isPlayerOpen]);
 
@@ -108,14 +179,17 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     dbService.setSetting('repeat', next);
   };
 
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setScrubValue(Number(e.target.value));
+  const handlePointerDown = () => {
+    setIsScrubbing(true);
+    // Move AudioContext out of suspended state for iOS
+    if (audioCtxRef.current?.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
   };
 
-  const handleScrubEnd = () => {
-    handleSeek(scrubValue);
-    // Tiny delay to prevent the "snap back" effect on slow connections
-    setTimeout(() => setIsScrubbing(false), 50);
+  const onScrubComplete = (val: number) => {
+    handleSeek(val);
+    setIsScrubbing(false); // Immediate sync
   };
 
   const toggleMute = () => {
@@ -172,19 +246,17 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
           <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row landscape:items-center landscape:justify-center landscape:gap-12 min-h-0">
             
-            {/* LEFT SIDE: Art or Queue */}
             <div className="flex-1 flex flex-col min-h-0 landscape:h-full landscape:justify-center landscape:w-1/2 landscape:max-w-lg">
               <AnimatePresence mode="wait">
                 {!showQueue ? (
                   <motion.div
-                    key="art-view"
+                    key={currentTrack.id}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ 
                       opacity: 1, 
                       scale: playerState.isPlaying ? 1 : 0.94,
                     }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ type: 'spring', damping: 20 }}
                     className="flex-1 flex items-center justify-center p-4"
                   >
                     <motion.img
@@ -208,7 +280,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                       tracks={tracks}
                       onPlay={id => playTrack(id, { fromQueue: true })}
                       onRemove={onRemoveTrack}
-                      onPlayNext={id => playTrack(id, { immediate: false })}
                       onReorder={q => setPlayerState(p => ({ ...p, queue: q }))}
                       onClose={() => setShowQueue(false)}
                     />
@@ -217,10 +288,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* RIGHT SIDE: Controls */}
             <div className="flex flex-col landscape:w-1/2 landscape:max-w-md pt-6">
               {!showQueue && (
                 <motion.div 
+                    key={currentTrack.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="mb-4 landscape:text-left text-center"
@@ -239,46 +310,51 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 <div className="relative h-1.5 bg-white/10 rounded-full group">
                   <motion.div 
                     className="absolute h-full bg-white rounded-full pointer-events-none"
-                    style={{ width: `${(scrubValue / (duration || 1)) * 100}%` }}
+                    style={{ width: `${(scrubValue / safeDuration) * 100}%` }}
                   />
                   <input
                     type="range"
                     min={0}
-                    max={duration || 0}
+                    max={safeDuration}
                     step={0.1}
                     value={scrubValue}
-                    onChange={handleScrubChange}
-                    onPointerDown={() => setIsScrubbing(true)}
-                    onPointerUp={handleScrubEnd}
+                    onChange={(e) => setScrubValue(Number(e.target.value))}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={(e) => onScrubComplete(Number((e.target as HTMLInputElement).value))}
                     className="absolute inset-0 opacity-0 w-full h-8 -top-3 cursor-pointer touch-none"
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-white/40 mt-3 font-mono tracking-tighter">
+                <div className="flex justify-between text-[10px] text-white/40 mt-3 font-mono">
                   <span>{formatTime(scrubValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
-              {/* Volume */}
-              <div className="mt-6 flex items-center gap-4 px-2">
-                <motion.button whileTap={{ scale: 0.8 }} onClick={toggleMute} className="text-white/60 hover:text-white">
-                  {playerState.volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </motion.button>
-                <div className="flex-1 relative h-1 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="absolute h-full bg-white/40 rounded-full"
-                    style={{ width: `${playerState.volume * 100}%` }}
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={playerState.volume}
-                    onChange={(e) => onVolumeChange(Number(e.target.value))}
-                    className="absolute inset-0 w-full h-4 -top-1.5 opacity-0 cursor-pointer touch-none"
-                  />
+              {/* Volume & Fade Control */}
+              <div className="mt-6 flex items-center justify-between px-2">
+                <div className="flex items-center gap-4 flex-1">
+                  <motion.button whileTap={{ scale: 0.8 }} onClick={toggleMute} className="text-white/60">
+                    {playerState.volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </motion.button>
+                  <div className="flex-1 max-w-[120px] relative h-1 bg-white/10 rounded-full">
+                    <div className="absolute h-full bg-white/40" style={{ width: `${playerState.volume * 100}%` }} />
+                    <input
+                      type="range" min="0" max="1" step="0.01" value={playerState.volume}
+                      onChange={(e) => onVolumeChange(Number(e.target.value))}
+                      className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                    />
+                  </div>
                 </div>
+                <button 
+                  onClick={() => {
+                    const next = !fadeOutEnabled;
+                    setFadeOutEnabled(next);
+                    dbService.setSetting('fadeOutAtEnd', next);
+                  }}
+                  className={`text-[10px] px-2 py-1 rounded border transition-colors ${fadeOutEnabled ? 'bg-white text-black border-white' : 'text-white/40 border-white/20'}`}
+                >
+                  FADE OUT {fadeOutEnabled ? 'ON' : 'OFF'}
+                </button>
               </div>
 
               {/* Main Controls */}
@@ -288,11 +364,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 </motion.button>
 
                 <div className="flex items-center gap-6">
-                  <motion.button 
-                    whileTap={{ scale: 0.9 }} 
-                    onClick={prevTrack} 
-                    className="text-white"
-                  >
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={prevTrack} className="text-white">
                     <SkipBack size={32} fill="currentColor" />
                   </motion.button>
                   
@@ -307,11 +379,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     }
                   </motion.button>
 
-                  <motion.button 
-                    whileTap={{ scale: 0.9 }} 
-                    onClick={nextTrack} 
-                    className="text-white"
-                  >
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={nextTrack} className="text-white">
                     <SkipForward size={32} fill="currentColor" />
                   </motion.button>
                 </div>
