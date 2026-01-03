@@ -49,6 +49,42 @@ export const useAudioPlayer = (
     return newArray;
   };
 
+  // --- 🔒 iOS GLOBAL UNLOCK FIX ---
+  // This listens for the FIRST interaction anywhere in the app to unlock the audio element
+  useEffect(() => {
+    if (!audioElement) return;
+
+    const handleUnlock = async () => {
+      // 1. Wake up Web Audio API Context
+      await resumeAudioContext();
+
+      // 2. Wake up HTML5 Audio Element (The "Silent Play" Hack)
+      // We play and immediately pause. This tells iOS "The user interacted, allow audio."
+      try {
+        await audioElement.play();
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      } catch (err) {
+        // Ignore errors (e.g., if it's already playing)
+        console.debug("Audio unlock check:", err);
+      }
+
+      // 3. Remove listeners immediately so this only runs ONCE per session
+      ['touchstart', 'touchend', 'click', 'keydown'].forEach(e => 
+        window.removeEventListener(e, handleUnlock)
+      );
+    };
+
+    // Attach to all possible interaction events
+    const events = ['touchstart', 'touchend', 'click', 'keydown'];
+    events.forEach(e => window.addEventListener(e, handleUnlock, { once: true }));
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, handleUnlock));
+    };
+  }, [audioElement]);
+
+
   // --- INITIALIZATION ---
   useEffect(() => {
     dbService.getSetting<PlayerState>('playerState').then(saved => {
@@ -262,6 +298,7 @@ export const useAudioPlayer = (
                  try {
                      await audioElement.play();
                  } catch (err) {
+                     console.error("Auto-play blocked or failed", err);
                      setPlayer(p => ({ ...p, isPlaying: false }));
                  }
              }
@@ -278,12 +315,16 @@ export const useAudioPlayer = (
     if (!audioElement) return;
 
     if (audioElement.paused) {
-        await resumeAudioContext(); // Ensure context is awake
-        audioElement.play()
-            .then(() => setPlayer(p => ({ ...p, isPlaying: true })))
-            .catch(err => {
-                setPlayer(p => ({ ...p, isPlaying: false }));
-            });
+        // Ensure AudioContext is awake on user interaction
+        await resumeAudioContext(); 
+        
+        try {
+          await audioElement.play();
+          setPlayer(p => ({ ...p, isPlaying: true }));
+        } catch(err) {
+            console.error("Play failed (iOS lock?)", err);
+            setPlayer(p => ({ ...p, isPlaying: false }));
+        }
     } else {
         audioElement.pause();
         if (crossfadeAudioElement) crossfadeAudioElement.pause();
