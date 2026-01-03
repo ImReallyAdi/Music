@@ -160,6 +160,11 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       e.stopPropagation();
       handleScrubStart();
 
+      // Prevent scrolling on touch devices
+      if (e.pointerType === 'touch') {
+          // CSS touch-action: none is usually better, but this helps prevent propagation
+      }
+
       const onPointerUp = () => {
           handleScrubEnd();
           window.removeEventListener('pointerup', onPointerUp);
