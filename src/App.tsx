@@ -302,11 +302,21 @@ function MusicApp() {
     <>
       {/* 2. THE BACKGROUND PLAY FIX: Render Audio Element Here */}
       <audio 
-        ref={setAudioRef} // CHANGED to wrapped ref
-        playsInline 
-        crossOrigin="anonymous" // ADDED for Web Audio API
+        ref={setAudioRef}
+        playsInline
+        crossOrigin="anonymous"
         preload="auto"
+        controlsList="nodownload"
         onError={(e) => console.error("Audio tag error:", e)}
+        onPlayingCapture={() => {
+          // Resume audio context on user interaction
+          if (typeof window !== 'undefined' && window.AudioContext) {
+            const ctx = (window as any).audioContext;
+            if (ctx && ctx.state === 'suspended') {
+              ctx.resume().catch(() => {});
+            }
+          }
+        }}
       />
 
       <Layout 

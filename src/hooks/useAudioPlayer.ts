@@ -150,10 +150,19 @@ export const useAudioPlayer = (
 
              audioElement.src = url;
              audioElement.currentTime = 0;
+             
+             // iOS: Load the audio first before playing
+             audioElement.load?.();
+             
              try {
-                await audioElement.play();
+                // Add a small delay to ensure load() has processed
+                await new Promise(resolve => setTimeout(resolve, 50));
+                await audioElement.play().catch(err => {
+                    console.warn("Autoplay (preloaded) prevented:", err);
+                    setPlayer(p => ({ ...p, isPlaying: false }));
+                });
              } catch (err) {
-                 console.warn("Autoplay (preloaded) prevented:", err);
+                 console.warn("Autoplay (preloaded) error:", err);
                  setPlayer(p => ({ ...p, isPlaying: false }));
              }
         } else {
@@ -166,10 +175,19 @@ export const useAudioPlayer = (
 
                  audioElement.src = url;
                  audioElement.currentTime = 0;
+                 
+                 // iOS: Load the audio first before playing
+                 audioElement.load?.();
+                 
                  try {
-                    await audioElement.play();
+                    // Add a small delay to ensure load() has processed
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    await audioElement.play().catch(err => {
+                        console.warn("Autoplay (fetched) prevented:", err);
+                        setPlayer(p => ({ ...p, isPlaying: false }));
+                    });
                  } catch (err) {
-                     console.warn("Autoplay (fetched) prevented:", err);
+                     console.warn("Autoplay (fetched) error:", err);
                      setPlayer(p => ({ ...p, isPlaying: false }));
                  }
              } else {
@@ -190,11 +208,21 @@ export const useAudioPlayer = (
     if (!audioElement) return;
 
     if (audioElement.paused) {
+        // iOS: Resume AudioContext if suspended
+        if ((window as any).audioContext && (window as any).audioContext.state === 'suspended') {
+            (window as any).audioContext.resume().catch(() => {});
+        }
+        
         audioElement.play()
-            .then(() => setPlayer(p => ({ ...p, isPlaying: true })))
+            .then(() => {
+                setPlayer(p => ({ ...p, isPlaying: true }));
+            })
             .catch(err => {
                 console.error("Play failed:", err);
-                setPlayer(p => ({ ...p, isPlaying: false }));
+                // Don't set isPlaying to false on iOS user gesture rejection
+                if (err.name !== 'NotAllowedError') {
+                    setPlayer(p => ({ ...p, isPlaying: false }));
+                }
             });
     } else {
         audioElement.pause();
@@ -233,12 +261,26 @@ export const useAudioPlayer = (
   }, [player.queue, player.currentTrackId, player.repeat, playTrack, audioElement]);
 
   const handleSeek = useCallback((time: number) => {
-      if (audioElement) {
-          const d = audioElement.duration;
-          const validDuration = !isNaN(d) && isFinite(d) ? d : 0;
-          const t = Math.max(0, Math.min(time, validDuration));
+      if (!audioElement) {
+          console.warn('Cannot seek: audio element not initialized');
+          return;
+      }
+      
+      // Check if the audio metadata has been loaded
+      if (isNaN(audioElement.duration) || !isFinite(audioElement.duration)) {
+          console.warn('Cannot seek: duration not available. Current duration:', audioElement.duration);
+          return;
+      }
+      
+      const d = audioElement.duration;
+      const validDuration = !isNaN(d) && isFinite(d) ? d : 0;
+      const t = Math.max(0, Math.min(time, validDuration));
+      
+      try {
           audioElement.currentTime = t;
           setCurrentTime(t);
+      } catch (e) {
+          console.error('Error seeking:', e);
       }
   }, [audioElement]);
 
@@ -277,6 +319,9 @@ export const useAudioPlayer = (
   useEffect(() => {
       if (!audioElement) return;
 
+      let lastTimeUpdateRef = 0;
+      const TIME_UPDATE_THROTTLE = 100; // Update every 100ms max
+
       const updatePositionState = () => {
           if ('mediaSession' in navigator && !isNaN(audioElement.duration)) {
               try {
@@ -293,7 +338,12 @@ export const useAudioPlayer = (
 
       const onTimeUpdate = () => {
           if (!audioElement.seeking) {
-              setCurrentTime(audioElement.currentTime);
+              const now = performance.now();
+              // Throttle updates to avoid excessive re-renders
+              if (now - lastTimeUpdateRef > TIME_UPDATE_THROTTLE) {
+                  setCurrentTime(audioElement.currentTime);
+                  lastTimeUpdateRef = now;
+              }
           }
       };
 
@@ -371,26 +421,37 @@ export const useAudioPlayer = (
   // --- MEDIA SESSION ---
   useEffect(() => {
       if ('mediaSession' in navigator) {
-          navigator.mediaSession.setActionHandler('play', () => {
-             // Explicitly use the togglePlay from the closure
-             togglePlay();
-          });
-          navigator.mediaSession.setActionHandler('pause', () => {
-             togglePlay();
-          });
-          navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
-          navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
-          navigator.mediaSession.setActionHandler('seekto', (details) => {
-              if (details.seekTime !== undefined) handleSeek(details.seekTime);
-          });
+          try {
+              navigator.mediaSession.setActionHandler('play', () => {
+                 // Explicitly use the togglePlay from the closure
+                 togglePlay();
+              });
+              navigator.mediaSession.setActionHandler('pause', () => {
+                 togglePlay();
+              });
+              navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
+              navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+              navigator.mediaSession.setActionHandler('seekto', (details) => {
+                  if (details.seekTime !== undefined) handleSeek(details.seekTime);
+              });
+              
+              // iOS: Set playback state
+              navigator.mediaSession.playbackState = audioElement?.paused ? 'paused' : 'playing';
+          } catch (e) {
+              console.warn("Media Session setup failed:", e);
+          }
       }
-  }, [togglePlay, prevTrack, nextTrack, handleSeek]);
+  }, [togglePlay, prevTrack, nextTrack, handleSeek, audioElement?.paused]);
 
   // Update Media Metadata whenever currentTrackId changes
   useEffect(() => {
       const currentTrack = player.currentTrackId ? libraryTracks[player.currentTrackId] : null;
       if (currentTrack && 'mediaSession' in navigator) {
-          updateMediaSession(currentTrack);
+          try {
+              updateMediaSession(currentTrack);
+          } catch (e) {
+              console.warn("Media metadata update failed:", e);
+          }
       }
   }, [player.currentTrackId, libraryTracks, updateMediaSession]);
 

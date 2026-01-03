@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -85,6 +85,14 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   // Use props directly
   const { beat } = analyzerData || { beat: false };
 
+  // Memoize color values to prevent recalculation
+  const colors = useMemo(() => ({
+    primary: theme?.primary || '#ffffff',
+    secondary: theme?.secondary || '#a1a1aa',
+    muted: theme?.muted || '#71717a',
+    background: theme?.background || '#09090b'
+  }), [theme?.primary, theme?.secondary, theme?.muted, theme?.background]);
+
   // Beat Animations
   const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
   const glowOpacity = useSpring(0, { stiffness: 200, damping: 20 });
@@ -120,14 +128,22 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     }
   }, [currentTime, isScrubbing]);
 
-  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
+    const value = Number((e.target as HTMLInputElement).value);
     setScrubValue(value);
     scrubValueRef.current = value;
   };
 
   const handleSeekCommit = React.useCallback(() => {
     const seekTime = scrubValueRef.current;
+    
+    // Extra validation: ensure we have a valid time to seek to
+    if (isNaN(seekTime) || seekTime < 0) {
+      console.warn('Invalid seek time:', seekTime);
+      setIsScrubbing(false);
+      return;
+    }
+    
     handleSeek(seekTime);
     ignoreTimeUpdateRef.current = true;
     setTimeout(() => {
@@ -135,16 +151,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     }, 500);
     setIsScrubbing(false);
   }, [handleSeek]);
-
-  useEffect(() => {
-    if (isScrubbing) {
-      const onEnd = () => handleSeekCommit();
-      window.addEventListener('pointerup', onEnd, { once: true });
-      return () => {
-        window.removeEventListener('pointerup', onEnd);
-      };
-    }
-  }, [isScrubbing, handleSeekCommit]);
 
   useEffect(() => {
     if (!isPlayerOpen) return;
@@ -164,18 +170,18 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
     return () => { isMounted = false; };
   }, [isPlayerOpen]);
 
-  const toggleRepeat = () => {
+  const toggleRepeat = useCallback(() => {
     const modes: RepeatMode[] = ['OFF', 'ALL', 'ONE'];
     const next = modes[(modes.indexOf(playerState.repeat) + 1) % modes.length];
     setPlayerState(p => ({ ...p, repeat: next }));
     dbService.setSetting('repeat', next);
-  };
+  }, [playerState.repeat, setPlayerState]);
 
-  const handleReorder = (newQueue: string[]) => {
+  const handleReorder = useCallback((newQueue: string[]) => {
     setPlayerState(prev => ({ ...prev, queue: newQueue }));
-  };
+  }, [setPlayerState]);
 
-  const handleQueuePlayNext = (trackId: string) => {
+  const handleQueuePlayNext = useCallback((trackId: string) => {
     setPlayerState(prev => {
       const q = [...prev.queue];
       const existingIdx = q.indexOf(trackId);
@@ -187,15 +193,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       q.splice(newCurrentIdx + 1, 0, trackId);
       return { ...prev, queue: q };
     });
-  };
+  }, [setPlayerState]);
 
   if (!currentTrack) return null;
 
-  // Dynamic Styles
-  const primaryColor = theme?.primary || '#ffffff';
-  const secondaryColor = theme?.secondary || '#a1a1aa';
-  const mutedColor = theme?.muted || '#71717a';
-  const backgroundColor = theme?.background || '#09090b';
+  // Use memoized color values
+  const { primary: primaryColor, secondary: secondaryColor, muted: mutedColor, background: backgroundColor } = colors;
 
   return (
     <AnimatePresence>
@@ -211,7 +214,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           dragListener={false}
           dragConstraints={{ top: 0 }}
           dragElastic={0.05}
-          style={{ opacity, y: dragY, background: backgroundColor }}
+          style={{ opacity, y: dragY, background: backgroundColor, willChange: 'transform, opacity' }}
           onDragEnd={(_, i) => {
             if (i.offset.y > 100 || i.velocity.y > 500) onClose();
             else dragY.set(0);
@@ -221,7 +224,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           {/* Dynamic Background */}
           <motion.div
             animate={{ background: `linear-gradient(to bottom, ${primaryColor}40, ${backgroundColor})` }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 0.8 }}
             className="absolute inset-0 -z-20"
           />
 
@@ -342,36 +345,49 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
               {/* Progress Slider */}
               <div className="group relative pt-4 pb-2">
-                <div className="relative h-1.5 w-full bg-white/10 rounded-full group-hover:h-2 transition-all overflow-hidden">
+                <div className="relative h-1.5 w-full bg-white/10 rounded-full group-hover:h-2 transition-all overflow-visible">
                   <motion.div
                     animate={{ backgroundColor: primaryColor }}
-                    className="absolute h-full rounded-full"
-                    style={{ width: `${(scrubValue / safeDuration) * 100}%` }}
+                    className="absolute h-full rounded-full pointer-events-none origin-left"
+                    style={{ width: `${(scrubValue / safeDuration) * 100}%`, willChange: 'width' }}
                   />
                   {/* Beat Pulse Overlay on Bar */}
                   {playerState.isPlaying && (
                       <motion.div
                         animate={{ opacity: beat ? 0.5 : 0 }}
                         transition={{ duration: 0.1 }}
-                        className="absolute h-full w-full bg-white mix-blend-overlay"
+                        className="absolute h-full w-full bg-white mix-blend-overlay pointer-events-none"
                       />
                   )}
+                </div>
 
-                  <input
+                <input
                     type="range"
                     min={0}
                     max={safeDuration}
                     step={0.1}
                     value={scrubValue}
                     onChange={handleSeekChange}
+                    onInput={handleSeekChange}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setIsScrubbing(true);
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      setIsScrubbing(true);
+                    }}
+                    onMouseUp={handleSeekCommit}
+                    onTouchEnd={handleSeekCommit}
                     onPointerDown={(e) => {
                       e.stopPropagation();
                       setIsScrubbing(true);
                     }}
                     onPointerUp={handleSeekCommit}
-                    className="absolute inset-0 w-full h-6 -top-2.5 opacity-0 cursor-pointer z-50"
+                    className="absolute -inset-x-0 -top-2.5 w-full h-6 opacity-0 cursor-pointer z-50"
+                    style={{ pointerEvents: 'auto', bottom: '-8px' }}
                   />
-                </div>
+
                 <div className="flex justify-between mt-2 text-xs font-medium font-mono" style={{ color: mutedColor }}>
                   <span>{formatTime(scrubValue)}</span>
                   <span>{formatTime(duration)}</span>
