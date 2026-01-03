@@ -450,80 +450,45 @@ export const useAudioPlayer = (
   }, [audioElement]);
 
   // ✅ FIX #3: Robust Seek Handler for iOS (Jumps)
-  const handleSeek = useCallback(async (time: number) => {
-       if (!audioElement) return;
+  const handleSeek = useCallback((time: number) => {
+      if (!audioElement) return;
 
-       isManualSeekingRef.current = true;
-       let d = audioElement.duration;
+      // 1. Calculate valid duration and clamp time
+      let d = audioElement.duration;
+      // Fallback to metadata duration if audio element isn't ready
+      if ((isNaN(d) || !isFinite(d)) && player.currentTrackId && libraryTracks[player.currentTrackId]) {
+          d = libraryTracks[player.currentTrackId].duration;
+      }
+      const validDuration = isNaN(d) ? 0 : d;
+      const t = Math.max(0, Math.min(time, validDuration));
 
-       // Use track duration as fallback if element duration is invalid
-       if ((isNaN(d) || d === 0 || !isFinite(d)) && player.currentTrackId && libraryTracks[player.currentTrackId]) {
-           d = libraryTracks[player.currentTrackId].duration;
-       }
+      // 2. Optimistic UI Update (Instant feedback)
+      setCurrentTime(t);
 
-       const validDuration = isNaN(d) ? 0 : d;
-       const t = Math.max(0, Math.min(time, validDuration));
+      // 3. iOS Resume Fix: Ensure context is awake
+      if (audioElement.paused && !wasPlayingBeforeScrubRef.current) {
+          resumeAudioContext().catch(console.error);
+      }
 
-       try {
-           // Resume audio context for iOS
-           if (audioElement.paused && !wasPlayingBeforeScrubRef.current) {
-               resumeAudioContext().catch(console.error);
-           }
+      // 4. EXECUTE SEEK
+      // Just set it directly. The browser handles buffering.
+      if (Number.isFinite(t)) {
+          audioElement.currentTime = t;
+      }
 
-           setCurrentTime(t);
-
-           // CRITICAL: Wait for proper ready state
-           const waitForReadyState = async () => {
-               return new Promise<void>((resolve) => {
-                   if (audioElement.readyState >= 2) {
-                       resolve();
-                   } else {
-                       const checkReady = () => {
-                           if (audioElement.readyState >= 2) {
-                               audioElement.removeEventListener('loadeddata', checkReady);
-                               audioElement.removeEventListener('canplay', checkReady);
-                               resolve();
-                           }
-                       };
-                       audioElement.addEventListener('loadeddata', checkReady);
-                       audioElement.addEventListener('canplay', checkReady);
-
-                       // Timeout fallback
-                       setTimeout(() => {
-                           audioElement.removeEventListener('loadeddata', checkReady);
-                           audioElement.removeEventListener('canplay', checkReady);
-                           resolve();
-                       }, 2000);
-                   }
-               });
-           };
-
-           await waitForReadyState();
-           audioElement.currentTime = t;
-           pendingSeekRef.current = null;
-
-           // Update media session
-           if ('mediaSession' in navigator && validDuration > 0) {
-               navigator.mediaSession.setPositionState({
-                   duration: validDuration,
-                   playbackRate: audioElement.playbackRate,
-                   position: t
-               });
-           }
-       } catch (e) {
-           console.error('Error seeking:', e);
-           // Retry fallback
-           setTimeout(() => {
-               if (audioElement && audioElement.readyState >= 2) {
-                   audioElement.currentTime = t;
-               }
-           }, 100);
-       } finally {
-           setTimeout(() => {
-               isManualSeekingRef.current = false;
-           }, 50);
-       }
-   }, [audioElement, player.currentTrackId, libraryTracks]);
+      // 5. Update Media Session (Lock Screen)
+      if ('mediaSession' in navigator && validDuration > 0) {
+          try {
+              navigator.mediaSession.setPositionState({
+                  duration: validDuration,
+                  playbackRate: audioElement.playbackRate,
+                  position: t
+              });
+          } catch (e) {
+              // Ignore errors (e.g. if position > duration temporarily)
+          }
+      }
+  }, [audioElement, player.currentTrackId, libraryTracks]);
 
   const setVolume = useCallback((volume: number) => {
       const v = Math.max(0, Math.min(1, volume));
