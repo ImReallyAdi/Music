@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { dbService } from '../db';
 import { Track, PlayerState, RepeatMode } from '../types';
+import { resumeAudioContext } from './useAudioAnalyzer';
 
 export const useAudioPlayer = (
   libraryTracks: Record<string, Track>,
@@ -155,13 +156,10 @@ export const useAudioPlayer = (
              audioElement.load?.();
              
              try {
-                // Add a small delay to ensure load() has processed
-                await new Promise(resolve => setTimeout(resolve, 50));
-                await audioElement.play().catch(err => {
-                    console.warn("Autoplay (preloaded) prevented:", err);
-                    setPlayer(p => ({ ...p, isPlaying: false }));
-                });
+                    await resumeAudioContext();
+                await audioElement.play();
              } catch (err) {
+           
                  console.warn("Autoplay (preloaded) error:", err);
                  setPlayer(p => ({ ...p, isPlaying: false }));
              }
@@ -180,12 +178,8 @@ export const useAudioPlayer = (
                  audioElement.load?.();
                  
                  try {
-                    // Add a small delay to ensure load() has processed
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    await audioElement.play().catch(err => {
-                        console.warn("Autoplay (fetched) prevented:", err);
-                        setPlayer(p => ({ ...p, isPlaying: false }));
-                    });
+                    await resumeAudioContext();
+                    await audioElement.play();
                  } catch (err) {
                      console.warn("Autoplay (fetched) error:", err);
                      setPlayer(p => ({ ...p, isPlaying: false }));
@@ -208,22 +202,14 @@ export const useAudioPlayer = (
     if (!audioElement) return;
 
     if (audioElement.paused) {
-        // iOS: Resume AudioContext if suspended
-        if ((window as any).audioContext && (window as any).audioContext.state === 'suspended') {
-            (window as any).audioContext.resume().catch(() => {});
-        }
-        
-        audioElement.play()
-            .then(() => {
-                setPlayer(p => ({ ...p, isPlaying: true }));
-            })
-            .catch(err => {
-                console.error("Play failed:", err);
-                // Don't set isPlaying to false on iOS user gesture rejection
-                if (err.name !== 'NotAllowedError') {
+        resumeAudioContext().then(() => {
+            audioElement.play()
+                .then(() => setPlayer(p => ({ ...p, isPlaying: true })))
+                .catch(err => {
+                    console.error("Play failed:", err);
                     setPlayer(p => ({ ...p, isPlaying: false }));
-                }
-            });
+                });
+        });
     } else {
         audioElement.pause();
         setPlayer(p => ({ ...p, isPlaying: false }));
