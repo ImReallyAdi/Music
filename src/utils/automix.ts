@@ -1,133 +1,170 @@
 // src/utils/automix.ts
-
 import { Track } from '../types';
 
-// --- CAMELOT WHEEL UTILS ---
-// Keys are represented as "1A", "1B", etc.
-const CAMELOT_KEYS: string[] = [
+// --- CONSTANTS ---
+const CAMELOT_KEYS = [
   '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
   '7A', '7B', '8A', '8B', '9A', '9B', '10A', '10B', '11A', '11B', '12A', '12B'
 ];
 
+type CamelotParts = { number: number; letter: 'A' | 'B' };
+
+/**
+ * Parses a key string (e.g., "11B") into parts.
+ */
+const parseKey = (key: string): CamelotParts | null => {
+  const match = key.toUpperCase().match(/^(\d+)([AB])$/);
+  if (!match) return null;
+  return {
+    number: parseInt(match[1], 10),
+    letter: match[2] as 'A' | 'B'
+  };
+};
+
+/**
+ * Calculates the shortest distance between two numbers on a 1-12 clock.
+ * e.g., Distance between 12 and 1 is 1.
+ */
+const getCircularDistance = (num1: number, num2: number): number => {
+  const diff = Math.abs(num1 - num2);
+  return Math.min(diff, 12 - diff);
+};
+
 /**
  * Returns a compatibility score (0-1) between two keys.
- * 1 = Perfect Match (Same Key)
- * 0.9 = Dominant/Subdominant (±1 hour on wheel) or Relative Major/Minor (Same number, different letter)
- * 0.5 = Compatible energy
- * 0.0 = Clash
+ * logic: https://mixedinkey.com/harmonic-mixing-guide/
  */
 export const getKeyCompatibility = (key1?: string, key2?: string): number => {
   if (!key1 || !key2) return 0.5; // Unknown keys are neutral
 
-  const k1 = key1.toUpperCase();
-  const k2 = key2.toUpperCase();
+  const k1 = parseKey(key1);
+  const k2 = parseKey(key2);
+  if (!k1 || !k2) return 0.5;
 
-  if (k1 === k2) return 1.0;
+  // 1. Exact Match
+  if (k1.number === k2.number && k1.letter === k2.letter) return 1.0;
 
-  // Parse Number and Letter
-  const match1 = k1.match(/^(\d+)([AB])$/);
-  const match2 = k2.match(/^(\d+)([AB])$/);
+  // 2. Relative Major/Minor (Same number, different letter) e.g. 8A <-> 8B
+  if (k1.number === k2.number && k1.letter !== k2.letter) return 1.0;
 
-  if (!match1 || !match2) return 0.5;
+  const dist = getCircularDistance(k1.number, k2.number);
 
-  const num1 = parseInt(match1[1]);
-  const char1 = match1[2];
-  const num2 = parseInt(match2[1]);
-  const char2 = match2[2];
+  // 3. Perfect 4th/5th (Adjacent number, same letter) e.g. 8A <-> 9A
+  if (dist === 1 && k1.letter === k2.letter) return 0.9;
 
-  // 1. Same Number, Different Letter (Relative Major/Minor) -> High compatibility
-  if (num1 === num2 && char1 !== char2) return 0.9;
+  // 4. Energy Boost (Add 1 or 2 semitones / +7 or +2 on Camelot)
+  // +1 number (dist 1) with key change is often used for modulation
+  if (dist === 1 && k1.letter !== k2.letter) return 0.7;
+  
+  // "Energy Boost" usually implies jumping +2 numbers (e.g. 1A -> 3A)
+  if (dist === 2 && k1.letter === k2.letter) return 0.6;
 
-  // 2. Adjacent Number (±1), Same Letter -> Harmonic mix
-  const diff = Math.abs(num1 - num2);
-  const isAdjacent = diff === 1 || diff === 11; // 12 wraps to 1
-  if (isAdjacent && char1 === char2) return 0.8;
-
-  // 3. Diagonal Mix (±1, different letter) -> Energy boost/drop
-  if (isAdjacent && char1 !== char2) return 0.7;
-
+  // 5. Disharmonic
   return 0.1;
 };
 
 /**
  * Returns BPM compatibility score (0-1).
- * 1 = Exact match
- * Drops off as BPM difference increases.
+ * Handles wide bpm ranges using percentages and half/double time.
  */
 export const getBpmCompatibility = (bpm1?: number, bpm2?: number): number => {
-  if (!bpm1 || !bpm2) return 0.6; // Neutral if unknown
+  if (!bpm1 || !bpm2) return 0.6; 
 
-  // Check double/half time
   const ratios = [1, 0.5, 2];
-  let minDiff = Infinity;
+  let bestRatioDiff = Infinity;
 
+  // Find the version of bpm2 (original, half, or double) closest to bpm1
   ratios.forEach(r => {
-    const adjustedBpm2 = bpm2 * r;
-    const diff = Math.abs(bpm1 - adjustedBpm2);
-    if (diff < minDiff) minDiff = diff;
+    const targetBpm = bpm2 * r;
+    const diffPct = Math.abs((bpm1 - targetBpm) / bpm1);
+    if (diffPct < bestRatioDiff) bestRatioDiff = diffPct;
   });
 
-  // Tolerance window: 0-5 BPM is good. >20 BPM is bad.
-  if (minDiff <= 1) return 1.0;
-  if (minDiff <= 5) return 0.9;
-  if (minDiff <= 10) return 0.7;
-  if (minDiff <= 20) return 0.4;
-  return 0.1;
+  // Linear drop-off based on percentage difference
+  // < 1% diff = 1.0 score
+  // > 15% diff = 0.0 score
+  const threshold = 0.15; // 15%
+  if (bestRatioDiff > threshold) return 0.1;
+
+  // Map 0 -> 0.15 diff to 1.0 -> 0.0 score
+  return 1.0 - (bestRatioDiff / threshold);
 };
 
 /**
- * Heuristic to assign mock metadata if missing
- * In a real app, this would use audio analysis.
+ * Deterministic mock metadata generator.
+ * Uses a string hash so the same ID always produces the same mock data.
  */
 export const enrichTrackMetadata = (track: Track): Track => {
   if (track.bpm && track.key) return track;
 
-  // Deterministic mock based on ID hash
   let hash = 0;
   for (let i = 0; i < track.id.length; i++) {
     hash = ((hash << 5) - hash) + track.id.charCodeAt(i);
     hash |= 0;
   }
+  const absHash = Math.abs(hash);
 
-  const mockBpm = 70 + (Math.abs(hash) % 110); // 70-180 BPM
-  const mockKeyIndex = Math.abs(hash) % CAMELOT_KEYS.length;
+  const mockBpm = 70 + (absHash % 110); 
+  const mockKeyIndex = absHash % CAMELOT_KEYS.length;
 
   return {
     ...track,
     bpm: track.bpm || Math.round(mockBpm),
     key: track.key || CAMELOT_KEYS[mockKeyIndex],
-    energy: track.energy || (Math.abs(hash) % 10) / 10
+    energy: track.energy // Don't overwrite if exists
   };
 };
 
 /**
- * Selects the best next track from candidates based on the current track.
+ * Selects the best next track using weighted probability.
+ * @param currentTrack The track currently playing
+ * @param candidates List of available tracks
+ * @param historyIds Optional array of recently played track IDs to avoid repeats
  */
-export const getSmartNextTrack = (currentTrack: Track, candidates: Track[]): Track | null => {
-  if (candidates.length === 0) return null;
+export const getSmartNextTrack = (
+  currentTrack: Track, 
+  candidates: Track[],
+  historyIds: string[] = []
+): Track | null => {
+  // Filter out recent history and self
+  const pool = candidates.filter(c => 
+    c.id !== currentTrack.id && !historyIds.includes(c.id)
+  );
+
+  if (pool.length === 0) return null;
 
   const current = enrichTrackMetadata(currentTrack);
 
-  // Score each candidate
-  const scored = candidates.map(c => {
+  const scored = pool.map(c => {
     const candidate = enrichTrackMetadata(c);
     const keyScore = getKeyCompatibility(current.key, candidate.key);
     const bpmScore = getBpmCompatibility(current.bpm, candidate.bpm);
-
-    // Weighted score: BPM matters more for mixing, Key for harmony
-    const totalScore = (keyScore * 0.4) + (bpmScore * 0.6);
+    
+    // Weights: BPM is critical for beatmatching, Key for "vibe"
+    // We add a tiny random jitter (0.05) so identical scores shuffle
+    const totalScore = (keyScore * 0.3) + (bpmScore * 0.7) + (Math.random() * 0.05);
+    
     return { track: c, score: totalScore };
   });
 
-  // Sort by score descending
+  // Sort descending
   scored.sort((a, b) => b.score - a.score);
 
-  // Return best match if score is decent (> 0.5), else just return the first one (fallback)
-  // But to add variety, we pick random from top 3
-  const topCandidates = scored.slice(0, 3);
-  if (topCandidates.length > 0) {
-      return topCandidates[Math.floor(Math.random() * topCandidates.length)].track;
+  // Take top 5 or top 10% (whichever is smaller) to ensure quality
+  const sliceSize = Math.max(1, Math.min(5, Math.floor(scored.length * 0.2)));
+  const topCandidates = scored.slice(0, sliceSize);
+
+  // Weighted Random Selection
+  // Sum of scores in top pool
+  const totalWeight = topCandidates.reduce((sum, item) => sum + item.score, 0);
+  let randomVal = Math.random() * totalWeight;
+
+  for (const item of topCandidates) {
+    randomVal -= item.score;
+    if (randomVal <= 0) {
+      return item.track;
+    }
   }
 
-  return candidates[0];
+  return topCandidates[0].track;
 };
