@@ -288,18 +288,23 @@ export const useAudioPlayer = (
         }
 
         if (nextBlob) {
-             await resumeAudioContext();
+             // Non-blocking context resume (fire and forget)
+             resumeAudioContext().catch(console.error);
 
-             if (player.crossfadeEnabled && currentBlob && crossfadeAudioElement) {
+             // Skip crossfade if in background to prevent stuck transitions
+             const isHidden = document.visibilityState === 'hidden';
+             const shouldCrossfade = player.crossfadeEnabled && !isHidden && currentBlob && crossfadeAudioElement;
+
+             if (shouldCrossfade) {
                  await performTransition(currentBlob, nextBlob, player.crossfadeDuration);
              } else {
-                 // Standard playback
+                 // Standard playback - Critical for iOS background audio
                  if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
                  const url = URL.createObjectURL(nextBlob);
                  currentUrlRef.current = url;
                  audioElement.src = url;
                  audioElement.currentTime = 0;
-                 audioElement.load?.();
+                 // removed audioElement.load() as it can cause issues on iOS
                  try {
                      await audioElement.play();
                  } catch (err) {
@@ -320,8 +325,8 @@ export const useAudioPlayer = (
     if (!audioElement) return;
 
     if (audioElement.paused) {
-        // Ensure AudioContext is awake on user interaction
-        await resumeAudioContext(); 
+        // Ensure AudioContext is awake on user interaction (non-blocking)
+        resumeAudioContext().catch(console.error);
         
         try {
           await audioElement.play();
@@ -466,10 +471,7 @@ export const useAudioPlayer = (
       try {
           // If we are jumping (not scrubbing), ensure context is awake
           if (audioElement.paused && !wasPlayingBeforeScrubRef.current) {
-               // Only force resume if we intend to play or if user interaction requires it
-               // For simple seek, we might not need to resume context if paused?
-               // But iOS might require it. Safe to call.
-               await resumeAudioContext();
+               resumeAudioContext().catch(console.error);
           }
           
           audioElement.currentTime = t;
@@ -648,22 +650,22 @@ export const useAudioPlayer = (
   useEffect(() => {
       if ('mediaSession' in navigator) {
           try {
-              navigator.mediaSession.setActionHandler('play', async () => {
-                  await resumeAudioContext();
+              navigator.mediaSession.setActionHandler('play', () => {
+                  resumeAudioContext().catch(console.error);
                   togglePlay();
               });
               navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-              navigator.mediaSession.setActionHandler('previoustrack', async () => {
-                  await resumeAudioContext();
+              navigator.mediaSession.setActionHandler('previoustrack', () => {
+                  resumeAudioContext().catch(console.error);
                   prevTrack();
               });
-              navigator.mediaSession.setActionHandler('nexttrack', async () => {
-                  await resumeAudioContext();
+              navigator.mediaSession.setActionHandler('nexttrack', () => {
+                  resumeAudioContext().catch(console.error);
                   nextTrack();
               });
-              navigator.mediaSession.setActionHandler('seekto', async (d) => { 
+              navigator.mediaSession.setActionHandler('seekto', (d) => { 
                   if (d.seekTime !== undefined) {
-                      await resumeAudioContext();
+                      resumeAudioContext().catch(console.error);
                       handleSeek(d.seekTime); 
                   }
               });
