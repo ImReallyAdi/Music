@@ -15,7 +15,10 @@ let globalAudioContext: AudioContext | null = null;
 
 export const getAudioContext = () => {
     if (!globalAudioContext) {
-        globalAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        globalAudioContext = new AudioContextClass();
+        // Store in window for access from other hooks
+        (window as any).audioContext = globalAudioContext;
     }
     return globalAudioContext;
 };
@@ -149,8 +152,9 @@ export const useAudioAnalyzer = (audioElement: HTMLAudioElement | null, isPlayin
         if (isBeat) {
             lastBeatTimeRef.current = now;
             setBeat(true);
-            // Reset beat state quickly to allow re-trigger
-            setTimeout(() => setBeat(false), 100);
+            // Use requestAnimationFrame for beat reset to avoid state thrashing
+            const resetId = setTimeout(() => setBeat(false), 100);
+            return () => clearTimeout(resetId);
         }
 
         rafRef.current = requestAnimationFrame(analyze);
