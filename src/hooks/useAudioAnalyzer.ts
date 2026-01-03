@@ -70,36 +70,34 @@ export const useAudioAnalyzer = (audioElement: HTMLAudioElement | null, isPlayin
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
 
-        // Connect: Source -> Analyser -> Destination
+        // Connect: Source -> Analyser. Also connect source directly to destination
+        // to avoid the analyser sitting inline and potentially interfering with playback.
         source.connect(analyser);
-        analyser.connect(audioCtx.destination);
+        try {
+            source.connect(audioCtx.destination);
+        } catch (e) {
+            // Some browsers may throw if already connected; ignore.
+        }
 
         analyserRef.current = analyser;
         dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
 
+        // Resume the context if the page becomes visible again (helps PWA/background resume)
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
+
         return () => {
-            // CRITICAL FIX: Ensure we don't break the audio path on unmount.
-            // If we disconnect the analyser from destination, we must reconnect source to destination?
-            // BUT, if we keep the hook at the App level, this cleanup only runs on App unmount (refresh), so it's fine.
-            // If this hook is used in a child component that unmounts, we MUST handle reconnection.
-            //
-            // Better strategy:
-            // If we disconnect analyser, the source is still connected to analyser.
-            // We should disconnect source -> analyser.
-            // AND ensure source -> destination is restored IF we want to bypass processing.
-            // However, typically we just leave it connected if we plan to reuse.
-            //
-            // Given the plan to move this hook to App.tsx, the unmount won't happen during navigation.
-            // So standard cleanup is safer.
             try {
                 source?.disconnect(analyser);
                 analyser.disconnect();
-                // Reconnect source directly to destination to ensure playback continues
-                // if this hook is unmounted but audio element persists.
-                source?.connect(audioCtx.destination);
             } catch (e) {
                 // Ignore disconnect errors
             }
+            document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     } catch (e) {
         console.error("Audio Context Error:", e);

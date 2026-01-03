@@ -356,11 +356,17 @@ export const useAudioPlayer = (
       const onPause = () => {
           if (!audioElement.ended) { // Don't set isPlaying=false if it just ended and is about to play next
              setPlayer(p => ({ ...p, isPlaying: false }));
+             if ('mediaSession' in navigator) {
+                 try { navigator.mediaSession.playbackState = 'paused'; } catch (e) {}
+             }
           }
       };
       const onPlay = () => {
           setPlayer(p => ({ ...p, isPlaying: true }));
           updatePositionState();
+          if ('mediaSession' in navigator) {
+              try { navigator.mediaSession.playbackState = 'playing'; } catch (e) {}
+          }
       };
 
       audioElement.addEventListener('timeupdate', onTimeUpdate);
