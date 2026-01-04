@@ -1,4 +1,4 @@
-import { Lyrics, LyricLine, Track } from '../types';
+import { Lyrics, LyricLine, Track, LyricWord } from '../types';
 import { dbService } from '../db';
 
 /**
@@ -29,18 +29,102 @@ const parseLrc = (lrc: string): LyricLine[] => {
   return lines;
 };
 
+const fetchLyricsWithGemini = async (track: Track, apiKey: string): Promise<Lyrics | null> => {
+    const { title, artist } = track;
+    // Construct prompt
+    const prompt = `Generate word-for-word synced lyrics for the song "${title}" by "${artist}".
+    Format the output strictly as a JSON object with this structure:
+    {
+      "lines": [
+        {
+          "time": <start_time_seconds>,
+          "text": "<line_text>",
+          "words": [
+            { "time": <word_time_seconds>, "text": "<word>" },
+            ...
+          ]
+        },
+        ...
+      ]
+    }
+    The "time" for the line should be the start time of the first word.
+    Ensure strict JSON validity. Do not include markdown code blocks. Just the JSON.`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        if (!response.ok) {
+            console.warn("Gemini API error:", response.statusText);
+            return null;
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) return null;
+
+        // Clean up markdown code blocks if present (despite prompt)
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        if (parsed.lines && Array.isArray(parsed.lines)) {
+             return {
+                 lines: parsed.lines,
+                 synced: true,
+                 isWordSynced: true,
+                 error: false
+             };
+        }
+    } catch (e) {
+        console.warn("Gemini parsing/fetch failed", e);
+    }
+    return null;
+};
+
 export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
-  // 0. Check if we already have lyrics stored in the track object
+  // 0. Check settings first
+  const wordSyncEnabled = await dbService.getSetting<boolean>('wordSyncEnabled');
+  const geminiApiKey = await dbService.getSetting<string>('geminiApiKey');
+  
+  // 0.1 Check if we already have lyrics stored
+  // If Word Sync is enabled, we ONLY accept stored lyrics if they are word-synced.
+  // Otherwise, we might want to re-fetch to upgrade them.
   if (track.lyrics && !track.lyrics.error) {
-      return track.lyrics;
+       if (wordSyncEnabled && geminiApiKey) {
+           if (track.lyrics.isWordSynced) {
+               return track.lyrics;
+           }
+           // If we have line lyrics but want word lyrics, we proceed to fetch.
+           // However, we should prioritize Gemini only if we don't have word lyrics yet.
+       } else {
+           // Standard mode: any valid lyrics are fine
+           return track.lyrics;
+       }
   }
 
   const { title, artist } = track;
+  let result: Lyrics = { lines: [], synced: false, error: true };
+
+  // 1. Try Gemini (if enabled)
+  if (wordSyncEnabled && geminiApiKey) {
+      const geminiLyrics = await fetchLyricsWithGemini(track, geminiApiKey);
+      if (geminiLyrics) {
+          // Save and return
+          const updatedTrack = { ...track, lyrics: geminiLyrics };
+          await dbService.saveTrack(updatedTrack);
+          return geminiLyrics;
+      }
+      // Fallback continues below if Gemini fails
+  }
 
   try {
-    let result: Lyrics = { lines: [], synced: false, error: true };
-
-    // 1. Try lrclib.net for synced lyrics
+    // 2. Try lrclib.net for synced lyrics
     const lrcUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
     try {
         const lrcRes = await fetch(lrcUrl);
@@ -59,7 +143,7 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
         console.warn("Lrclib fetch failed", e);
     }
 
-    // 2. Fallback to api.popcat.xyz if no result yet
+    // 3. Fallback to api.popcat.xyz if no result yet
     if (result.error) {
         const backupUrl = `https://api.popcat.xyz/v2/lyrics?song=${encodeURIComponent(title + " " + artist)}`;
         try {
@@ -75,11 +159,19 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
         }
     }
 
-    // 3. Save to DB if we found something
+    // 4. Save to DB if we found something
     if (!result.error) {
         const updatedTrack = { ...track, lyrics: result };
         await dbService.saveTrack(updatedTrack);
         return result;
+    }
+
+    // If we have "stale" line lyrics but failed to upgrade to word lyrics, return the old ones?
+    // The initial check at step 0 handled returning valid word lyrics.
+    // If we reached here, it means we didn't have word lyrics (or didn't accept the line lyrics).
+    // If we have existing line lyrics in the track but we wanted to upgrade and failed, we should probably fall back to them.
+    if (track.lyrics && !track.lyrics.error) {
+        return track.lyrics;
     }
 
     return result;
