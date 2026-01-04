@@ -35,6 +35,7 @@ export const useAudioPlayer = (
   const currentUrlRef = useRef<string | null>(null);
   const crossfadeUrlRef = useRef<string | null>(null);
   const isTransitioningRef = useRef(false);
+  const isAutoTriggeredRef = useRef(false);
   const isScrubbingRef = useRef(false);
   const wasPlayingBeforeScrubRef = useRef(false);
   const pendingSeekRef = useRef<number | null>(null);
@@ -217,7 +218,7 @@ export const useAudioPlayer = (
     if (!audioElement) return;
 
     let currentBlob: Blob | null = null;
-    if (player.crossfadeEnabled && player.currentTrackId && immediate) {
+    if ((player.crossfadeEnabled || player.automixEnabled) && player.currentTrackId && immediate) {
         try {
             currentBlob = await dbService.getAudioBlob(player.currentTrackId);
         } catch (e) { console.warn("Could not fetch current blob for crossfade"); }
@@ -307,7 +308,7 @@ export const useAudioPlayer = (
              resumeAudioContext().catch(console.error);
 
              const isHidden = document.visibilityState === 'hidden';
-             const shouldCrossfade = player.crossfadeEnabled && !isHidden && currentBlob && crossfadeAudioElement;
+             const shouldCrossfade = (player.crossfadeEnabled || player.automixEnabled) && !isHidden && currentBlob && crossfadeAudioElement;
 
              if (shouldCrossfade) {
                  await performTransition(currentBlob, nextBlob, player.crossfadeDuration);
@@ -333,7 +334,7 @@ export const useAudioPlayer = (
       console.error("Playback error", e);
       setPlayer(p => ({ ...p, isPlaying: false }));
     }
-  }, [libraryTracks, updateMediaSession, audioElement, crossfadeAudioElement, player.crossfadeEnabled, player.crossfadeDuration, player.currentTrackId, player.shuffle, player.queue]);
+  }, [libraryTracks, updateMediaSession, audioElement, crossfadeAudioElement, player.crossfadeEnabled, player.automixEnabled, player.crossfadeDuration, player.currentTrackId, player.shuffle, player.queue]);
 
   const togglePlay = useCallback(async () => {
     if (!audioElement) return;
@@ -580,8 +581,14 @@ export const useAudioPlayer = (
               }
 
               const timeLeft = audioElement.duration - audioElement.currentTime;
-              if (player.crossfadeEnabled && !isTransitioningRef.current && timeLeft <= player.crossfadeDuration && timeLeft > 0) {
-                   // Placeholder for auto-transition
+              if ((player.crossfadeEnabled || player.automixEnabled) &&
+                  !isTransitioningRef.current &&
+                  !isAutoTriggeredRef.current &&
+                  timeLeft <= player.crossfadeDuration &&
+                  timeLeft > 0) {
+
+                   isAutoTriggeredRef.current = true;
+                   nextTrack();
               }
           }
       };
@@ -602,6 +609,9 @@ export const useAudioPlayer = (
          const d = audioElement.duration;
          setDuration(!isNaN(d) ? d : 0);
          updatePositionState();
+
+         // Reset auto-trigger flag when a new track loads
+         isAutoTriggeredRef.current = false;
 
          if (pendingSeekRef.current !== null) {
              audioElement.currentTime = pendingSeekRef.current;
