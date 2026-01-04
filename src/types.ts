@@ -56,14 +56,21 @@ export interface Metadata {
   requestFramePermissions: any[];
 }
 
+export interface LyricWord {
+  time: number;
+  text: string;
+}
+
 export interface LyricLine {
   time: number; // in seconds
   text: string;
+  words?: LyricWord[];
 }
 
 export interface Lyrics {
   lines: LyricLine[];
   plain?: string;
   synced: boolean;
+  isWordSynced?: boolean;
   error?: boolean;
 }
