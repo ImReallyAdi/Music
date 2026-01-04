@@ -39,7 +39,6 @@ const getGeminiLyrics = async (
   context?: { synced?: string, plain?: string }
 ): Promise<Lyrics | null> => {
     const { title, artist } = track;
-
     let prompt = "";
 
     if (context?.synced) {
@@ -68,7 +67,7 @@ const getGeminiLyrics = async (
             }
           ]
         }
-        Return ONLY the raw JSON string. No markdown.`;
+        Return ONLY the raw JSON string. No markdown code blocks.`;
     } else if (context?.plain) {
         // SCENARIO 2: Sync plain text (Good Case)
         prompt = `I have the lyrics for "${title}" by "${artist}".
@@ -90,7 +89,7 @@ const getGeminiLyrics = async (
             }
           ]
         }
-        Return ONLY the raw JSON string. No markdown.`;
+        Return ONLY the raw JSON string. No markdown code blocks.`;
     } else {
         // SCENARIO 3: Generate from scratch (Fallback)
         prompt = `Generate word-for-word synced lyrics for the song "${title}" by "${artist}".
@@ -116,7 +115,11 @@ const getGeminiLyrics = async (
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.1, // Low temp for deterministic format
+                    responseMimeType: "application/json" // Force JSON output
+                }
             })
         });
 
@@ -130,21 +133,26 @@ const getGeminiLyrics = async (
 
         if (!text) return null;
 
-        // Robust JSON parsing
+        // --- ROBUST JSON PARSING ---
         let parsed: any = null;
         try {
-            // 1. Try regex to find the JSON object (first { to last })
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
-            } else {
-                // 2. Fallback: try cleaning markdown code blocks explicitly
-                const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                parsed = JSON.parse(cleanJson);
-            }
+            // 1. Try parsing directly
+            parsed = JSON.parse(text);
         } catch (e) {
-             console.warn("Failed to parse Gemini JSON:", e);
-             return null;
+            // 2. Fallback: Clean markdown wrappers if direct parse fails
+            // This handles ```json ... ``` and just ``` ... ```
+            const cleanText = text
+                .replace(/^```json\s*/, '')
+                .replace(/^```\s*/, '')
+                .replace(/\s*```$/, '')
+                .trim();
+            
+            try {
+                parsed = JSON.parse(cleanText);
+            } catch (innerE) {
+                console.warn("Failed to parse Gemini JSON:", innerE);
+                return null;
+            }
         }
 
         if (parsed && parsed.lines && Array.isArray(parsed.lines)) {
@@ -168,15 +176,12 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
 
   // 1. Check if existing lyrics in track are already good enough
   if (track.lyrics && !track.lyrics.error) {
-      // If we want word sync, and we have it, return it.
       if (wordSyncEnabled && track.lyrics.isWordSynced) {
           return track.lyrics;
       }
-      // If we don't care about word sync, or don't have a key, return what we have.
       if (!wordSyncEnabled || !geminiApiKey) {
           return track.lyrics;
       }
-      // Otherwise, we proceed to try and upgrade them.
   }
 
   let lrcData: { synced?: string, plain?: string } | null = null;
@@ -188,7 +193,6 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
       const lrcRes = await fetch(lrcUrl);
       if (lrcRes.ok) {
           const data = await lrcRes.json();
-          // Prefer synced lyrics if available
           if (data.syncedLyrics) {
               lrcData = { synced: data.syncedLyrics, plain: data.plainLyrics };
               standardResult = {
@@ -232,15 +236,12 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
 
   // 4. Upgrade with Gemini if enabled
   if (wordSyncEnabled && geminiApiKey) {
-      // Pass whatever context we found (or undefined if nothing found)
       const geminiLyrics = await getGeminiLyrics(track, geminiApiKey, lrcData || undefined);
       if (geminiLyrics) {
-          // Success! Save and return
           const updatedTrack = { ...track, lyrics: geminiLyrics };
           await dbService.saveTrack(updatedTrack);
           return geminiLyrics;
       }
-      // If Gemini failed, we fall back to standardResult below
   }
 
   // 5. Return standard result (Lrclib/Popcat)
