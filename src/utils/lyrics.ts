@@ -48,7 +48,7 @@ const fetchLyricsWithGemini = async (track: Track, apiKey: string): Promise<Lyri
       ]
     }
     The "time" for the line should be the start time of the first word.
-    Ensure strict JSON validity. Do not include markdown code blocks. Just the JSON.`;
+    Ensure strict JSON validity. Do not include markdown code blocks. Just return the raw JSON string.`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -69,11 +69,24 @@ const fetchLyricsWithGemini = async (track: Track, apiKey: string): Promise<Lyri
 
         if (!text) return null;
 
-        // Clean up markdown code blocks if present (despite prompt)
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(cleanJson);
+        // Robust JSON parsing
+        let parsed: any = null;
+        try {
+            // 1. Try regex to find the JSON object (first { to last })
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsed = JSON.parse(jsonMatch[0]);
+            } else {
+                // 2. Fallback: try cleaning markdown code blocks explicitly
+                const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                parsed = JSON.parse(cleanJson);
+            }
+        } catch (e) {
+             console.warn("Failed to parse Gemini JSON:", e);
+             return null;
+        }
 
-        if (parsed.lines && Array.isArray(parsed.lines)) {
+        if (parsed && parsed.lines && Array.isArray(parsed.lines)) {
              return {
                  lines: parsed.lines,
                  synced: true,
