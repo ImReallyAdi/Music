@@ -1,15 +1,17 @@
-import React, { memo, useMemo, useCallback, useState, useEffect } from 'react';
+import React, { memo, useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Music, Play, Shuffle, ListFilter, Settings, Trash2, 
   PlusCircle, Loader2, X, Mic2, Users, ChevronLeft, 
-  Disc, Heart, Check, Sparkles, Key
+  Disc, Heart, Check, Sparkles, Key, FileText
 } from 'lucide-react';
 import { Track, PlayerState, Playlist } from '../types';
 import { dbService } from '../db';
 import Playlists from './Playlists';
 import AddToPlaylistModal from './AddToPlaylistModal';
 import { getOrFetchArtistImage } from '../utils/artistImage';
+import { parseLrc } from '../utils/lyrics';
+import { useToast } from './Toast';
 
 // --- TYPES ---
 type LibraryTab = 'Songs' | 'Favorites' | 'Albums' | 'Artists' | 'Playlists' | 'Settings';
@@ -105,7 +107,7 @@ ArtistRow.displayName = 'ArtistRow';
 
 // Optimized Track Row
 const TrackRow = memo(({ 
-  track, index, onPlay, isPlaying, isCurrentTrack, onDelete, onAddToPlaylist 
+  track, index, onPlay, isPlaying, isCurrentTrack, onDelete, onAddToPlaylist, onUploadLyrics 
 }: { 
   track: Track; 
   index: number; 
@@ -114,6 +116,7 @@ const TrackRow = memo(({
   isCurrentTrack: boolean;
   onDelete: (id: string) => void;
   onAddToPlaylist: (id: string) => void;
+  onUploadLyrics: (id: string) => void;
 }) => {
     return (
         <motion.div
@@ -175,6 +178,13 @@ const TrackRow = memo(({
 
             {/* Actions */}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onUploadLyrics(track.id); }}
+                    className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
+                    title="Upload Lyrics (.lrc)"
+                >
+                    <FileText className="w-5 h-5" />
+                </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onAddToPlaylist(track.id); }}
                     className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
@@ -353,6 +363,7 @@ const Library: React.FC<LibraryProps> = ({
   activeTab, libraryTab, setLibraryTab, filteredTracks, 
   playerState, setPlayerState, playTrack, refreshLibrary, isLoading = false 
 }) => {
+  const { addToast } = useToast();
   
   // State
   const [playlists, setPlaylists] = useState<Record<string, Playlist>>({});
@@ -364,6 +375,10 @@ const Library: React.FC<LibraryProps> = ({
   // Modal State
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [trackToAddId, setTrackToAddId] = useState<string | null>(null);
+
+  // Lyrics Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lyricTrackId, setLyricTrackId] = useState<string | null>(null);
 
   // Load Data
   useEffect(() => {
@@ -454,6 +469,38 @@ const Library: React.FC<LibraryProps> = ({
       setIsPlaylistModalOpen(true);
   }, []);
 
+  const handleUploadLyrics = useCallback((id: string) => {
+      setLyricTrackId(id);
+      fileInputRef.current?.click();
+  }, []);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !lyricTrackId) return;
+
+      try {
+          const text = await file.text();
+          const parsed = parseLrc(text);
+          const track = tracksMap[lyricTrackId];
+          
+          if (track) {
+              const updatedTrack = { ...track, lyrics: parsed };
+              await dbService.saveTrack(updatedTrack);
+              refreshLibrary();
+              addToast("Lyrics updated successfully", "success");
+          }
+      } catch (err) {
+          console.error("Failed to parse/save lyrics:", err);
+          addToast("Failed to process lyrics file", "error");
+      } finally {
+          setLyricTrackId(null);
+          // Reset file input
+          if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+          }
+      }
+  };
+
   const handleShuffleAll = () => {
      if (sortedTracks.length > 0) {
         const randomId = sortedTracks[Math.floor(Math.random() * sortedTracks.length)].id;
@@ -494,6 +541,15 @@ const Library: React.FC<LibraryProps> = ({
 
   return (
     <>
+        {/* Hidden File Input for Lyrics */}
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept=".lrc,.txt" 
+            onChange={handleFileSelect} 
+        />
+
         <div className="flex flex-col h-full px-4 md:px-8 max-w-5xl mx-auto w-full">
             {/* Header & Tabs */}
             <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
@@ -589,6 +645,7 @@ const Library: React.FC<LibraryProps> = ({
                                             isCurrentTrack={playerState.currentTrackId === track.id}
                                             onDelete={handleDelete}
                                             onAddToPlaylist={openAddToPlaylist}
+                                            onUploadLyrics={handleUploadLyrics}
                                         />
                                     ))
                                 ) : (
@@ -622,6 +679,7 @@ const Library: React.FC<LibraryProps> = ({
                                                 isCurrentTrack={playerState.currentTrackId === track.id}
                                                 onDelete={handleDelete}
                                                 onAddToPlaylist={openAddToPlaylist}
+                                                onUploadLyrics={handleUploadLyrics}
                                             />
                                         ))}
                                     </div>
