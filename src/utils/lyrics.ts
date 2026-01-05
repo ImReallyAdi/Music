@@ -166,13 +166,13 @@ const getGeminiLyrics = async (
 
 // --- MAIN FETCH STRATEGY ---
 
-export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
+export const fetchLyrics = async (track: Track, force = false): Promise<Lyrics> => {
   // 1. Check DB / Settings
   const wordSyncEnabled = await dbService.getSetting<boolean>('wordSyncEnabled');
   const geminiApiKey = await dbService.getSetting<string>('geminiApiKey');
 
   // 2. Return Cached if valid
-  if (track.lyrics && !track.lyrics.error) {
+  if (!force && track.lyrics && !track.lyrics.error) {
     if (track.lyrics.isWordSynced) return track.lyrics;
     if (!wordSyncEnabled) return track.lyrics;
     // If here: we have non-word-synced lyrics, and user wants word-synced.
@@ -279,6 +279,11 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
   if (!bestResult.error) {
     await dbService.saveTrack({ ...track, lyrics: bestResult });
     return bestResult;
+  }
+
+  // Fallback: If we failed to find better lyrics, but we had valid cached ones, return them!
+  if (track.lyrics && !track.lyrics.error) {
+    return track.lyrics;
   }
 
   return { lines: [], synced: false, error: true };
