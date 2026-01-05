@@ -61,6 +61,7 @@ const Search: React.FC<SearchProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="Find your frequency..."
             className="flex-1 bg-transparent text-body-large text-surface-on placeholder:text-surface-on-variant/50 outline-none"
+            style={{ fontSize: '16px' }} // Prevent iOS zoom
           />
           <AnimatePresence>
             {searchQuery && (
@@ -72,7 +73,7 @@ const Search: React.FC<SearchProps> = ({
                   setSearchQuery('');
                   inputRef.current?.focus();
                 }} 
-                className="p-2 text-surface-on-variant hover:text-surface-on hover:bg-surface-container-highest/50 rounded-full transition-colors"
+                className="p-2 text-surface-on-variant hover:text-surface-on hover:bg-surface-container-highest/50 rounded-full transition-colors active:scale-90"
               >
                 <X className="w-5 h-5" />
               </motion.button>
@@ -93,7 +94,7 @@ const Search: React.FC<SearchProps> = ({
               key={t.id}
               whileTap={{ scale: 0.98, backgroundColor: 'var(--surface-container-highest)' }}
               onClick={() => handleTrackClick(t.id)}
-              className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors"
+              className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98]"
             >
               {/* Cover Art */}
               <div className="w-14 h-14 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative">

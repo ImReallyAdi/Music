@@ -239,7 +239,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             if (i.offset.y > 100 || i.velocity.y > 500) onClose();
             else dragY.set(0);
           }}
-          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden"
+          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
         >
           {/* Dynamic Background */}
           <motion.div
@@ -268,15 +268,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           {/* Drag Handle */}
           <div 
             onPointerDown={(e) => dragControls.start(e)}
-            className="h-12 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20"
+            className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
           >
             <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors" />
           </div>
 
-          <main className="flex-1 px-8 pb-10 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16">
+          <main className="flex-1 px-8 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
             
             {/* Left: Artwork */}
-            <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center">
+            <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
               <AnimatePresence mode="wait">
                 {showLyrics ? (
                   <motion.div
@@ -285,6 +285,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
                      className="absolute inset-0 rounded-2xl overflow-hidden"
+                     onPointerDown={(e) => e.stopPropagation()}
                   >
                      <LyricsView
                        track={currentTrack}
@@ -301,6 +302,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col"
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
                     <QueueList
                       queue={playerState.queue}
@@ -343,7 +345,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             </div>
 
             {/* Right: Info & Controls */}
-            <div className="w-full max-w-[380px] flex flex-col justify-center gap-6">
+            <div className="w-full max-w-[380px] flex flex-col justify-center gap-6 shrink-0">
               
               {/* Text Info & Favorite */}
               <div className="flex items-center justify-between">
@@ -373,7 +375,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             }
                         });
                     }}
-                    className="p-3 rounded-full hover:bg-white/10 transition-colors"
+                    className="p-3 rounded-full hover:bg-white/10 active:scale-90 transition-all"
                     style={{ color: currentTrack.isFavorite ? primaryColor : mutedColor }}
                   >
                      <Heart size={24} fill={currentTrack.isFavorite ? "currentColor" : "none"} strokeWidth={currentTrack.isFavorite ? 0 : 2} />
@@ -407,8 +409,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     disabled={!isSeekable}
                     onChange={handleScrubChange}
                     onPointerDown={(e) => isSeekable && handleScrubInteractionStart(e)}
-                    className={`absolute -inset-x-0 -top-2.5 w-full h-6 opacity-0 z-50 ${isSeekable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                    style={{ pointerEvents: 'auto', bottom: '-8px' }}
+                    className={`absolute -inset-x-0 -top-2.5 w-full h-8 opacity-0 z-50 ${isSeekable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    style={{ pointerEvents: 'auto', bottom: '-8px', touchAction: 'none' }}
                   />
 
                 <div className="flex justify-between mt-2 text-xs font-medium font-mono" style={{ color: mutedColor }}>
@@ -421,14 +423,14 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               <div className="flex items-center justify-between">
                 <button 
                     onClick={toggleShuffle} 
-                    className={`p-2 rounded-full transition-colors`}
+                    className={`p-3 rounded-full transition-all active:scale-90`}
                     style={{ color: playerState.shuffle ? primaryColor : mutedColor, backgroundColor: playerState.shuffle ? `${primaryColor}20` : 'transparent' }}
                 >
                   <Shuffle size={20} />
                 </button>
 
                 <div className="flex items-center gap-6">
-                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform" style={{ color: secondaryColor }}>
+                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
                     <SkipBack size={32} fill="currentColor" />
                   </button>
                   
@@ -437,7 +439,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     whileTap={{ scale: 0.9 }}
                     animate={{ scale: beat ? 1.05 : 1 }}
                     style={{ backgroundColor: primaryColor, color: backgroundColor }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors"
+                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors active:opacity-90"
                   >
                     {playerState.isPlaying ? 
                       <Pause size={36} fill="currentColor" /> :
@@ -445,19 +447,19 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     }
                   </motion.button>
                   
-                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform" style={{ color: secondaryColor }}>
+                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
                     <SkipForward size={32} fill="currentColor" />
                   </button>
                 </div>
 
                 <button 
                     onClick={toggleRepeat} 
-                    className={`p-2 relative rounded-full transition-colors`}
+                    className={`p-3 relative rounded-full transition-all active:scale-90`}
                     style={{ color: playerState.repeat !== 'OFF' ? primaryColor : mutedColor, backgroundColor: playerState.repeat !== 'OFF' ? `${primaryColor}20` : 'transparent' }}
                 >
                   <Repeat size={20} />
                   {playerState.repeat === 'ONE' && (
-                    <span className="absolute top-1 right-1.5 text-[7px] px-0.5 rounded-[2px] font-bold leading-none" style={{ backgroundColor: primaryColor, color: backgroundColor }}>1</span>
+                    <span className="absolute top-1.5 right-2 text-[7px] px-0.5 rounded-[2px] font-bold leading-none" style={{ backgroundColor: primaryColor, color: backgroundColor }}>1</span>
                   )}
                 </button>
               </div>
@@ -469,7 +471,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     setShowLyrics(!showLyrics);
                     if (!showLyrics) setShowQueue(false);
                   }}
-                  className={`p-3 rounded-full transition-all`}
+                  className={`p-3 rounded-full transition-all active:scale-90`}
                   style={{
                       backgroundColor: showLyrics ? primaryColor : 'rgba(255,255,255,0.05)',
                       color: showLyrics ? backgroundColor : mutedColor
@@ -483,7 +485,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     setShowQueue(!showQueue);
                     if (!showQueue) setShowLyrics(false);
                   }}
-                  className={`p-3 rounded-full transition-all`}
+                  className={`p-3 rounded-full transition-all active:scale-90`}
                   style={{
                       backgroundColor: showQueue ? primaryColor : 'rgba(255,255,255,0.05)',
                       color: showQueue ? backgroundColor : mutedColor
