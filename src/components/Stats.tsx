@@ -1,30 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, Music, X, Play, Pause } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence, useInView, useSpring, useTransform } from 'framer-motion';
+import { TrendingUp, Music, X, Play, Share2 } from 'lucide-react';
 import { dbService } from '../db';
 import { Track } from '../types';
 
-// --- RETRO GRAPHICS COMPONENTS (MATCHING VIDEO) ---
+// --- CONFIGURATION ---
+// Set this to TRUE to see the button even if it's not Nov/Dec
+const DEV_OVERRIDE = true; 
+
+// --- UTILS ---
+const Counter: React.FC<{ value: number }> = ({ value }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const motionValue = useSpring(0, { duration: 2000, bounce: 0 });
+  
+  useEffect(() => {
+    motionValue.set(value);
+  }, [value, motionValue]);
+
+  useEffect(() => {
+    return motionValue.on("change", (latest) => {
+      if (ref.current) {
+        ref.current.textContent = Math.floor(latest).toLocaleString();
+      }
+    });
+  }, [motionValue]);
+
+  return <span ref={ref} />;
+};
+
+// --- RETRO GRAPHICS ---
+
+const FilmGrain = () => (
+  <div className="absolute inset-0 pointer-events-none opacity-20 z-0 mix-blend-multiply" 
+       style={{ 
+         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`
+       }} 
+  />
+);
 
 const RetroWaves = () => (
-  <svg viewBox="0 0 1440 320" className="absolute bottom-0 left-0 w-full h-auto text-[#FF2E2E] opacity-100" preserveAspectRatio="none">
+  <svg viewBox="0 0 1440 320" className="absolute bottom-0 left-0 w-full h-auto text-[#FF2E2E] opacity-100 z-10" preserveAspectRatio="none">
     <path fill="transparent" stroke="currentColor" strokeWidth="40" d="M0,160 C320,300,420,0,740,160 C1060,320,1160,0,1480,160" />
     <path fill="transparent" stroke="currentColor" strokeWidth="40" d="M0,260 C320,400,420,100,740,260 C1060,420,1160,100,1480,260" />
   </svg>
 );
 
 const RetroArches = () => (
-  <svg viewBox="0 0 500 500" className="absolute bottom-[-10%] left-1/2 transform -translate-x-1/2 w-full max-w-md text-[#FF2E2E]">
+  <svg viewBox="0 0 500 500" className="absolute bottom-[-10%] left-1/2 transform -translate-x-1/2 w-full max-w-md text-[#FF2E2E] z-10">
     <path d="M50 500 A 200 200 0 0 1 450 500" fill="transparent" stroke="currentColor" strokeWidth="30" />
     <path d="M100 500 A 150 150 0 0 1 400 500" fill="transparent" stroke="currentColor" strokeWidth="30" />
     <path d="M150 500 A 100 100 0 0 1 350 500" fill="transparent" stroke="currentColor" strokeWidth="30" />
-    <path d="M200 500 A 50 50 0 0 1 300 500" fill="transparent" stroke="currentColor" strokeWidth="30" />
   </svg>
 );
 
 const RetroBurst = () => (
-  <svg viewBox="0 0 200 200" className="absolute bottom-[-50px] left-1/2 transform -translate-x-1/2 w-64 h-64 text-[#FF2E2E]">
+  <svg viewBox="0 0 200 200" className="absolute bottom-[-50px] left-1/2 transform -translate-x-1/2 w-80 h-80 text-[#FF2E2E] z-10 animate-spin-slow">
     <path fill="currentColor" d="M100 0 L120 80 L200 100 L120 120 L100 200 L80 120 L0 100 L80 80 Z" />
+    <path fill="currentColor" opacity="0.5" transform="rotate(45 100 100)" d="M100 0 L120 80 L200 100 L120 120 L100 200 L80 120 L0 100 L80 80 Z" />
   </svg>
 );
 
@@ -32,135 +64,172 @@ const RetroBurst = () => (
 
 const AdiRetrograde: React.FC<{ isOpen: boolean; onClose: () => void; stats: any }> = ({ isOpen, onClose, stats }) => {
   const [slide, setSlide] = useState(0);
+  const currentYear = new Date().getFullYear();
 
   // Auto-advance logic
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => {
       if (slide < 3) setSlide(s => s + 1);
-      else onClose();
-    }, 5000); // 5 seconds per slide
+      // Note: We don't auto-close on the last slide so they can share/replay
+    }, 6000); 
     return () => clearTimeout(timer);
-  }, [slide, isOpen, onClose]);
+  }, [slide, isOpen]);
 
   const slideVariants = {
-    enter: { x: 100, opacity: 0 },
+    enter: { x: '100%', opacity: 1 },
     center: { x: 0, opacity: 1 },
-    exit: { x: -100, opacity: 0 }
+    exit: { x: '-50%', opacity: 0 }
   };
 
   const slides = [
-    // SLIDE 1: INTRO (Waves)
+    // SLIDE 1: INTRO
     {
+      bg: "bg-[#FFFDF8]",
       content: (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-10">
+        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-20">
           <motion.div
-            initial={{ scale: 0.8, rotate: -5 }}
-            animate={{ scale: 1, rotate: 0 }}
-            className="font-black text-6xl md:text-7xl text-[#FF2E2E] leading-tight tracking-tighter drop-shadow-sm"
-            style={{ fontFamily: '"Arial Black", sans-serif' }} // Fallback for bubbly font
+            initial={{ scale: 0.8, rotate: -5, opacity: 0 }}
+            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+            transition={{ type: "spring", bounce: 0.5 }}
+            className="font-black text-6xl md:text-7xl text-[#FF2E2E] leading-[0.85] tracking-tighter drop-shadow-sm mix-blend-multiply"
           >
-            <div>Music</div>
-            <div>retrograde</div>
-            <div className="text-5xl mt-4">2026</div>
+            <div>ADI</div>
+            <div>RETRO</div>
+            <div>GRADE</div>
+            <div className="text-5xl mt-2 tracking-widest bg-[#FF2E2E] text-[#FFFDF8] inline-block px-4 -rotate-3">{currentYear}</div>
           </motion.div>
         </div>
       ),
-      graphic: <RetroWaves />,
-      bg: "bg-[#FFFDF8]" // Warm white
+      graphic: <RetroWaves />
     },
     
-    // SLIDE 2: TOP SONG (Arches) - "Clearly you were on something"
+    // SLIDE 2: TOP SONG
     {
+      bg: "bg-[#FFFDF8]",
       content: (
-        <div className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10 pb-32">
+        <div className="flex flex-col items-center justify-center h-full text-center p-6 relative z-20 pb-24">
           <motion.h2 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="font-black text-4xl text-[#FF2E2E] mb-8 leading-tight tracking-tight"
+            className="font-black text-4xl text-[#FF2E2E] mb-8 leading-none tracking-tight"
           >
             Clearly you<br/>were on<br/>something
           </motion.h2>
 
           {stats.topTrack && (
             <motion.div 
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className="bg-[#FF2E2E] p-4 rounded-3xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rotate-[-2deg]"
+              initial={{ scale: 0, rotate: 10 }}
+              animate={{ scale: 1, rotate: -3 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="bg-[#FF2E2E] p-4 pb-8 rounded-sm shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative"
             >
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-black/20" />
               <img 
                 src={stats.topTrack.coverArt} 
-                className="w-48 h-48 rounded-xl border-4 border-white object-cover" 
+                className="w-56 h-56 border-2 border-black/10 object-cover grayscale-[0.2] contrast-125" 
+                alt="Top Track"
               />
-              <div className="mt-4 text-white font-bold text-lg">{stats.topTrack.title}</div>
-              <div className="text-white/80 text-sm font-mono">{stats.topTrack.playCount} PLAYS</div>
+              <div className="mt-4 text-white text-left">
+                <div className="font-black text-2xl leading-none">{stats.topTrack.title}</div>
+                <div className="text-white/90 text-sm font-mono mt-1 uppercase">{stats.topTrack.artist}</div>
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-black text-white px-3 py-1 font-mono text-xs font-bold rotate-3">
+                #{stats.topTrack.playCount} PLAYS
+              </div>
             </motion.div>
           )}
         </div>
       ),
-      graphic: <RetroArches />,
-      bg: "bg-[#FFFDF8]"
+      graphic: <RetroArches />
     },
 
-    // SLIDE 3: STATS (Drum Roll)
+    // SLIDE 3: STATS
     {
+      bg: "bg-[#FFFDF8]",
       content: (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-10">
+        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-20">
            <motion.h2 
-            className="font-black text-5xl text-[#FF2E2E] mb-2 tracking-tight"
+            className="font-black text-6xl text-[#FF2E2E] mb-8 tracking-tighter"
+            initial={{ scale: 2, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
           >
-            your stats
+            THE<br/>DAMAGES
           </motion.h2>
-          <motion.div 
-            animate={{ rotate: [0, -10, 10, 0] }}
-            transition={{ repeat: Infinity, duration: 0.5 }}
-            className="text-xl font-bold text-black mb-12 bg-gray-200 px-4 py-1 rounded-full"
-          >
-            🥁 Drum-roll
-          </motion.div>
 
           <div className="grid grid-cols-1 gap-6 w-full max-w-xs">
-            <div className="bg-[#FF2E2E] text-white p-6 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black">
-              <div className="text-5xl font-black">{stats.totalPlays}</div>
-              <div className="text-sm font-mono uppercase">Total Tracks</div>
-            </div>
+            {/* Total Plays Card */}
+            <motion.div 
+               initial={{ x: -50, opacity: 0 }}
+               animate={{ x: 0, opacity: 1 }}
+               className="bg-[#FF2E2E] text-white p-6 rounded-none skew-x-[-6deg] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-2 border-black"
+            >
+              <div className="skew-x-[6deg]">
+                <div className="text-5xl font-black tabular-nums">
+                  <Counter value={stats.totalPlays} />
+                </div>
+                <div className="text-sm font-mono uppercase tracking-widest border-t-2 border-white/30 pt-2 mt-1">Tracks Played</div>
+              </div>
+            </motion.div>
             
-            <div className="bg-white text-[#FF2E2E] p-6 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-[#FF2E2E]">
-              <div className="text-5xl font-black">{Math.floor(stats.totalTime / 60)}</div>
-              <div className="text-sm font-mono uppercase text-black">Minutes</div>
-            </div>
+            {/* Minutes Card */}
+            <motion.div 
+               initial={{ x: 50, opacity: 0 }}
+               animate={{ x: 0, opacity: 1 }}
+               transition={{ delay: 0.2 }}
+               className="bg-white text-[#FF2E2E] p-6 rounded-none skew-x-[-6deg] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-2 border-[#FF2E2E]"
+            >
+              <div className="skew-x-[6deg]">
+                <div className="text-5xl font-black tabular-nums">
+                  <Counter value={Math.floor(stats.totalTime / 60)} />
+                </div>
+                <div className="text-sm font-mono uppercase tracking-widest border-t-2 border-[#FF2E2E]/20 pt-2 mt-1 text-black">Minutes Lost</div>
+              </div>
+            </motion.div>
           </div>
         </div>
       ),
-      graphic: <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#FF2E2E]" />, // Side strip
-      bg: "bg-[#FFFDF8]"
+      graphic: <div className="absolute right-0 top-0 bottom-0 w-12 bg-[#FF2E2E] opacity-10" style={{ backgroundImage: 'radial-gradient(circle, black 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
     },
 
-    // SLIDE 4: OUTRO (Burst)
+    // SLIDE 4: OUTRO
     {
+      bg: "bg-[#FFFDF8]",
       content: (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-10 pb-40">
+        <div className="flex flex-col items-center justify-center h-full text-center p-8 relative z-20 pb-32">
            <motion.h2 
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            className="font-black text-4xl md:text-5xl text-[#FF2E2E] leading-snug tracking-tight"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="font-black text-5xl text-[#FF2E2E] leading-tight tracking-tighter mb-8"
           >
-            Maybe it's<br/>more to<br/>expect<br/>next year?
+            SEE YOU<br/>NEXT<br/>YEAR?
           </motion.h2>
           
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onClose}
-            className="mt-12 px-8 py-3 bg-black text-white font-bold rounded-full font-mono text-lg"
-          >
-            REPLAY ↺
-          </motion.button>
+          <div className="flex flex-col gap-4 w-full max-w-xs">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSlide(0)}
+              className="w-full px-8 py-4 bg-black text-white font-bold font-mono text-lg border-2 border-black hover:bg-transparent hover:text-black transition-colors"
+            >
+              REPLAY ↺
+            </motion.button>
+            
+            <motion.button
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onClose}
+              className="w-full px-8 py-4 bg-[#FF2E2E] text-white font-bold font-mono text-lg flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            >
+              <Share2 size={20} /> CLOSE
+            </motion.button>
+          </div>
         </div>
       ),
-      graphic: <RetroBurst />,
-      bg: "bg-[#FFFDF8]"
+      graphic: <RetroBurst />
     }
   ];
 
@@ -171,32 +240,32 @@ const AdiRetrograde: React.FC<{ isOpen: boolean; onClose: () => void; stats: any
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex flex-col bg-black"
+      className="fixed inset-0 z-[200] flex flex-col bg-black/90 backdrop-blur-sm"
     >
-      {/* Container simulating mobile screen aspect ratio if on desktop */}
-      <div className="w-full h-full max-w-md mx-auto relative overflow-hidden bg-white shadow-2xl">
+      <div className="w-full h-full max-w-md mx-auto relative overflow-hidden bg-[#FFFDF8] shadow-2xl">
+        <FilmGrain />
         
         {/* Progress Bars */}
         <div className="absolute top-2 left-0 right-0 flex gap-1 px-2 z-50">
           {slides.map((_, i) => (
-            <div key={i} className="h-1.5 flex-1 bg-gray-200 rounded-full overflow-hidden">
+            <div key={i} className="h-1 flex-1 bg-black/10 rounded-full overflow-hidden backdrop-blur-sm">
               <motion.div
                 className="h-full bg-[#FF2E2E]"
                 initial={{ width: "0%" }}
                 animate={{ width: i < slide ? "100%" : i === slide ? "100%" : "0%" }}
-                transition={i === slide ? { duration: 5, ease: "linear" } : { duration: 0 }}
+                transition={i === slide ? { duration: 6, ease: "linear" } : { duration: 0 }}
               />
             </div>
           ))}
         </div>
 
         {/* Close Button */}
-        <button onClick={onClose} className="absolute top-6 right-4 z-50 p-2 text-black/50 hover:text-[#FF2E2E]">
+        <button onClick={onClose} className="absolute top-6 right-4 z-50 p-2 text-black/30 hover:text-[#FF2E2E] transition-colors">
           <X size={28} strokeWidth={3} />
         </button>
 
         {/* Slide Content */}
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={slide}>
           <motion.div
             key={slide}
             variants={slideVariants}
@@ -206,12 +275,11 @@ const AdiRetrograde: React.FC<{ isOpen: boolean; onClose: () => void; stats: any
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className={`absolute inset-0 flex flex-col ${slides[slide].bg}`}
             onClick={(e) => {
-               // Tap navigation logic
+               // Navigation logic
                const width = e.currentTarget.offsetWidth;
                const x = e.nativeEvent.offsetX;
                if (x > width / 2) {
                  if (slide < slides.length - 1) setSlide(s => s + 1);
-                 else onClose();
                } else {
                  if (slide > 0) setSlide(s => s - 1);
                }
@@ -234,124 +302,4 @@ interface StatsProps {
 }
 
 const Stats: React.FC<StatsProps> = ({ playTrack }) => {
-  const [topTracks, setTopTracks] = useState<Track[]>([]);
-  const [topArtists, setTopArtists] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalPlays: 0, totalTime: 0, uniqueArtists: 0 });
-  const [showWrapped, setShowWrapped] = useState(false);
-
-  useEffect(() => {
-    const loadStats = async () => {
-      const allTracks = await dbService.getAllTracks();
-      const playedTracks = allTracks.filter(t => (t.playCount || 0) > 0);
-
-      // Top Tracks Logic
-      const sortedTracks = [...playedTracks].sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
-      setTopTracks(sortedTracks.slice(0, 10));
-
-      // Top Artists Logic
-      const artistMap = new Map();
-      playedTracks.forEach(t => {
-        const current = artistMap.get(t.artist) || { count: 0, cover: t.coverArt || '' };
-        artistMap.set(t.artist, { count: current.count + (t.playCount || 0), cover: current.cover || t.coverArt });
-      });
-      const sortedArtists = Array.from(artistMap.entries())
-        .map(([name, data]) => ({ name, ...data }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-      setTopArtists(sortedArtists);
-
-      // Totals
-      setStats({
-        totalPlays: playedTracks.reduce((acc, t) => acc + (t.playCount || 0), 0),
-        totalTime: playedTracks.reduce((acc, t) => acc + ((t.playCount || 0) * t.duration), 0),
-        uniqueArtists: artistMap.size
-      });
-    };
-    loadStats();
-  }, []);
-
-  return (
-    <div className="px-6 pt-24 pb-32 min-h-screen bg-black">
-      <AnimatePresence>
-         {showWrapped && (
-             <AdiRetrograde
-                isOpen={showWrapped}
-                onClose={() => setShowWrapped(false)}
-                stats={{ topTrack: topTracks[0], topArtist: topArtists[0], ...stats }}
-             />
-         )}
-      </AnimatePresence>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        
-        {/* Header Area */}
-        <div className="flex flex-col gap-4 mb-8">
-            <h2 className="text-4xl font-black text-white tracking-tighter">Your Stats</h2>
-            
-            {/* The Retrograde Trigger Button */}
-            <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setShowWrapped(true)}
-                className="w-full bg-[#FF2E2E] text-white p-6 rounded-2xl relative overflow-hidden group shadow-lg"
-            >
-                {/* Decorative BG Waves for button */}
-                <div className="absolute bottom-[-20px] left-0 w-full opacity-30 group-hover:opacity-50 transition-opacity">
-                    <svg viewBox="0 0 1440 320" className="w-full h-24 text-black fill-current">
-                         <path d="M0,160 C320,300,420,0,740,160 C1060,320,1160,0,1480,160 L1480,320 L0,320 Z" />
-                    </svg>
-                </div>
-                
-                <div className="relative z-10 flex items-center justify-between">
-                    <div>
-                        <div className="text-xl font-black uppercase tracking-widest mb-1">Play</div>
-                        <div className="text-3xl font-black font-serif">RETROGRADE '26</div>
-                    </div>
-                    <div className="bg-black/20 p-3 rounded-full">
-                        <Play fill="white" size={32} />
-                    </div>
-                </div>
-            </motion.button>
-        </div>
-
-        {/* Standard List Stats (Keeping dark mode for the list view) */}
-        <div className="space-y-8">
-             {/* Totals */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-                    <div className="text-[#FF2E2E] text-2xl font-black">{stats.totalPlays}</div>
-                    <div className="text-zinc-500 text-xs font-bold uppercase">Plays</div>
-                </div>
-                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-                    <div className="text-[#FF2E2E] text-2xl font-black">{Math.floor(stats.totalTime / 60)}</div>
-                    <div className="text-zinc-500 text-xs font-bold uppercase">Minutes</div>
-                </div>
-            </div>
-
-            {/* Top Songs List */}
-            <div>
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                   <Music size={20} className="text-[#FF2E2E]" /> Top Songs
-                </h3>
-                <div className="space-y-3">
-                    {topTracks.map((track, i) => (
-                        <div key={track.id} onClick={() => playTrack(track.id)} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
-                            <span className="font-mono text-[#FF2E2E] font-bold w-6 text-center">{i + 1}</span>
-                            <img src={track.coverArt} className="w-12 h-12 rounded bg-zinc-800 object-cover" />
-                            <div className="flex-1 min-w-0">
-                                <div className="text-white font-bold truncate">{track.title}</div>
-                                <div className="text-zinc-500 text-sm truncate">{track.artist}</div>
-                            </div>
-                            <span className="text-xs font-bold bg-zinc-800 text-zinc-400 px-2 py-1 rounded">{track.playCount}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-
-      </motion.div>
-    </div>
-  );
-};
-
-export default Stats;
+  const [topTracks,
