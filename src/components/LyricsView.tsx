@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { fetchLyrics } from '../utils/lyrics';
 import { Track, Lyrics } from '../types';
-import { Loader2, Music2 } from 'lucide-react';
+import { Loader2, Music2, RefreshCw } from 'lucide-react';
 
 interface LyricsViewProps {
   track: Track;
@@ -62,6 +62,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
     load();
     return () => { mounted = false; };
   }, [track.id, track.title, track.artist]); // Re-run if track changes
+
+  const handleReload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const data = await fetchLyrics(track, true);
+      setLyrics(data);
+      if (onTrackUpdate && !data.error) {
+        onTrackUpdate({ ...track, lyrics: data });
+      }
+    } catch (error) {
+      console.error("Failed to reload lyrics:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Sync Active Line
   useEffect(() => {
@@ -225,6 +241,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
         exit={{ opacity: 0 }}
         className="absolute inset-0 z-20 flex flex-col bg-black/40 backdrop-blur-xl rounded-2xl overflow-hidden"
     >
+      <div className="absolute top-4 right-4 z-50">
+        <button
+           onClick={handleReload}
+           className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+           title="Reload Lyrics"
+         >
+           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+         </button>
+      </div>
       {renderContent()}
     </motion.div>
   );
