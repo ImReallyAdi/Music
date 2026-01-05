@@ -24,13 +24,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
           animate={{ y: 0 }}
           exit={{ y: 100 }}
           transition={{ type: 'spring', damping: 28, stiffness: 300, mass: 0.8 }}
-          className="fixed bottom-0 w-full z-40 h-[92px] pb-safe"
+          className="fixed bottom-0 w-full z-40 h-[calc(60px+env(safe-area-inset-bottom))] pb-safe"
         >
           {/* Blur Background Layer */}
           <div className="absolute inset-0 bg-[#09090b]/80 backdrop-blur-[32px] saturate-[180%] border-t border-white/5" />
 
           {/* Nav Items */}
-          <div className="relative flex justify-around items-center h-full px-2">
+          <div className="relative flex justify-around items-center h-[60px] px-2">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               const Icon = tab.icon;
@@ -39,10 +39,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="relative flex-1 h-full flex flex-col items-center justify-center gap-1.5 group cursor-pointer"
+                  className="relative flex-1 h-full flex flex-col items-center justify-center gap-1 group cursor-pointer active:scale-95 active:opacity-80 transition-all duration-200"
                 >
                   {/* Pill Indicator */}
-                  <div className="relative h-9 w-[64px] flex items-center justify-center">
+                  <div className="relative h-8 w-[56px] flex items-center justify-center">
                     {isActive && (
                       <motion.div 
                         layoutId="nav-pill"
@@ -51,7 +51,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
                       />
                     )}
                     <Icon
-                      size={24}
+                      size={22}
                       strokeWidth={isActive ? 2.5 : 2}
                       className={`relative z-10 transition-colors duration-200 ${isActive ? 'text-on-primary' : 'text-zinc-500 group-hover:text-zinc-300'}`}
                     />
@@ -59,7 +59,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
                   
                   {/* Label */}
                   <span
-                    className={`text-[11px] font-bold tracking-tight transition-colors duration-200 ${
+                    className={`text-[10px] font-bold tracking-tight transition-colors duration-200 ${
                       isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'
                     }`}
                   >
