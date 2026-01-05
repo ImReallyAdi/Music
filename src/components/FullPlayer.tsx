@@ -428,7 +428,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 </button>
 
                 <div className="flex items-center gap-6">
-                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform" style={{ color: secondaryColor }}>
+                  <button onClick={prevTrack} className="hover:scale-110 active:scale-95 transition-transform" style={{ color: secondaryColor }}>
                     <SkipBack size={32} fill="currentColor" />
                   </button>
                   
@@ -437,7 +437,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     whileTap={{ scale: 0.9 }}
                     animate={{ scale: beat ? 1.05 : 1 }}
                     style={{ backgroundColor: primaryColor, color: backgroundColor }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors"
+                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors active:scale-90"
                   >
                     {playerState.isPlaying ? 
                       <Pause size={36} fill="currentColor" /> :
@@ -445,7 +445,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     }
                   </motion.button>
                   
-                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform" style={{ color: secondaryColor }}>
+                  <button onClick={nextTrack} className="hover:scale-110 active:scale-95 transition-transform" style={{ color: secondaryColor }}>
                     <SkipForward size={32} fill="currentColor" />
                   </button>
                 </div>

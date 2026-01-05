@@ -50,7 +50,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       className="fixed bottom-[calc(92px+env(safe-area-inset-bottom))] left-3 right-3 md:left-auto md:right-6 md:w-[420px]
                  h-[76px] bg-[#1c1c1e]/80 backdrop-blur-[32px] saturate-[180%] rounded-[24px]
                  flex items-center pl-3 pr-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-[500] cursor-pointer
-                 border border-white/10 overflow-hidden group hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] transition-shadow"
+                 border border-white/10 overflow-hidden group hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] transition-shadow active:scale-95"
       layoutId="mini-player"
     >
       {/* Subtle Progress Bar at Bottom */}

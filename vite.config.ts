@@ -18,19 +18,25 @@ export default defineConfig(({ mode }) => {
           manifest: {
             name: 'Adi Music',
             short_name: 'Music',
+            description: 'A premium music player for your personal library.',
             theme_color: '#000000',
             background_color: '#000000',
             display: 'standalone',
+            orientation: 'portrait',
+            start_url: '/',
+            scope: '/',
             icons: [
               {
-                src: 'IMG_0296.png', // Ensure this matches your file in /public
+                src: 'IMG_0296.png',
                 sizes: '192x192',
-                type: 'image/png'
+                type: 'image/png',
+                purpose: 'any maskable'
               },
               {
                 src: 'IMG_0296.png',
                 sizes: '512x512',
-                type: 'image/png'
+                type: 'image/png',
+                purpose: 'any maskable'
               }
             ]
           }

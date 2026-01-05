@@ -169,7 +169,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               whileTap={{ scale: 0.95 }}
               onClick={handleShufflePlay}
               disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition-colors flex items-center gap-3 text-lg"
+              className="h-14 px-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition-colors flex items-center gap-3 text-lg active:scale-95"
             >
               <Shuffle className="w-6 h-6" />
               <span>Shuffle</span>
@@ -180,7 +180,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               whileTap={{ scale: 0.95 }}
               onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
               disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-10 rounded-full bg-white text-black font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] transition-all flex items-center gap-3 text-lg disabled:opacity-50"
+              className="h-14 px-10 rounded-full bg-white text-black font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] transition-all flex items-center gap-3 text-lg disabled:opacity-50 active:scale-95"
             >
               <Play className="w-6 h-6 fill-current" />
               <span>Play</span>

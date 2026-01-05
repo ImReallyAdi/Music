@@ -61,6 +61,9 @@ const Search: React.FC<SearchProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="Find your frequency..."
             className="flex-1 bg-transparent text-body-large text-surface-on placeholder:text-surface-on-variant/50 outline-none"
+            enterKeyHint="search"
+            autoCorrect="off"
+            autoCapitalize="off"
           />
           <AnimatePresence>
             {searchQuery && (
