@@ -1,5 +1,5 @@
 import { Track, Lyrics, LyricLine, LyricWord } from '../types';
-import { dbService } from '../db'; // Assuming this exists in your project
+import { dbService } from '../db';
 
 // --- HELPERS ---
 
@@ -176,34 +176,78 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
     if (track.lyrics.isWordSynced) return track.lyrics;
     if (!wordSyncEnabled) return track.lyrics;
     // If here: we have non-word-synced lyrics, and user wants word-synced.
-    // We proceed to see if we can enhance them.
+    // We proceed to see if we can enhance them or find better ones.
   }
 
   let bestResult: Lyrics = { lines: [], synced: false, error: true };
   let rawData: { synced?: string; plain?: string } | null = null;
 
   // 3. Strategy A: LRCLIB (Best Free Source)
-  try {
-    const url = new URL('https://lrclib.net/api/get');
-    url.searchParams.append('artist_name', track.artist);
-    url.searchParams.append('track_name', track.title);
-    url.searchParams.append('album_name', track.album || '');
-    url.searchParams.append('duration', track.duration.toString());
+  // New: If word sync is enabled, first try to search specifically for word-synced lyrics
+  if (wordSyncEnabled) {
+    try {
+      const searchUrl = new URL('https://lrclib.net/api/search');
+      searchUrl.searchParams.append('q', `${track.artist} ${track.title}`);
+      
+      const res = await fetch(searchUrl.toString());
+      if (res.ok) {
+        const searchData = await res.json();
+        if (Array.isArray(searchData)) {
+           // Filter candidates: must match duration within 5 seconds
+           const candidates = searchData.filter((item: any) => 
+             Math.abs(item.duration - track.duration) < 5
+           );
 
-    const res = await fetch(url.toString());
-    if (res.ok) {
-      const data = await res.json();
-      if (data.syncedLyrics) {
-        const parsed = parseLrc(data.syncedLyrics);
-        bestResult = { ...parsed, plain: data.plainLyrics };
-        rawData = { synced: data.syncedLyrics, plain: data.plainLyrics };
-      } else if (data.plainLyrics) {
-        bestResult = { lines: [], synced: false, plain: data.plainLyrics, error: false };
-        rawData = { plain: data.plainLyrics };
+           // Prioritize: Find first candidate with word-level timestamps (A-LRC format)
+           const wordSyncedItem = candidates.find((item: any) => 
+             item.syncedLyrics && /<\d{2}:\d{2}\.\d{2,3}>/.test(item.syncedLyrics)
+           );
+
+           if (wordSyncedItem) {
+             const parsed = parseLrc(wordSyncedItem.syncedLyrics);
+             if (parsed.isWordSynced) {
+               // Found a word-synced version!
+               bestResult = { ...parsed, plain: wordSyncedItem.plainLyrics };
+               rawData = { synced: wordSyncedItem.syncedLyrics, plain: wordSyncedItem.plainLyrics };
+             }
+           }
+        }
       }
+    } catch (e) {
+      console.warn('LRCLIB Search failed', e);
     }
-  } catch (e) {
-    console.warn('LRCLIB fetch failed', e);
+  }
+
+  // If search didn't yield a word-synced result (or wasn't performed), try the standard /get endpoint
+  if (!bestResult.isWordSynced) {
+    try {
+      const url = new URL('https://lrclib.net/api/get');
+      url.searchParams.append('artist_name', track.artist);
+      url.searchParams.append('track_name', track.title);
+      url.searchParams.append('album_name', track.album || '');
+      url.searchParams.append('duration', track.duration.toString());
+
+      const res = await fetch(url.toString());
+      if (res.ok) {
+        const data = await res.json();
+        // Only override if we don't have a valid result yet
+        if (data.syncedLyrics) {
+          const parsed = parseLrc(data.syncedLyrics);
+           // If we somehow found word synced here, great. If not, we take line synced.
+           // Note: if our search step failed to find word sync, this probably returns line sync.
+           // But we should take it as it's the "best match" found by the API.
+           if (!bestResult.synced || parsed.isWordSynced) {
+             bestResult = { ...parsed, plain: data.plainLyrics };
+             rawData = { synced: data.syncedLyrics, plain: data.plainLyrics };
+           }
+        } else if (data.plainLyrics && !bestResult.synced) {
+          bestResult = { lines: [], synced: false, plain: data.plainLyrics, error: false };
+          rawData = { plain: data.plainLyrics };
+        }
+      }
+    } catch (e) {
+      console.warn('LRCLIB fetch failed', e);
+    }
   }
 
   // 4. Strategy B: Popcat (Fallback for plain text)
@@ -221,7 +265,7 @@ export const fetchLyrics = async (track: Track): Promise<Lyrics> => {
   }
 
   // 5. Strategy C: Gemini Enhancement (The "Magic" Step)
-  // If we have content, but no word-sync, and the user wants it...
+  // If we have content, but no word-sync, and the user wants it, and has a key...
   if (wordSyncEnabled && geminiApiKey && rawData && !bestResult.isWordSynced) {
     const enhanced = await getGeminiLyrics(track, geminiApiKey, rawData);
     if (enhanced) {
