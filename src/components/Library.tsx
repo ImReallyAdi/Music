@@ -229,22 +229,14 @@ const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
 
 const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState, setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>> }) => {
     const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
-    const [geminiKey, setGeminiKey] = useState('');
 
     useEffect(() => {
         dbService.getSetting<boolean>('wordSyncEnabled').then(val => setWordSyncEnabled(val || false));
-        dbService.getSetting<string>('geminiApiKey').then(val => setGeminiKey(val || ''));
     }, []);
 
     const handleWordSyncToggle = (enabled: boolean) => {
         setWordSyncEnabled(enabled);
         dbService.setSetting('wordSyncEnabled', enabled);
-    };
-
-    const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setGeminiKey(val);
-        dbService.setSetting('geminiApiKey', val);
     };
 
     return (
@@ -319,30 +311,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                 <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
                      <ToggleRow
                         label="Word-by-word Lyrics"
-                        subLabel="Use AI to generate synced lyrics (Requires Gemini API Key)"
+                        subLabel="Automatically estimate word timings for Karaoke mode"
                         checked={wordSyncEnabled}
                         onChange={handleWordSyncToggle}
-                    >
-                        <div className="flex flex-col gap-2 pt-1">
-                            <div className="flex items-center gap-2 text-xs font-medium text-on-surface/80">
-                                <Sparkles className="w-3 h-3 text-primary" />
-                                <span>Gemini API Key</span>
-                            </div>
-                            <div className="relative">
-                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface/40" />
-                                <input 
-                                    type="password"
-                                    value={geminiKey}
-                                    onChange={handleKeyChange}
-                                    placeholder="Enter your API Key"
-                                    className="w-full h-10 pl-10 pr-4 bg-surface-variant/50 rounded-xl text-sm text-on-surface placeholder:text-on-surface/30 border border-transparent focus:border-primary/50 focus:bg-surface-variant outline-none transition-all"
-                                />
-                            </div>
-                             <p className="text-[10px] text-on-surface/40 leading-relaxed">
-                                Your key is stored locally on your device and never sent to our servers.
-                            </p>
-                        </div>
-                    </ToggleRow>
+                    />
                 </div>
             </section>
 

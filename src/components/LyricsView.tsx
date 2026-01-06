@@ -65,11 +65,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
     return () => { mounted = false; };
   }, [track.id, track.title, track.artist]); // Re-run if track changes
 
-  const handleSyncWithAI = async (e: React.MouseEvent) => {
+  const handleGenerateWordSync = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setLoading(true);
     try {
-      // Force refresh AND force AI sync
+      // Force refresh AND force Word Sync generation
       const data = await fetchLyrics(track, true, true);
       setLyrics(data);
       if (onTrackUpdate && !data.error) {
@@ -77,13 +77,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
       }
 
       if (data.isWordSynced) {
-        addToast("Lyrics synced with AI!", "success");
+        addToast("Lyrics enhanced!", "success");
       } else {
-        addToast("AI Sync failed. Check API Key or try again.", "error");
+        addToast("Enhancement failed. Try again.", "error");
       }
     } catch (error) {
-      console.error("Failed to sync lyrics with AI:", error);
-      addToast("Failed to sync lyrics", "error");
+      console.error("Failed to enhance lyrics:", error);
+      addToast("Failed to enhance lyrics", "error");
     } finally {
       setLoading(false);
     }
@@ -269,9 +269,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
     >
       <div className="absolute top-4 right-4 z-50">
         <button
-           onClick={handleSyncWithAI}
+           onClick={handleGenerateWordSync}
            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
-           title="Sync with AI"
+           title="Estimate Word Timing"
          >
            <Sparkles size={16} className={loading ? 'animate-pulse text-purple-400' : ''} />
          </button>

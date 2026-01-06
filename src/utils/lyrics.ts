@@ -21,21 +21,6 @@ const parseTime = (timeStr: string): number | null => {
   return min * 60 + sec + ms;
 };
 
-/**
- * Extracts JSON from AI strings, handling markdown blocks or raw text.
- */
-const extractJSON = (text: string): any | null => {
-  try {
-    // Finds { ... } or [ ... ]
-    const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) {
-    console.error("JSON Extraction failed", e);
-    return null;
-  }
-};
-
 // --- PARSER ---
 
 export const parseLrc = (lrc: string): Lyrics => {
@@ -58,49 +43,51 @@ export const parseLrc = (lrc: string): Lyrics => {
     
     // Parse Word Tags <mm:ss.xx> (Enhanced LRC format)
     const parts = content.split(/(<\d{1,2}:\d{2}(?:[\.\:]\d{1,3})?>)/);
+    const hasTags = parts.length > 1;
     const words: LyricWord[] = [];
     let currentTime = lineTime;
 
-    parts.forEach((part) => {
-      if (!part) return;
+    if (hasTags) {
+      parts.forEach((part) => {
+        if (!part) return;
 
-      if (part.startsWith('<') && part.endsWith('>')) {
-        const t = parseTime(part.slice(1, -1));
-        if (t !== null) currentTime = t;
-        return;
-      }
-
-      const text = part.trim();
-      if (text) {
-        words.push({ time: currentTime, text, endTime: 0 }); // Init endTime
-      }
-    });
-
-    // Fix: Ensure every word has an endTime
-    for (let i = 0; i < words.length; i++) {
-      if (i < words.length - 1) {
-        words[i].endTime = words[i + 1].time;
-      } else {
-        // Last word logic: Try to find start of next line, otherwise guess +0.5s
-        // (This prevents the last word from highlighting forever)
-        let nextLineTime = lineTime + 5; // Fallback
-        
-        // Peek ahead to find the next valid line time
-        for(let j = index + 1; j < rawLines.length; j++) {
-             const nextMatch = rawLines[j].trim().match(lineRegex);
-             if(nextMatch) {
-                 const t = parseTime(nextMatch[1]);
-                 if(t !== null) {
-                     nextLineTime = t;
-                     break;
-                 }
-             }
+        if (part.startsWith('<') && part.endsWith('>')) {
+          const t = parseTime(part.slice(1, -1));
+          if (t !== null) currentTime = t;
+          return;
         }
-        words[i].endTime = Math.min(words[i].time + 1.5, nextLineTime);
+
+        const text = part.trim();
+        if (text) {
+          words.push({ time: currentTime, text, endTime: 0 }); // Init endTime
+        }
+      });
+
+      // Fix: Ensure every word has an endTime
+      for (let i = 0; i < words.length; i++) {
+        if (i < words.length - 1) {
+          words[i].endTime = words[i + 1].time;
+        } else {
+          // Last word logic: Try to find start of next line, otherwise guess +0.5s
+          let nextLineTime = lineTime + 5; // Fallback
+
+          // Peek ahead to find the next valid line time
+          for(let j = index + 1; j < rawLines.length; j++) {
+               const nextMatch = rawLines[j].trim().match(lineRegex);
+               if(nextMatch) {
+                   const t = parseTime(nextMatch[1]);
+                   if(t !== null) {
+                       nextLineTime = t;
+                       break;
+                   }
+               }
+          }
+          words[i].endTime = Math.min(words[i].time + 1.5, nextLineTime);
+        }
       }
     }
 
-    if (words.length > 0) {
+    if (hasTags && words.length > 0) {
       lines.push({
         time: lineTime,
         text: words.map((w) => w.text).join(' '), // Reconstruct clean text from words
@@ -120,187 +107,124 @@ export const parseLrc = (lrc: string): Lyrics => {
   };
 };
 
-// --- GEMINI ENHANCER ---
+// --- DETERMINISTIC WORD TIMING GENERATOR (OFFLINE SAFE) ---
 
-const lyricsSchema = {
-  type: "OBJECT",
-  properties: {
-    karaokeLines: {
-      type: "ARRAY",
-      items: {
-        type: "OBJECT",
-        properties: {
-          text: { type: "STRING" },
-          time: { type: "NUMBER" },
-          words: {
-            type: "ARRAY",
-            items: {
-              type: "OBJECT",
-              properties: {
-                text: { type: "STRING" },
-                start: { type: "NUMBER" },
-                end: { type: "NUMBER" }
-              },
-              required: ["text", "start", "end"]
-            }
-          }
-        },
-        required: ["text", "time", "words"]
-      }
+const generateWordTiming = (lines: LyricLine[], durationTotal?: number): LyricLine[] => {
+  return lines.map((line, i) => {
+    // If words are already synced (Enhanced LRC), preserve them
+    if (line.words && line.words.length > 0) {
+      return line;
     }
-  },
-  required: ["karaokeLines"]
-};
 
-const getGeminiLyrics = async (
-  track: Track,
-  apiKey: string,
-  context: { synced?: string; plain?: string }
-): Promise<Lyrics | null> => {
-  // Prefer synced lyrics to provide timing anchors for the AI
-  // Only use plain text if synced is unavailable.
-  const hasSynced = !!context.synced;
-  let cleanInput = (context.synced || context.plain || '').trim();
+    // Determine end time of the line
+    let endTime = 0;
+    if (i < lines.length - 1) {
+      endTime = lines[i + 1].time;
+    } else {
+      // Last line: default to line start + 5s or total duration if available
+      endTime = durationTotal ? Math.min(line.time + 5, durationTotal) : line.time + 5;
+    }
 
-  // If we only have plain text, strip any potential stray tags.
-  // If we have synced text, KEEP the tags so AI knows the timing.
-  if (!hasSynced) {
-    cleanInput = cleanInput
-      .replace(/[\[<]\d{1,2}:\d{2}(?:\.\d{1,3})?[\]>]/g, '')
-      .trim();
-  }
+    const duration = Math.max(0.5, endTime - line.time);
 
-  // Updated Prompt: Ask for a NESTED structure (Lines -> Words)
-  const prompt = `
-  System: You are a karaoke engine.
-  Task: Align the lyrics word-by-word.
-  
-  Instructions:
-  1. The "input_text" is the reference. Do not add or remove lines.
-  2. The input ${hasSynced ? 'contains [mm:ss.xx] timestamps. Use them as the START time for each line. Estimate word timings within the line.' : 'is plain text. Estimate timings based on the song structure.'}
-  3. "start" and "end" must be in seconds (number).
-  4. Ensure "text" in the output matches the input.
-  
-  Song: "${track.title}"
-  Duration: ${track.duration}s
-  Input Text:
-  ${cleanInput}
-  `;
+    // Split text into words, preserving content
+    const rawWords = line.text.trim().split(/\s+/);
+    if (rawWords.length === 0 || (rawWords.length === 1 && rawWords[0] === '')) {
+      return line;
+    }
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { 
-            temperature: 0.2, 
-            responseMimeType: 'application/json',
-            responseSchema: lyricsSchema
-          },
-        }),
-      }
-    );
+    const wordCount = rawWords.length;
+    const timePerWord = duration / wordCount;
 
-    const data = await res.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return null;
-
-    const parsed = extractJSON(rawText);
-
-    // Validate structure
-    if (parsed && Array.isArray(parsed.karaokeLines)) {
-      const lines: LyricLine[] = parsed.karaokeLines.map((line: any) => ({
-        time: line.time || line.words?.[0]?.start || 0,
-        text: line.text,
-        words: line.words.map((w: any) => ({
-          text: w.text,
-          time: w.start,
-          endTime: w.end
-        }))
-      }));
-
-      // Double check that we actually got words
-      const hasWords = lines.some(l => l.words && l.words.length > 0);
-
-      return { 
-        lines, 
-        synced: true, 
-        isWordSynced: hasWords,
-        error: false 
+    const words: LyricWord[] = rawWords.map((text, wIdx) => {
+      const start = line.time + (wIdx * timePerWord);
+      const end = start + timePerWord;
+      return {
+        text,
+        time: start,
+        endTime: end
       };
-    }
-    
-    return null;
-  } catch (e) {
-    console.error('Gemini Sync failed:', e);
-    return null;
-  }
+    });
+
+    return {
+      ...line,
+      words
+    };
+  });
 };
 
 // --- MAIN FETCH STRATEGY ---
 
-export const fetchLyrics = async (track: Track, force = false, forceAISync = false): Promise<Lyrics> => {
+export const fetchLyrics = async (track: Track, force = false, forceResync = false): Promise<Lyrics> => {
   const wordSyncEnabled = await dbService.getSetting<boolean>('wordSyncEnabled');
-  const geminiApiKey = await dbService.getSetting<string>('geminiApiKey');
 
-  // Decide if we should try AI sync (if enabled or forced, AND key is present)
-  const shouldTryAISync = (wordSyncEnabled || forceAISync) && !!geminiApiKey;
+  // Decide if we should generate word timings
+  const shouldGenerateWordTiming = wordSyncEnabled || forceResync;
 
   // Return cache if valid
   // If force is true, we bypass cache.
+  // If forceResync is true, we might need to re-process the cached lyrics if they aren't word-synced.
   if (!force && track.lyrics && !track.lyrics.error) {
-    // If we want AI sync but don't have it, don't return cache
-    // Otherwise return cache
-    if (track.lyrics.isWordSynced || !shouldTryAISync) return track.lyrics;
+    // If we want word sync, but the cache doesn't have it, we should proceed to generation
+    // unless force is false and we rely on the cache.
+    // However, if we have cache, we can just upgrade it in-place without fetching LRCLIB again.
+    if (track.lyrics.isWordSynced || !shouldGenerateWordTiming) {
+      return track.lyrics;
+    }
+    // If we have cached lyrics but they are not word synced and we want them to be,
+    // we can skip the network fetch and go straight to generation using the cache.
+    // But we need to make sure we don't skip the "Best Result" logic below.
   }
 
   let bestResult: Lyrics = { lines: [], synced: false, error: true };
-  let rawData: { synced?: string; plain?: string } | null = null;
 
-  // 1. Try LRCLIB
-  try {
-    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(track.artist)}&track_name=${encodeURIComponent(track.title)}&duration=${track.duration}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.syncedLyrics) {
-        bestResult = parseLrc(data.syncedLyrics);
-        rawData = { synced: data.syncedLyrics, plain: data.plainLyrics };
-      } else if (data.plainLyrics) {
-        bestResult = { lines: [], synced: false, plain: data.plainLyrics, error: false };
-        rawData = { plain: data.plainLyrics };
+  // 1. Try LRCLIB (only if force is true or we don't have good cached lyrics to work with)
+  let fetchedNewLyrics = false;
+  if (force || !track.lyrics || track.lyrics.error) {
+    try {
+      const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(track.artist)}&track_name=${encodeURIComponent(track.title)}&duration=${track.duration}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.syncedLyrics) {
+          bestResult = parseLrc(data.syncedLyrics);
+          fetchedNewLyrics = true;
+        } else if (data.plainLyrics) {
+          bestResult = { lines: [], synced: false, plain: data.plainLyrics, error: false };
+          fetchedNewLyrics = true;
+        }
       }
+    } catch (e) {
+      console.warn('LRCLIB failed', e);
     }
-  } catch (e) {
-    console.warn('LRCLIB failed', e);
   }
 
-  // FALLBACK: If LRCLIB failed (or returned no lyrics) but we have cached lyrics, use them as base
-  // This is crucial for "Sync with AI" on existing lyrics when LRCLIB is down or fails
-  if ((!rawData || (!rawData.synced && !rawData.plain)) && track.lyrics && !track.lyrics.error) {
-     console.log("LRCLIB failed or empty, falling back to cached lyrics for AI sync base.");
+  // FALLBACK: Use cached lyrics as base if LRCLIB failed or we didn't fetch
+  if (!fetchedNewLyrics && track.lyrics && !track.lyrics.error) {
      bestResult = track.lyrics;
-
-     // We need to reconstruct rawData for the AI
-     // Preference: plain text from lines, or the plain field if available
-     const plainText = track.lyrics.plain || track.lyrics.lines.map(l => l.text).join('\n');
-     rawData = { plain: plainText };
   }
 
-  // 2. Gemini Enhancement if word sync is missing
-  // If forceAISync is true, we attempt it even if bestResult thinks it is word synced?
-  // Usually we only need to enhance if NOT word synced.
-  // But if the user clicks "Sync with AI", maybe the current word sync is bad or they want to re-run it.
-  // So we allow re-running if forceAISync is set.
-  if (shouldTryAISync && rawData && (!bestResult.isWordSynced || forceAISync)) {
-    console.log("Enhancing lyrics with Gemini...");
-    const enhanced = await getGeminiLyrics(track, geminiApiKey, rawData);
-    if (enhanced) {
-      bestResult = { ...enhanced, plain: rawData.plain || rawData.synced };
-    }
+  // 2. Deterministic Word Timing Generation
+  // Apply if enabled/forced AND the lyrics are synced (have lines) BUT not yet word-synced
+  if (shouldGenerateWordTiming && bestResult.synced && !bestResult.isWordSynced) {
+    console.log("Generating deterministic word timings...");
+    const enhancedLines = generateWordTiming(bestResult.lines, track.duration);
+    bestResult = {
+      ...bestResult,
+      lines: enhancedLines,
+      isWordSynced: true
+    };
+  } else if (forceResync && bestResult.synced) {
+     // Even if it says isWordSynced, forceResync might mean "regenerate" (e.g. if previous was bad)
+     // But wait, if it was Enhanced LRC from source, we shouldn't overwrite it with dumb generation?
+     // generateWordTiming checks `if (line.words...) return line;` so it preserves Enhanced LRC.
+     // So calling it again is safe.
+     const enhancedLines = generateWordTiming(bestResult.lines, track.duration);
+     bestResult = {
+        ...bestResult,
+        lines: enhancedLines,
+        isWordSynced: true
+     };
   }
 
   if (!bestResult.error) {
