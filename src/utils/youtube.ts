@@ -51,3 +51,8 @@ export async function searchYouTube(query: string): Promise<YouTubeTrack[]> {
 export function formatYouTubeArtwork(url: string): string {
     return url;
 }
+
+export function extractVideoId(url: string): string | null {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*).*/);
+    return match ? match[1] : null;
+}
