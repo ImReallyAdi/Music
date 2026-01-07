@@ -750,7 +750,8 @@ export const useAudioPlayer = (
     toggleShuffle,
     setAudioElement,
     setCrossfadeAudioElement,
-    setWebPlayer, 
+    setWebPlayer,
+    webPlayer,
     webMuted, // <--- EXPORTED STATE FOR REACTPLAYER
     onWebProgress,
     onWebDuration,
