@@ -428,7 +428,7 @@ function MusicApp() {
         ref={(p) => {
           if (p) setWebPlayer(p);
         }}
-        url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" // STABLE URL - Valid ID required for init
+        url="https://www.youtube.com/watch?v=" // STABLE URL - Valid ID required for init
         playing={player.isPlaying}
         muted={webMuted}
         playsinline
