@@ -23,6 +23,9 @@ import { ToastProvider, useToast } from './components/Toast';
 
 type LibraryTab = 'Songs' | 'Albums' | 'Artists' | 'Playlists';
 
+// Short, static video for initialization (Me at the zoo)
+const WARMUP_VIDEO_URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
+
 function MusicApp() {
   const metadata = useMetadata();
   const { addToast } = useToast();
@@ -93,7 +96,9 @@ function MusicApp() {
     setWebPlayer, // NEW
     onWebProgress, // NEW
     onWebDuration, // NEW
-    onWebEnded // NEW
+    onWebEnded, // NEW
+    onWebPlay, // NEW
+    onWebPause // NEW
   } = useAudioPlayer(library.tracks, updateMediaSession);
 
   const [audioElementNode, setAudioElementNode] = useState<HTMLAudioElement | null>(null);
@@ -346,6 +351,8 @@ function MusicApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, handleSeek, currentTime, player.volume, setVolume]);
 
+  const isYouTubeActive = currentTrack?.source === 'youtube';
+
   return (
     <>
       <audio 
@@ -376,34 +383,39 @@ function MusicApp() {
       />
 
       {/* WEB PLAYER: YouTube */}
-      {currentTrack?.source === 'youtube' && (
-          // Avoid display:none to prevent browser throttling/pausing
-          <div className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none">
-             <ReactPlayer
-                ref={setWebPlayer as any}
-                url={currentTrack.externalUrl}
-                playing={player.isPlaying}
-                volume={player.volume}
-                onProgress={onWebProgress as any}
-                onDuration={onWebDuration}
-                onEnded={onWebEnded}
-                config={{
-                    youtube: {
-                        playerVars: {
-                            controls: 0,
-                            disablekb: 1,
-                            fs: 0,
-                            iv_load_policy: 3,
-                            modestbranding: 1,
-                            playsinline: 1,
-                            rel: 0,
-                            showinfo: 0
-                        }
+      {/* 
+        Always render ReactPlayer with a warmup URL to ensure the iframe is initialized and ready.
+        This allows `useAudioPlayer` to make imperative `loadVideoById` calls synchronously during user gestures.
+      */}
+      <div className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none">
+          <ReactPlayer
+            ref={setWebPlayer as any}
+            url={isYouTubeActive ? currentTrack.externalUrl : WARMUP_VIDEO_URL}
+            playing={player.isPlaying && isYouTubeActive}
+            muted={!isYouTubeActive} // Mute when warming up or not active
+            volume={player.volume}
+            onProgress={onWebProgress as any}
+            onDuration={onWebDuration}
+            onEnded={onWebEnded}
+            onPlay={onWebPlay}
+            onPause={onWebPause}
+            config={{
+                youtube: {
+                    playerVars: {
+                        controls: 0,
+                        disablekb: 1,
+                        fs: 0,
+                        iv_load_policy: 3,
+                        modestbranding: 1,
+                        playsinline: 1,
+                        rel: 0,
+                        showinfo: 0,
+                        origin: window.location.origin
                     }
-                } as any}
-             />
-          </div>
-      )}
+                } as any
+            }}
+          />
+      </div>
 
       <Layout 
         activeTab={activeTab} 
