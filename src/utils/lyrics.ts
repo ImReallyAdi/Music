@@ -109,6 +109,37 @@ export const parseLrc = (lrc: string): Lyrics => {
 
 // --- DETERMINISTIC WORD TIMING GENERATOR (OFFLINE SAFE) ---
 
+const COUNT_VOWELS_REGEX = /[aeiouy]+/gi;
+const COMMON_FILLERS = new Set([
+  'a', 'an', 'the', 'and', 'but', 'or', 'nor',
+  'at', 'by', 'for', 'from', 'in', 'into', 'of', 'off', 'on', 'onto', 'out', 'over', 'to', 'up', 'with',
+  'it', 'is', 'was', 'are', 'am', 'be',
+  'oh', 'uh', 'ah', 'hm', 'hmm'
+]);
+
+const countSyllables = (word: string): number => {
+  const stripped = word.replace(/[^a-zA-Z]/g, '');
+  if (!stripped) return 1;
+  const matches = stripped.match(COUNT_VOWELS_REGEX);
+  return matches ? matches.length : 1;
+};
+
+const getWordWeight = (word: string): number => {
+  const lower = word.toLowerCase().replace(/[^a-z]/g, '');
+  let weight = countSyllables(word);
+
+  // Bonus for length (complex words)
+  if (word.length >= 6) weight *= 1.3;
+
+  // Penalty for fillers
+  if (COMMON_FILLERS.has(lower)) weight *= 0.6;
+
+  // Bonus for punctuation (held notes)
+  if (/[\.,\!\?]$/.test(word)) weight *= 1.3;
+
+  return Math.max(0.5, weight);
+};
+
 export const generateWordTiming = (lines: LyricLine[], durationTotal?: number): LyricLine[] => {
   return lines.map((line, i) => {
     // If words are already synced (Enhanced LRC), preserve them
@@ -117,80 +148,55 @@ export const generateWordTiming = (lines: LyricLine[], durationTotal?: number): 
     }
 
     // Determine end time of the line (Next line start)
-    let endTime = 0;
+    let lineEndTime = 0;
     if (i < lines.length - 1) {
-      endTime = lines[i + 1].time;
+      lineEndTime = lines[i + 1].time;
     } else {
       // Last line: default to line start + 5s or total duration if available
-      endTime = durationTotal ? Math.min(line.time + 5, durationTotal) : line.time + 5;
+      lineEndTime = durationTotal ? Math.min(line.time + 5, durationTotal) : line.time + 5;
     }
 
-    // Ensure strictly positive duration, slightly reduced min to allow for fast lines
-    const lineDuration = Math.max(0.2, endTime - line.time);
+    // Ensure strictly positive duration
+    const lineDuration = Math.max(0.1, lineEndTime - line.time);
 
     // Split text into words, preserving content
     const rawWords = line.text.trim().split(/\s+/);
     if (rawWords.length === 0 || (rawWords.length === 1 && rawWords[0] === '')) {
-      return line;
+      return { ...line, words: [] };
     }
 
-    const wordCount = rawWords.length;
+    // Calculate weights
+    const weights = rawWords.map(getWordWeight);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
-    // --- 3. Insert micro gaps ---
-    // Rule: GAP = 0.03–0.05 seconds
-    const GAP = 0.04;
+    let currentTime = line.time;
+    const words: LyricWord[] = [];
+    const OVERLAP = 0.15; // 150ms overlap for smoothness
 
-    // Safety: Don't let gaps consume more than 50% of the line
-    let actualGap = GAP;
-    const totalGapNeeded = (wordCount - 1) * GAP;
-    if (totalGapNeeded > lineDuration * 0.5) {
-      actualGap = (lineDuration * 0.5) / Math.max(1, wordCount - 1);
-    }
+    rawWords.forEach((text, idx) => {
+      const weight = weights[idx];
+      const wordDuration = (weight / totalWeight) * lineDuration;
 
-    const totalGapTime = (wordCount - 1) * actualGap;
-    const availableForWords = Math.max(0, lineDuration - totalGapTime);
+      const start = currentTime;
 
-    // --- 2. Bias long words ---
-    // Rule: If word.length >= 6, duration *= 1.3–1.6
-    let totalWeight = 0;
-    const weights = rawWords.map(word => {
-      const len = word.length;
-      let weight = 1.0;
-      if (len >= 6) {
-        weight = 1.5;
-      }
-      totalWeight += weight;
-      return weight;
-    });
+      // Calculate overlap: cap it so it doesn't swallow the next word entirely if it's very short
+      const effectiveOverlap = Math.min(OVERLAP, wordDuration * 0.5);
+      let end = start + wordDuration + effectiveOverlap;
 
-    let cursor = line.time;
-
-    const words: LyricWord[] = rawWords.map((text, wIdx) => {
-      const weight = weights[wIdx];
-      const wordDuration = (weight / totalWeight) * availableForWords;
-
-      const start = cursor;
-      const end = start + wordDuration;
-
-      // Advance cursor: word duration + gap (if not last word)
-      if (wIdx < wordCount - 1) {
-        cursor = end + actualGap;
-      } else {
-        cursor = end;
+      // Clamp last word to line end to avoid bleeding into next line too much
+      if (idx === rawWords.length - 1) {
+        end = lineEndTime;
       }
 
-      return {
+      words.push({
         text,
         time: start,
         endTime: end
-      };
-    });
+      });
 
-    // --- 1. Clamp last word aggressively ---
-    // Rule: lastWord.endTime = nextLine.time
-    if (words.length > 0) {
-      words[words.length - 1].endTime = endTime;
-    }
+      // Advance time by the allocated duration (without overlap)
+      currentTime += wordDuration;
+    });
 
     return {
       ...line,
