@@ -240,7 +240,18 @@ export const useAudioPlayer = (
     const { immediate = true, fromQueue = false, customQueue } = options;
     
     // Check if new track is web based
-    const nextTrackDef = libraryTracks[trackId];
+    let nextTrackDef = libraryTracks[trackId];
+
+    // Fallback: If track is not in library (e.g. just added), fetch from DB
+    if (!nextTrackDef) {
+       try {
+         const t = await dbService.getTrack(trackId);
+         if (t) nextTrackDef = t;
+       } catch (e) {
+         console.warn("Could not fetch track definition from DB", e);
+       }
+    }
+
     const isNextWeb = nextTrackDef?.source === 'youtube';
 
     // Stop current playback engines before switching logic
