@@ -388,7 +388,7 @@ function MusicApp() {
         url={currentTrack?.externalUrl ?? undefined}
         playing={player.isPlaying}
         muted={webMuted}
-        volume={player.volume}
+        // volume prop removed for YouTube autoplay fix
         playsinline
         width={1}
         height={1}
