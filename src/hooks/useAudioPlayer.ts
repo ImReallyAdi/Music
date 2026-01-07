@@ -3,6 +3,7 @@ import { dbService } from '../db';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { resumeAudioContext, getAudioContext } from './useAudioAnalyzer';
 import { getSmartNextTrack } from '../utils/automix';
+import { extractVideoId } from '../utils/youtube';
 
 export const useAudioPlayer = (
   libraryTracks: Record<string, Track>,
@@ -329,7 +330,19 @@ export const useAudioPlayer = (
                 audioElement.currentTime = 0;
             }
             setCurrentTime(0);
-            return; // ReactPlayer handles the rest via webMuted + isPlaying props
+
+            // Imperatively load the video ID to prevent iframe reload
+            if (webPlayer && nextTrackDef?.externalUrl) {
+                const id = extractVideoId(nextTrackDef.externalUrl);
+                if (id) {
+                    webPlayer.seekTo(0);
+                    const internalPlayer = webPlayer.getInternalPlayer();
+                    if (internalPlayer && typeof internalPlayer.loadVideoById === 'function') {
+                        internalPlayer.loadVideoById(id);
+                    }
+                }
+            }
+            return;
         }
 
         // --- LOCAL MODE ---

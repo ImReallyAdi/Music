@@ -92,7 +92,6 @@ function MusicApp() {
     setCrossfadeAudioElement,
     setWebPlayer, // NEW
     webMuted,
-    webPlayer,
     onWebProgress, // NEW
     onWebDuration, // NEW
     onWebEnded, // NEW
@@ -385,10 +384,9 @@ function MusicApp() {
         ref={(p) => {
           if (p) setWebPlayer(p);
         }}
-        url={currentTrack?.externalUrl ?? undefined}
+        url="https://www.youtube.com/watch?v=" // STABLE URL
         playing={player.isPlaying}
         muted={webMuted}
-        // volume prop removed for YouTube autoplay fix
         playsinline
         width={1}
         height={1}
