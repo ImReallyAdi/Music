@@ -51,45 +51,55 @@ function calculateRelevance(track: YouTubeTrack): number {
     return score;
 }
 
+async function fetchFromPiped(path: string): Promise<any> {
+    for (let i = 0; i < 3; i++) {
+        const instance = PIPED_INSTANCES[(currentInstanceIndex + i) % PIPED_INSTANCES.length];
+        try {
+            const response = await fetch(`${instance}${path}`);
+            if (!response.ok) throw new Error(`Request failed on ${instance}`);
+
+            const data = await response.json();
+
+            // Update successful index
+            currentInstanceIndex = (currentInstanceIndex + i) % PIPED_INSTANCES.length;
+
+            return data;
+        } catch (error) {
+            console.warn(`Piped request failed on ${instance}`, error);
+            // Continue to next instance
+        }
+    }
+    throw new Error('All Piped instances failed');
+}
+
 export async function searchYouTube(query: string): Promise<YouTubeTrack[]> {
-  // Try up to 3 instances
-  for (let i = 0; i < 3; i++) {
-      const instance = PIPED_INSTANCES[(currentInstanceIndex + i) % PIPED_INSTANCES.length];
-      try {
-        const response = await fetch(`${instance}/search?q=${encodeURIComponent(query)}&filter=all`);
-        if (!response.ok) throw new Error(`Search failed on ${instance}`);
+  try {
+      const data = await fetchFromPiped(`/search?q=${encodeURIComponent(query)}&filter=all`);
 
-        const data = await response.json();
+      if (!data.items || !Array.isArray(data.items)) return [];
 
-        if (!data.items || !Array.isArray(data.items)) return [];
+      const tracks = data.items
+          .filter((item: any) => item.type === 'stream')
+          .map((item: any) => {
+              const videoId = item.url.split('v=')[1];
+              return {
+                  id: videoId,
+                  title: item.title,
+                  channel: item.uploaderName,
+                  duration: item.duration,
+                  thumbnail: item.thumbnail,
+                  url: `https://www.youtube.com/watch?v=${videoId}`
+              };
+          });
 
-        // Update successful index
-        currentInstanceIndex = (currentInstanceIndex + i) % PIPED_INSTANCES.length;
+      return tracks
+          .filter(isSong)
+          .sort((a: YouTubeTrack, b: YouTubeTrack) => calculateRelevance(b) - calculateRelevance(a));
 
-        const tracks = data.items
-            .filter((item: any) => item.type === 'stream')
-            .map((item: any) => {
-                const videoId = item.url.split('v=')[1];
-                return {
-                    id: videoId,
-                    title: item.title,
-                    channel: item.uploaderName,
-                    duration: item.duration,
-                    thumbnail: item.thumbnail,
-                    url: `https://www.youtube.com/watch?v=${videoId}`
-                };
-            });
-
-        return tracks
-            .filter(isSong)
-            .sort((a: YouTubeTrack, b: YouTubeTrack) => calculateRelevance(b) - calculateRelevance(a));
-
-      } catch (error) {
-        console.warn(`YouTube search failed on ${instance}`, error);
-        // Continue to next instance
-      }
+  } catch (error) {
+      console.error('YouTube search failed', error);
+      return [];
   }
-  return [];
 }
 
 export function formatYouTubeArtwork(url: string): string {
@@ -99,4 +109,57 @@ export function formatYouTubeArtwork(url: string): string {
 export function extractVideoId(url: string): string | null {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^#&?]*).*/);
     return match ? match[1] : null;
+}
+
+export function extractPlaylistId(url: string): string | null {
+    const match = url.match(/[?&]list=([^#\&\?]+)/);
+    return match ? match[1] : null;
+}
+
+export async function getYouTubeVideo(url: string): Promise<YouTubeTrack | null> {
+    const videoId = extractVideoId(url);
+    if (!videoId) return null;
+
+    try {
+        const data = await fetchFromPiped(`/streams/${videoId}`);
+
+        return {
+            id: videoId,
+            title: data.title,
+            channel: data.uploader,
+            duration: data.duration,
+            thumbnail: data.thumbnailUrl,
+            url: `https://www.youtube.com/watch?v=${videoId}`
+        };
+    } catch (error) {
+        console.error('Failed to fetch video metadata', error);
+        return null;
+    }
+}
+
+export async function getYouTubePlaylist(url: string): Promise<YouTubeTrack[]> {
+    const playlistId = extractPlaylistId(url);
+    if (!playlistId) return [];
+
+    try {
+        const data = await fetchFromPiped(`/playlists/${playlistId}`);
+
+        if (!data.relatedStreams || !Array.isArray(data.relatedStreams)) return [];
+
+        return data.relatedStreams.map((item: any) => {
+            // Piped returns url like "/watch?v=VIDEO_ID"
+            const videoId = item.url.split('v=')[1];
+            return {
+                id: videoId,
+                title: item.title,
+                channel: item.uploaderName,
+                duration: item.duration,
+                thumbnail: item.thumbnail,
+                url: `https://www.youtube.com/watch?v=${videoId}`
+            };
+        });
+    } catch (error) {
+        console.error('Failed to fetch playlist metadata', error);
+        return [];
+    }
 }
