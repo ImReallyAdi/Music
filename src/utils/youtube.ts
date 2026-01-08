@@ -16,10 +16,10 @@ export interface YouTubeTrack {
 // ==============================
 
 const PIPED_INSTANCES = [
-  'https://api.piped.private.coffee',
   'https://pipedapi.kavin.rocks',
-  'https://pipedapi.moomoo.me',
-  'https://api-piped.mha.fi',
+  'https://api.piped.private.coffee',
+  'https://pipedapi.drgns.space',
+  'https://api.piped.smnz.de',
   'https://pipedapi.tokhmi.xyz'
 ];
 
@@ -36,14 +36,14 @@ async function fetchFromPiped(path: string): Promise<any> {
 
     try {
       const res = await fetch(`${instance}${path}`);
-      if (!res.ok) throw new Error('Bad response');
+      if (!res.ok) throw new Error(`Bad response: ${res.status}`);
 
       currentInstanceIndex =
         (currentInstanceIndex + i) % PIPED_INSTANCES.length;
 
       return await res.json();
-    } catch {
-      // try next instance
+    } catch (err) {
+      console.warn(`Piped instance failed: ${instance}`);
     }
   }
 
@@ -51,8 +51,17 @@ async function fetchFromPiped(path: string): Promise<any> {
 }
 
 export function extractVideoId(url: string): string | null {
+  if (!url) return null;
+
+  // piped playlist urls: "/watch?v=VIDEO_ID"
+  if (url.startsWith('/')) {
+    const match = url.match(/[?&]v=([^&#]+)/);
+    return match?.[1] ?? null;
+  }
+
+  // youtube / shorts / embed
   const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&#?]+)/
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^&#?]+)/
   );
   return match?.[1] ?? null;
 }
@@ -77,10 +86,10 @@ export async function getYouTubeVideo(
 
     return {
       id: videoId,
-      title: data.title,
-      channel: data.uploader,
-      duration: data.duration,
-      thumbnail: data.thumbnailUrl,
+      title: data.title ?? 'Unknown title',
+      channel: data.uploader ?? 'Unknown channel',
+      duration: data.duration ?? 0,
+      thumbnail: data.thumbnailUrl || data.thumbnail || '',
       url: `https://www.youtube.com/watch?v=${videoId}`
     };
   } catch (err) {
@@ -101,25 +110,30 @@ export async function getYouTubePlaylist(
 
   try {
     const data = await fetchFromPiped(`/playlists/${playlistId}`);
-    if (!Array.isArray(data.relatedStreams)) return [];
+
+    if (!Array.isArray(data.relatedStreams)) {
+      console.warn('Playlist missing relatedStreams');
+      return [];
+    }
 
     return data.relatedStreams
-      .filter((item: any) => item.type === 'stream')
+      .filter(
+        (item: any) => item.type === 'stream' || item.type === 'video'
+      )
       .map((item: any) => {
         const videoId = extractVideoId(item.url);
-
         if (!videoId) return null;
 
         return {
           id: videoId,
-          title: item.title,
-          channel: item.uploaderName,
-          duration: item.duration,
-          thumbnail: item.thumbnail,
+          title: item.title ?? 'Unknown title',
+          channel: item.uploaderName ?? 'Unknown channel',
+          duration: item.duration ?? 0,
+          thumbnail: item.thumbnail || '',
           url: `https://www.youtube.com/watch?v=${videoId}`
         };
       })
-      .filter(Boolean) as YouTubeTrack[];
+      .filter((track): track is YouTubeTrack => track !== null);
   } catch (err) {
     console.error('Failed to fetch playlist', err);
     return [];
