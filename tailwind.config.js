@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import colors from 'material-colors/dist/colors.js';
+
 export default {
   content: [
     "./index.html",
@@ -7,19 +9,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#09090b', // Deepest Zinc/Black
+        background: '#09090b', // Deepest Zinc/Black for OLED-like dark
         surface: '#18181b', // Zinc 900
         'surface-variant': '#27272a', // Zinc 800
-        primary: 'rgb(var(--color-primary) / <alpha-value>)', // Dynamic Primary
-        'primary-container': 'rgb(var(--color-primary) / 0.2)',
-        secondary: '#E6C08D',
-        'secondary-container': '#3E3528',
+
+        // Material Colors Integration
+        primary: {
+          DEFAULT: colors.deepPurple[400], // Visible on dark background
+          light: colors.deepPurple[300],
+          dark: colors.deepPurple[700],
+          container: `rgb(var(--color-primary) / 0.2)`,
+        },
+        secondary: {
+          DEFAULT: colors.teal[400],
+          light: colors.teal[200],
+          dark: colors.teal[700],
+          container: '#3E3528', // Keep original or update? Updating to match teal
+        },
+
+        // Semantic Colors
+        error: colors.red[400],
+        success: colors.green[400],
+        warning: colors.amber[400],
+        info: colors.lightBlue[400],
+
         on: {
           background: '#FFFFFF',
           surface: '#F4F4F5', // Zinc 100
           primary: '#FFFFFF',
+          secondary: '#000000',
         },
         outline: '#52525b', // Zinc 600
+
+        // Keep existing Tailwind extends if used
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],

@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Playlist } from '../types';
-import { Plus, X } from 'lucide-react';
 
 interface AddToPlaylistModalProps {
   isOpen: boolean;
@@ -31,86 +30,79 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         />
 
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="relative w-full max-w-sm bg-surface-container-high rounded-3xl p-6 shadow-2xl overflow-hidden z-10"
+          className="relative w-full max-w-sm z-10"
         >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-title-large font-bold text-on-surface">Add to Playlist</h3>
-            <button onClick={onClose} className="p-2 hover:bg-surface-variant rounded-full text-on-surface">
-              <X size={24} />
-            </button>
-          </div>
+          <mc-card variant="elevated" style={{ padding: '24px', borderRadius: '28px' } as any}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-on-surface">Add to Playlist</h3>
+                <mc-icon-button onClick={onClose}>
+                  <mc-icon name="close"></mc-icon>
+                </mc-icon-button>
+              </div>
 
-          <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-            <button
-                onClick={() => setIsCreating(!isCreating)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 text-primary font-medium transition-colors"
-            >
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <Plus size={20} />
+              <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+                <div onClick={() => setIsCreating(!isCreating)}>
+                     <mc-button variant="standard" style={{ width: '100%', justifyContent: 'flex-start' } as any}>
+                        <mc-icon slot="icon" name="add"></mc-icon>
+                        New Playlist
+                     </mc-button>
                 </div>
-                <span>New Playlist</span>
-            </button>
 
-            <AnimatePresence>
-                {isCreating && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden mb-2"
-                    >
-                        <div className="flex gap-2">
-                            <input
-                                autoFocus
-                                value={newPlaylistName}
-                                onChange={(e) => setNewPlaylistName(e.target.value)}
-                                placeholder="Playlist Name"
-                                className="flex-1 bg-surface-variant px-3 py-2 rounded-lg text-on-surface outline-none focus:ring-1 focus:ring-primary"
-                            />
-                            <button
-                                onClick={() => {
-                                    if(newPlaylistName.trim()) {
-                                        onCreatePlaylist(newPlaylistName);
-                                        setNewPlaylistName('');
-                                        setIsCreating(false);
-                                    }
-                                }}
-                                className="bg-primary text-primary-on-container px-3 py-2 rounded-lg text-sm font-bold"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </motion.div>
+                <AnimatePresence>
+                    {isCreating && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden mb-4"
+                        >
+                            <div className="flex gap-2 items-center">
+                                <mc-text-field
+                                    placeholder="Playlist Name"
+                                    value={newPlaylistName}
+                                    type="text"
+                                    oninput={(e: any) => setNewPlaylistName(e.target.value)}
+                                    style={{ flex: 1 } as any}
+                                ></mc-text-field>
+                                <mc-button
+                                    onClick={() => {
+                                        if(newPlaylistName.trim()) {
+                                            onCreatePlaylist(newPlaylistName);
+                                            setNewPlaylistName('');
+                                            setIsCreating(false);
+                                        }
+                                    }}
+                                    variant="filled"
+                                >
+                                    Create
+                                </mc-button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {playlists.length === 0 && !isCreating && (
+                    <p className="text-center text-on-surface-variant py-4 text-sm">No playlists found</p>
                 )}
-            </AnimatePresence>
 
-            {playlists.length === 0 && !isCreating && (
-                <p className="text-center text-on-surface/50 py-4 text-sm">No playlists found</p>
-            )}
-
-            {playlists.map(playlist => (
-              <button
-                key={playlist.id}
-                onClick={() => onSelectPlaylist(playlist.id)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant transition-colors group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-surface-variant-dim flex items-center justify-center text-on-surface-variant font-bold text-xs">
-                    {playlist.trackIds.length}
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                    <p className="font-medium text-on-surface truncate group-hover:text-primary transition-colors">{playlist.name}</p>
-                    <p className="text-xs text-on-surface/50">{playlist.trackIds.length} tracks</p>
-                </div>
-              </button>
-            ))}
-          </div>
+                {playlists.map(playlist => (
+                  <div key={playlist.id} onClick={() => onSelectPlaylist(playlist.id)} className="cursor-pointer">
+                      <mc-list-item>
+                          <div slot="headline">{playlist.name}</div>
+                          <div slot="supporting-text">{playlist.trackIds.length} tracks</div>
+                          <mc-icon slot="start" name="queue_music"></mc-icon>
+                      </mc-list-item>
+                  </div>
+                ))}
+              </div>
+          </mc-card>
         </motion.div>
       </div>
     </AnimatePresence>
