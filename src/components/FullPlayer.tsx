@@ -18,8 +18,8 @@ import {
   ChevronDown,
   Mic2,
   Heart,
-  Globe, // Added icon
-  Youtube, // Added YouTube icon
+  Globe,
+  Youtube,
 } from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
@@ -28,7 +28,6 @@ import LyricsView from './LyricsView';
 import { ThemePalette } from '../utils/colors';
 import { AudioAnalysis } from '../hooks/useAudioAnalyzer';
 
-// Helper to format time (mm:ss)
 const formatTime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return '0:00';
   const mins = Math.floor(seconds / 60);
@@ -36,7 +35,6 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-// --- PROPS INTERFACE ---
 interface FullPlayerProps {
   currentTrack: Track | null;
   playerState: PlayerState;
@@ -59,7 +57,7 @@ interface FullPlayerProps {
   onTrackUpdate?: (track: Track) => void;
   theme: ThemePalette | null;
   themeColor?: string;
-  analyzerData?: AudioAnalysis; // Accept data from prop
+  analyzerData?: AudioAnalysis;
 }
 
 const FullPlayer: React.FC<FullPlayerProps> = ({
@@ -88,28 +86,29 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const [showLyrics, setShowLyrics] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
 
-  // Local state for the slider to ensure immediate feedback
+  // Local state for the slider
   const [localScrubValue, setLocalScrubValue] = useState<number | null>(null);
   const isScrubbing = localScrubValue !== null;
 
   const { beat } = analyzerData || { beat: false };
 
-  // Memoize color values
+  // Material Colors
   const colors = useMemo(() => ({
-    primary: theme?.primary || '#ffffff',
-    secondary: theme?.secondary || '#a1a1aa',
-    muted: theme?.muted || '#71717a',
-    background: theme?.background || '#09090b'
-  }), [theme?.primary, theme?.secondary, theme?.muted, theme?.background]);
+    primary: theme?.primary || 'var(--md-sys-color-primary)',
+    onPrimary: 'var(--md-sys-color-on-primary)',
+    secondary: theme?.secondary || 'var(--md-sys-color-secondary)',
+    muted: 'var(--md-sys-color-on-surface-variant)',
+    background: 'var(--md-sys-color-background)',
+    surface: 'var(--md-sys-color-surface)'
+  }), [theme]);
 
-  // Beat Animations
   const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
   const glowOpacity = useSpring(0, { stiffness: 200, damping: 20 });
 
   useEffect(() => {
       if (beat && isPlayerOpen) {
-          beatScale.set(1.03); // Pop
-          glowOpacity.set(0.6); // Flash
+          beatScale.set(1.03);
+          glowOpacity.set(0.6);
           setTimeout(() => {
               beatScale.set(1);
               glowOpacity.set(0);
@@ -123,21 +122,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
 
-  // Display value
   const displayValue = isScrubbing ? localScrubValue : currentTime;
 
-  // --- SCRUBBING HANDLERS ---
-  const handleScrubStart = () => {
-      if (startScrub) startScrub();
-  };
+  // Slider change logic using standard input for now as mc-slider might differ
+  // Or better, stick to the invisible input trick but style the visual bar
+  // The original implementation had a good trick. I will keep it but wrap controls in Material buttons.
 
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
-      // Allow scrubbing even if duration is unknown for streams?
-      // YouTube streams might have duration. If 0, seekable is false.
+  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!isSeekable && currentTrack?.source !== 'youtube') return;
-
-      const value = Number((e.target as HTMLInputElement).value);
-      setLocalScrubValue(value);
+      setLocalScrubValue(Number(e.target.value));
   };
 
   const handleScrubEnd = () => {
@@ -150,14 +143,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   const handleScrubInteractionStart = (e: React.PointerEvent<HTMLInputElement>) => {
       e.stopPropagation();
-      handleScrubStart();
-
+      if (startScrub) startScrub();
       const onPointerUp = () => {
           handleScrubEnd();
           window.removeEventListener('pointerup', onPointerUp);
           window.removeEventListener('pointercancel', onPointerUp);
       };
-
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
   };
@@ -207,8 +198,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   if (!currentTrack) return null;
 
-  const { primary: primaryColor, secondary: secondaryColor, muted: mutedColor, background: backgroundColor } = colors;
-
   return (
     <AnimatePresence>
       {isPlayerOpen && (
@@ -223,7 +212,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           dragListener={false}
           dragConstraints={{ top: 0 }}
           dragElastic={0.05}
-          style={{ opacity, y: dragY, background: backgroundColor, willChange: 'transform, opacity' }}
+          style={{ opacity, y: dragY, background: colors.background, willChange: 'transform, opacity' }}
           onDragEnd={(_, i) => {
             if (i.offset.y > 100 || i.velocity.y > 500) onClose();
             else dragY.set(0);
@@ -232,12 +221,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <motion.div
-            animate={{ background: `linear-gradient(to bottom, ${primaryColor}40, ${backgroundColor})` }}
+            animate={{ background: `linear-gradient(to bottom, ${colors.primary}40, ${colors.background})` }}
             transition={{ duration: 0.8 }}
             className="absolute inset-0 -z-20"
           />
 
-          {/* Background Blur Image */}
+           {/* Background Blur Image */}
           <div className="absolute inset-0 -z-10 overflow-hidden">
             <motion.img
               key={currentTrack.coverArt}
@@ -248,7 +237,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               className="w-full h-full object-cover blur-[100px] scale-125 brightness-75"
               alt=""
             />
-            {/* Grain Overlay */}
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             />
@@ -257,15 +245,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           {/* Drag Handle */}
           <div 
             onPointerDown={(e) => dragControls.start(e)}
-            className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
+            className="h-12 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors" />
+            <div className="w-12 h-1.5 bg-on-surface/20 rounded-full hover:bg-on-surface/40 transition-colors" />
           </div>
 
-          <main className="flex-1 px-8 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
+          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
             
-            {/* Left: Artwork */}
-            <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
+            {/* Artwork / Lyrics / Queue */}
+            <div className="w-full max-w-[340px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
               <AnimatePresence mode="wait">
                 {showLyrics ? (
                   <motion.div
@@ -273,7 +261,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                      initial={{ opacity: 0, scale: 0.95 }}
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
-                     className="absolute inset-0 rounded-2xl overflow-hidden"
+                     className="absolute inset-0 rounded-2xl overflow-hidden bg-surface/50 backdrop-blur-xl border border-white/5"
                      onPointerDown={(e) => e.stopPropagation()}
                   >
                      <LyricsView
@@ -282,8 +270,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                        onSeek={handleSeek}
                        onClose={() => setShowLyrics(false)}
                        onTrackUpdate={onTrackUpdate}
-                       lyricOffset={playerState.lyricOffset} // PASS OFFSET
-                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))} // UPDATE
+                       lyricOffset={playerState.lyricOffset}
+                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))}
                      />
                   </motion.div>
                 ) : showQueue ? (
@@ -292,7 +280,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col"
+                    className="absolute inset-0 bg-surface/50 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden flex flex-col"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <QueueList
@@ -318,24 +306,20 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{ scale: playerState.isPlaying ? beatScale : 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+                    className="relative w-full h-full shadow-2xl rounded-3xl overflow-hidden"
                   >
                      <img
                       src={currentTrack.coverArt}
                       className="w-full h-full object-cover"
                       alt="Album Art"
                     />
-
-                    {/* WEB MODE BADGE */}
                     {currentTrack.source === 'youtube' && (
-                        <div className="absolute top-4 right-4 bg-red-600/90 text-white p-2 rounded-full shadow-lg backdrop-blur-sm z-10">
-                            <Youtube size={20} />
+                        <div className="absolute top-4 right-4 bg-red-600 text-white p-2 rounded-full shadow-lg z-10">
+                             <mc-icon name="smart_display"></mc-icon>
                         </div>
                     )}
-
-                    {/* Beat Glow Flash */}
                     <motion.div
-                        style={{ opacity: glowOpacity, background: primaryColor }}
+                        style={{ opacity: glowOpacity, background: colors.primary }}
                         className="absolute inset-0 mix-blend-overlay pointer-events-none"
                     />
                   </motion.div>
@@ -343,155 +327,137 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* Right: Info & Controls */}
-            <div className="w-full max-w-[380px] flex flex-col justify-center gap-6 shrink-0">
+            {/* Controls Section */}
+            <div className="w-full max-w-[360px] flex flex-col justify-center gap-6 shrink-0">
               
-              {/* Text Info & Favorite */}
+              {/* Info Header */}
               <div className="flex items-center justify-between">
-                  <div className="text-left flex-1 min-w-0">
+                  <div className="text-left flex-1 min-w-0 pr-4">
                     <motion.h1
-                        animate={{ color: theme?.primary ? '#ffffff' : '#ffffff' }}
-                        className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1"
+                        className="text-2xl font-bold leading-tight line-clamp-1 text-on-surface"
                         title={currentTrack.title}
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
-                        animate={{ color: mutedColor }}
-                        className="text-lg line-clamp-1 mt-1 font-medium"
+                        className="text-lg line-clamp-1 mt-1 font-medium text-on-surface-variant"
                         title={currentTrack.artist}
                     >
                       {currentTrack.artist}
                     </motion.p>
                   </div>
 
-                  <button
-                    onClick={(e) => {
+                  <mc-icon-button
+                    toggle
+                    selected={currentTrack.isFavorite}
+                    onClick={(e: any) => {
                         e.stopPropagation();
                         dbService.toggleFavorite(currentTrack.id).then(updatedTrack => {
-                            if (updatedTrack && onTrackUpdate) {
-                                onTrackUpdate(updatedTrack);
-                            }
+                            if (updatedTrack && onTrackUpdate) onTrackUpdate(updatedTrack);
                         });
                     }}
-                    className="p-3 rounded-full hover:bg-white/10 active:scale-90 transition-all"
-                    style={{ color: currentTrack.isFavorite ? primaryColor : mutedColor }}
+                    style={{ '--md-sys-color-primary': 'var(--md-sys-color-error)' } as any}
                   >
-                     <Heart size={24} fill={currentTrack.isFavorite ? "currentColor" : "none"} strokeWidth={currentTrack.isFavorite ? 0 : 2} />
-                  </button>
+                     <mc-icon slot="selected_icon" name="favorite" filled style={{ color: colors.primary } as any}></mc-icon>
+                     <mc-icon slot="icon" name="favorite_border"></mc-icon>
+                  </mc-icon-button>
               </div>
 
-              {/* Progress Slider */}
+              {/* Seeker / Progress */}
               <div className="group relative pt-4 pb-2">
-                <div className="relative h-1.5 w-full bg-white/10 rounded-full group-hover:h-2 transition-all overflow-visible">
+                <div className="relative h-1.5 w-full bg-on-surface/10 rounded-full overflow-visible">
                   <motion.div
-                    animate={{ backgroundColor: primaryColor }}
-                    className="absolute h-full rounded-full pointer-events-none origin-left"
-                    style={{ width: `${(displayValue / safeDuration) * 100}%`, willChange: 'width' }}
+                    className="absolute h-full rounded-full pointer-events-none origin-left bg-primary"
+                    style={{ width: `${(displayValue / safeDuration) * 100}%` }}
                   />
-                  {/* Beat Pulse Overlay on Bar */}
-                  {playerState.isPlaying && (
-                      <motion.div
-                        animate={{ opacity: beat ? 0.5 : 0 }}
-                        transition={{ duration: 0.1 }}
-                        className="absolute h-full w-full bg-white mix-blend-overlay pointer-events-none"
-                      />
-                  )}
                 </div>
 
                 <input
                     type="range"
                     min={0}
                     max={safeDuration}
-                    step={0.1} // High resolution for smooth dragging
+                    step={0.1}
                     value={displayValue}
                     disabled={!isSeekable && currentTrack.source !== 'youtube'}
                     onChange={handleScrubChange}
                     onPointerDown={(e) => (isSeekable || currentTrack.source === 'youtube') && handleScrubInteractionStart(e)}
-                    className={`absolute -inset-x-0 -top-2.5 w-full h-8 opacity-0 z-50 ${isSeekable || currentTrack.source === 'youtube' ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                    style={{ pointerEvents: 'auto', bottom: '-8px', touchAction: 'none' }}
-                  />
+                    className="absolute -inset-x-0 -top-2.5 w-full h-8 opacity-0 z-50 cursor-pointer"
+                    style={{ touchAction: 'none' }}
+                />
 
-                <div className="flex justify-between mt-2 text-xs font-medium font-mono" style={{ color: mutedColor }}>
+                <div className="flex justify-between mt-2 text-xs font-medium text-on-surface-variant/80 font-mono">
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
-              {/* Main Controls */}
+              {/* Playback Controls */}
               <div className="flex items-center justify-between">
-                <button 
-                    onClick={toggleShuffle} 
-                    className={`p-3 rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.shuffle ? primaryColor : mutedColor, backgroundColor: playerState.shuffle ? `${primaryColor}20` : 'transparent' }}
+                <mc-icon-button
+                    toggle
+                    selected={playerState.shuffle}
+                    onClick={toggleShuffle}
                 >
-                  <Shuffle size={20} />
-                </button>
+                    <mc-icon name="shuffle"></mc-icon>
+                </mc-icon-button>
 
-                <div className="flex items-center gap-6">
-                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipBack size={32} fill="currentColor" />
-                  </button>
+                <div className="flex items-center gap-4">
+                  <mc-icon-button size="large" onClick={prevTrack}>
+                     <mc-icon name="skip_previous" style={{ fontSize: '32px' } as any}></mc-icon>
+                  </mc-icon-button>
                   
-                  <motion.button
-                    onClick={togglePlay}
+                  <motion.div
                     whileTap={{ scale: 0.9 }}
                     animate={{ scale: beat ? 1.05 : 1 }}
-                    style={{ backgroundColor: primaryColor, color: backgroundColor }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors active:opacity-90"
                   >
-                    {playerState.isPlaying ? 
-                      <Pause size={36} fill="currentColor" /> :
-                      <Play size={36} fill="currentColor" className="ml-1" />
-                    }
-                  </motion.button>
+                    <mc-fab
+                        size="large"
+                        color="primary"
+                        onClick={togglePlay}
+                    >
+                        <mc-icon slot="icon" name={playerState.isPlaying ? 'pause' : 'play_arrow'} style={{ fontSize: '36px' } as any}></mc-icon>
+                    </mc-fab>
+                  </motion.div>
                   
-                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipForward size={32} fill="currentColor" />
-                  </button>
+                  <mc-icon-button size="large" onClick={nextTrack}>
+                    <mc-icon name="skip_next" style={{ fontSize: '32px' } as any}></mc-icon>
+                  </mc-icon-button>
                 </div>
 
-                <button 
-                    onClick={toggleRepeat} 
-                    className={`p-3 relative rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.repeat !== 'OFF' ? primaryColor : mutedColor, backgroundColor: playerState.repeat !== 'OFF' ? `${primaryColor}20` : 'transparent' }}
+                <mc-icon-button
+                    toggle
+                    selected={playerState.repeat !== 'OFF'}
+                    onClick={toggleRepeat}
                 >
-                  <Repeat size={20} />
-                  {playerState.repeat === 'ONE' && (
-                    <span className="absolute top-1.5 right-2 text-[7px] px-0.5 rounded-[2px] font-bold leading-none" style={{ backgroundColor: primaryColor, color: backgroundColor }}>1</span>
-                  )}
-                </button>
+                   <mc-icon name={playerState.repeat === 'ONE' ? 'repeat_one' : 'repeat'}></mc-icon>
+                </mc-icon-button>
               </div>
 
-              {/* Bottom Row (Queue & Lyrics) */}
-              <div className="flex items-center justify-between mt-4 px-1">
-                <button
-                  onClick={() => {
-                    setShowLyrics(!showLyrics);
-                    if (!showLyrics) setShowQueue(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showLyrics ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showLyrics ? backgroundColor : mutedColor
-                  }}
+              {/* Bottom Actions */}
+              <div className="flex items-center justify-between mt-2 px-2">
+                <mc-icon-button
+                    toggle
+                    selected={showLyrics}
+                    onClick={() => {
+                        setShowLyrics(!showLyrics);
+                        if (!showLyrics) setShowQueue(false);
+                    }}
+                    variant="tonal"
                 >
-                  <Mic2 size={20} />
-                </button>
+                    <mc-icon name="lyrics"></mc-icon>
+                </mc-icon-button>
 
-                <button 
-                  onClick={() => {
-                    setShowQueue(!showQueue);
-                    if (!showQueue) setShowLyrics(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showQueue ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showQueue ? backgroundColor : mutedColor
-                  }}
+                <mc-icon-button
+                    toggle
+                    selected={showQueue}
+                    onClick={() => {
+                        setShowQueue(!showQueue);
+                        if (!showQueue) setShowLyrics(false);
+                    }}
+                    variant="tonal"
                 >
-                  {showQueue ? <ChevronDown size={20} /> : <ListMusic size={20} />}
-                </button>
+                    <mc-icon name="queue_music"></mc-icon>
+                </mc-icon-button>
               </div>
 
             </div>

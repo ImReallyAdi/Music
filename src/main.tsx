@@ -1,27 +1,16 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+
+import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import process from 'process';
+import App from './App';
+import '@xujunhao2010/material_components/dist/mc.js';
+import '@xujunhao2010/material_components/dist/mc.css';
+import '../index.css'; // Correct path to index.css - Imported LAST to override library styles
 
-declare global {
-  interface Window {
-    Buffer: typeof Buffer;
-    process: typeof process;
-  }
-}
+// Polyfill Buffer and process for music-metadata-browser
+window.Buffer = Buffer;
+window.process = process;
 
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-  window.process = process;
-}
-
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error("Could not find root element");
-
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+createRoot(document.getElementById('root')!).render(
+  <App />
 );

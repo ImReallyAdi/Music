@@ -28,7 +28,7 @@ const Search: React.FC<SearchProps> = ({
   libraryTracks,
   onAddYouTubeTrack
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); // Kept for logic, but UI will use mc-text-field
   const [isWebMode, setIsWebMode] = useState(false);
 
   // Import State
@@ -37,14 +37,17 @@ const Search: React.FC<SearchProps> = ({
   const [importedCount, setImportedCount] = useState(0);
   const [totalToImport, setTotalToImport] = useState(0);
 
-  // Auto-focus input when tab becomes active
+  // Auto-focus logic might need adjustment for custom element
   useEffect(() => {
     if (activeTab === 'search') {
-      inputRef.current?.focus();
+      // Try to focus the native input inside the shadow DOM if possible or just the element
+      // inputRef.current?.focus();
+      // With mc-text-field, we might need a ref to the custom element
+      const el = document.querySelector('mc-text-field') as HTMLElement;
+      if (el) el.focus();
     }
   }, [activeTab]);
 
-  // Handle Escape key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       handleClearSearch();
@@ -55,10 +58,8 @@ const Search: React.FC<SearchProps> = ({
     setSearchQuery('');
     setImportStatus('idle');
     setImportMessage('');
-    inputRef.current?.focus();
   };
 
-  // Optimize click handler to prevent array recreation in the loop
   const handleTrackClick = useCallback((trackId: string) => {
     const queue = filteredTracks.map(t => t.id);
     playTrack(trackId, { customQueue: queue });
@@ -92,14 +93,12 @@ const Search: React.FC<SearchProps> = ({
 
             for (let i = 0; i < tracks.length; i++) {
                 const track = tracks[i];
-                // Check if already exists to avoid duplicates (optional, but good UX)
                 const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
                 if (!exists) {
                     onAddYouTubeTrack(track);
                 }
                 setImportedCount(i + 1);
                 setImportMessage(`Importing ${i + 1}/${tracks.length} tracks...`);
-                // Small delay to prevent UI freezing if needed, but react state updates are async anyway
                 await new Promise(resolve => setTimeout(resolve, 10));
             }
 
@@ -118,7 +117,7 @@ const Search: React.FC<SearchProps> = ({
 
             const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
             if (exists) {
-                setImportStatus('error'); // Or success with different message
+                setImportStatus('error');
                 setImportMessage('Track already in library.');
                 return;
             }
@@ -144,64 +143,40 @@ const Search: React.FC<SearchProps> = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="space-y-6 pt-2 h-full flex flex-col"
+      className="space-y-4 pt-2 h-full flex flex-col"
     >
-      {/* Search Bar - Sticky Header */}
-      <div className="sticky top-0 z-20 pt-2 pb-4 bg-surface/95 backdrop-blur-md">
-        <div className="flex flex-col gap-2">
-            <div className="relative group rounded-full bg-surface-container-high focus-within:bg-surface-container-highest transition-colors flex items-center h-14 px-4 shadow-sm ring-1 ring-white/5">
-            {isWebMode ? (
-                 <Youtube className="text-red-500 w-6 h-6 mr-3 transition-colors" />
-            ) : (
-                 <SearchIcon className="text-surface-on-variant w-6 h-6 mr-3 transition-colors group-focus-within:text-primary" />
-            )}
+      {/* Search Bar */}
+      <div className="sticky top-0 z-20 pt-2 pb-2 bg-background/95 backdrop-blur-md px-4">
+        <mc-text-field
+          label={isWebMode ? "Paste YouTube Link" : "Search Library"}
+          value={searchQuery}
+          type="text"
+          oninput={(e: any) => setSearchQuery(e.target.value)}
+          onkeydown={(e: any) => handleKeyDown(e)}
+          icon={isWebMode ? "link" : "search"} // Trailing icon
+          style={{ width: '100%' } as any}
+        >
+            {/* Slot for leading icon if supported or utilize built-in props */}
+        </mc-text-field>
 
-            <input
-                ref={inputRef}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isWebMode ? "Paste YouTube Video or Playlist Link..." : "Find your frequency..."}
-                className="flex-1 bg-transparent text-body-large text-surface-on placeholder:text-surface-on-variant/50 outline-none"
-                style={{ fontSize: '16px' }} // Prevent iOS zoom
-            />
-            <AnimatePresence>
-                {searchQuery && (
-                <motion.button
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    onClick={handleClearSearch}
-                    className="p-2 text-surface-on-variant hover:text-surface-on hover:bg-surface-container-highest/50 rounded-full transition-colors active:scale-90"
-                >
-                    <X className="w-5 h-5" />
-                </motion.button>
-                )}
-            </AnimatePresence>
-            </div>
-
-            {/* Mode Toggle */}
-             <div className="flex items-center justify-end px-2">
-                <button
-                    onClick={() => {
-                        setIsWebMode(!isWebMode);
-                        setSearchQuery('');
-                        setImportStatus('idle');
-                        setImportMessage('');
-                    }}
-                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                        isWebMode ? 'bg-red-500/20 text-red-500' : 'text-surface-on-variant hover:text-surface-on'
-                    }`}
-                >
-                    {isWebMode ? 'Switch to Local Search' : 'Switch to YouTube Import'}
-                </button>
-            </div>
+        <div className="flex justify-end mt-2">
+            <mc-button
+                variant="standard"
+                size="small"
+                onClick={() => {
+                    setIsWebMode(!isWebMode);
+                    setSearchQuery('');
+                    setImportStatus('idle');
+                    setImportMessage('');
+                }}
+            >
+                {isWebMode ? 'Local Search' : 'YouTube Import'}
+            </mc-button>
         </div>
       </div>
 
       {/* Results List */}
-      <div className="flex-1 flex flex-col gap-2 pb-24">
-
+      <div className="flex-1 flex flex-col gap-2 pb-24 px-4">
         {/* Web Mode UI */}
         {isWebMode && (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
@@ -209,92 +184,68 @@ const Search: React.FC<SearchProps> = ({
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-surface-on-variant space-y-4 max-w-sm"
+                        className="text-on-surface-variant space-y-4 max-w-sm"
                     >
-                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-                            <Youtube className="w-10 h-10 text-red-500" />
+                        <div className="w-20 h-20 rounded-full bg-secondary-container flex items-center justify-center mx-auto mb-6">
+                            <mc-icon name="cloud_download" style={{ fontSize: '40px', color: 'var(--md-sys-color-on-secondary-container)' } as any}></mc-icon>
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Import from YouTube</h3>
-                        <p className="text-body-medium">
-                            Paste a link to a video or playlist to add it directly to your library.
+                        <h3 className="text-xl font-bold text-on-surface">Import from YouTube</h3>
+                        <p className="text-sm opacity-70">
+                            Paste a link to a video or playlist.
                         </p>
                     </motion.div>
                  )}
 
                  {searchQuery && importStatus === 'idle' && (
-                     <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                     <mc-button
+                        variant="filled"
                         onClick={handleImport}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-medium transition-all active:scale-95 shadow-lg shadow-red-500/20"
                      >
-                         <Download className="w-5 h-5" />
+                         <mc-icon slot="icon" name="download"></mc-icon>
                          Import Link
-                     </motion.button>
+                     </mc-button>
                  )}
 
                 {importStatus === 'loading' && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center gap-4"
-                    >
-                        <Loader2 className="w-10 h-10 text-red-500 animate-spin" />
-                        <div className="text-body-large font-medium text-surface-on">{importMessage}</div>
-                        {totalToImport > 0 && (
-                            <div className="w-64 h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-red-500"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(importedCount / totalToImport) * 100}%` }}
-                                    transition={{ type: "spring", stiffness: 50 }}
-                                />
-                            </div>
-                        )}
-                    </motion.div>
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                        <div className="text-lg font-medium text-on-surface">{importMessage}</div>
+                    </div>
                 )}
 
                 {importStatus === 'success' && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-4"
-                    >
+                    <div className="flex flex-col items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center">
                             <Check className="w-8 h-8" />
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Success!</h3>
-                        <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
-                        <button
+                        <h3 className="text-xl font-bold text-on-surface">Success!</h3>
+                        <p className="text-sm text-on-surface-variant">{importMessage}</p>
+                        <mc-button
+                            variant="standard"
                             onClick={() => {
                                 setSearchQuery('');
                                 setImportStatus('idle');
                             }}
-                            className="mt-4 text-primary font-medium hover:underline"
                         >
-                            Import another link
-                        </button>
-                    </motion.div>
+                            Import another
+                        </mc-button>
+                    </div>
                 )}
 
                 {importStatus === 'error' && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-4"
-                    >
+                    <div className="flex flex-col items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center">
                             <AlertCircle className="w-8 h-8" />
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Oops!</h3>
-                        <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
-                         <button
+                        <h3 className="text-xl font-bold text-on-surface">Oops!</h3>
+                        <p className="text-sm text-on-surface-variant">{importMessage}</p>
+                         <mc-button
+                            variant="standard"
                             onClick={() => setImportStatus('idle')}
-                            className="mt-4 text-surface-on font-medium hover:underline"
                         >
                             Try again
-                        </button>
-                    </motion.div>
+                        </mc-button>
+                    </div>
                 )}
             </div>
         )}
@@ -304,42 +255,39 @@ const Search: React.FC<SearchProps> = ({
             <AnimatePresence mode='popLayout'>
             {filteredTracks.map(t => (
                 <motion.div
-                layout // Enables smooth position transitions when filtering
+                layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 key={t.id}
-                whileTap={{ scale: 0.98, backgroundColor: 'var(--surface-container-highest)' }}
                 onClick={() => handleTrackClick(t.id)}
-                className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98]"
+                className="mb-1"
                 >
-                {/* Cover Art */}
-                <div className="w-14 h-14 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative">
-                    {t.coverArt ? (
-                    <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
-                    ) : (
-                    <Music className="w-6 h-6 text-surface-on-variant/50" />
-                    )}
-                    {/* Play Overlay on Hover */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="bg-surface-on text-surface-inverse p-1.5 rounded-full">
-                        <Music className="w-4 h-4" />
-                    </div>
-                    </div>
-                </div>
-
-                {/* Text Info */}
-                <div className="flex-1 min-w-0">
-                    <h4 className="text-body-large font-medium text-surface-on truncate group-hover:text-primary transition-colors flex items-center gap-2">
-                    {t.title}
-                    {t.source === 'youtube' && (
-                        <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30">WEB</span>
-                    )}
-                    </h4>
-                    <p className="text-body-medium text-surface-on-variant truncate">
-                    {t.artist}
-                    </p>
-                </div>
+                    <mc-card variant="filled" style={{ width: '100%', cursor: 'pointer', backgroundColor: 'var(--md-sys-color-surface-container)' } as any}>
+                        <div className="flex items-center p-3 gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden relative flex-shrink-0">
+                                {t.coverArt ? (
+                                    <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover"/>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full w-full">
+                                        <mc-icon name="music_note" style={{ color: 'var(--md-sys-color-on-surface-variant)' } as any}></mc-icon>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-base font-medium text-on-surface truncate flex items-center gap-2">
+                                    {t.title}
+                                    {t.source === 'youtube' && (
+                                        <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">WEB</span>
+                                    )}
+                                </h4>
+                                <p className="text-sm text-on-surface-variant truncate">
+                                    {t.artist}
+                                </p>
+                            </div>
+                        </div>
+                        <mc-ripple></mc-ripple>
+                    </mc-card>
                 </motion.div>
             ))}
             </AnimatePresence>
@@ -347,17 +295,10 @@ const Search: React.FC<SearchProps> = ({
 
         {/* Empty State */}
         {searchQuery && ((!isWebMode && filteredTracks.length === 0)) && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-surface-on-variant/60"
-          >
-            <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
-              <Disc className="w-8 h-8 opacity-50" />
-            </div>
-            <p className="text-body-large font-medium">No tracks found</p>
-            <p className="text-body-small">Try searching for a different artist or song</p>
-          </motion.div>
+          <div className="flex flex-col items-center justify-center py-20 opacity-60">
+            <mc-icon name="album" style={{ fontSize: '64px', opacity: 0.5 } as any}></mc-icon>
+            <p className="text-lg font-medium mt-4">No tracks found</p>
+          </div>
         )}
       </div>
     </motion.div>

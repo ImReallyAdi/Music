@@ -10,7 +10,6 @@ interface HomeProps {
   isLoading?: boolean;
 }
 
-// --- ANIMATION VARIANTS ---
 const containerVariants: any = {
   hidden: { opacity: 0 },
   visible: {
@@ -34,82 +33,72 @@ const cardVariants: any = {
   tap: { scale: 0.96 }
 };
 
-// --- SKELETON LOADER ---
 const SkeletonCard = () => (
   <div className="flex flex-col gap-4">
-    <div className="aspect-square rounded-[32px] bg-zinc-800/50 relative overflow-hidden isolate">
-      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_1.5s_infinite] z-10" />
-    </div>
-    <div className="space-y-2 px-2">
-      <div className="h-5 w-3/4 bg-zinc-800/50 rounded-full animate-pulse" />
-      <div className="h-4 w-1/2 bg-zinc-800/30 rounded-full animate-pulse" />
+    <div className="aspect-square rounded-[24px] bg-surface-variant relative overflow-hidden isolate animate-pulse" />
+    <div className="space-y-2 px-1">
+      <div className="h-5 w-3/4 bg-surface-variant rounded-full animate-pulse" />
+      <div className="h-4 w-1/2 bg-surface-variant/50 rounded-full animate-pulse" />
     </div>
   </div>
 );
 
-// --- EXPRESSIVE TRACK CARD ---
 const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) => void }) => (
   <motion.div
     variants={cardVariants}
     whileHover="hover"
     whileTap="tap"
-    className="group cursor-pointer flex flex-col gap-4 relative"
+    className="group cursor-pointer relative"
     onClick={() => onPlay(track.id)}
   >
-    {/* Image Container */}
-    <div className="aspect-square rounded-[32px] bg-zinc-900 overflow-hidden relative shadow-lg ring-1 ring-white/5 isolate">
-      {track.coverArt ? (
-        <motion.img 
-          src={track.coverArt} 
-          alt={track.title}
-          className="w-full h-full object-cover transition-transform duration-500 will-change-transform"
-          variants={{
-             hover: { scale: 1.05 }
-          }}
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-          <Music className="w-20 h-20 text-zinc-700" />
+     <mc-card
+        variant="elevated"
+        style={{
+            borderRadius: '24px',
+            overflow: 'hidden',
+            backgroundColor: 'var(--md-sys-color-surface-container-low)',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%'
+        } as any}
+     >
+        <div className="aspect-square w-full relative">
+            {track.coverArt ? (
+                <img
+                src={track.coverArt}
+                alt={track.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center bg-surface-variant">
+                    <mc-icon name="music_note" style={{ fontSize: '48px', opacity: 0.5 } as any}></mc-icon>
+                </div>
+            )}
+             {/* Play Overlay */}
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <div className="w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg">
+                    <mc-icon name="play_arrow" style={{ fontSize: '32px' } as any}></mc-icon>
+                </div>
+            </div>
         </div>
-      )}
-      
-      {/* Play Overlay - Only visible on hover/focus */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        variants={{
-          hover: { opacity: 1 },
-          tap: { opacity: 1 }
-        }}
-        className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center transition-opacity"
-      >
-        <motion.div
-          variants={{
-            hover: { scale: 1, opacity: 1 },
-            hidden: { scale: 0.8, opacity: 0 }
-          }}
-          className="w-16 h-16 bg-white/90 text-black rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"
-        >
-          <Play className="w-7 h-7 fill-current ml-1" />
-        </motion.div>
-      </motion.div>
-    </div>
 
-    {/* Text Content */}
-    <div className="px-2 flex flex-col gap-1">
-      <h3 className="text-[17px] font-bold text-white truncate leading-tight tracking-tight">
-        {track.title}
-      </h3>
-      <p className="text-[15px] text-zinc-400 font-medium truncate group-hover:text-zinc-200 transition-colors">
-        {track.artist}
-      </p>
-    </div>
+        <div className="p-4 flex flex-col gap-1">
+            <h3 className="text-base font-bold text-on-surface truncate leading-tight">
+                {track.title}
+            </h3>
+            <p className="text-sm text-on-surface-variant font-medium truncate">
+                {track.artist}
+            </p>
+        </div>
+        <mc-ripple></mc-ripple>
+     </mc-card>
   </motion.div>
 ));
 
 TrackCard.displayName = 'TrackCard';
 
-// --- MAIN COMPONENT ---
 const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoading = false }) => {
   
   const randomMix = useMemo(() => {
@@ -142,61 +131,59 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       exit={{ opacity: 0 }}
       className="w-full h-full overflow-y-auto pt-safe pb-40 px-6 scrollbar-hide"
     >
-      <div className="max-w-[1400px] mx-auto space-y-16 py-8">
+      <div className="max-w-[1400px] mx-auto space-y-12 py-8">
 
-        {/* Expressive Header */}
+        {/* Header */}
         <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8">
           <div className="space-y-3">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold uppercase tracking-widest"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <mc-icon name="auto_awesome" style={{ fontSize: '16px' } as any}></mc-icon>
               <span>Discovery Mix</span>
             </motion.div>
-            <h2 className="text-5xl md:text-7xl font-bold text-white tracking-tighter leading-[0.9]">
+            <h2 className="text-5xl md:text-7xl font-bold text-on-background tracking-tighter leading-[0.9]">
               Fresh <br className="hidden md:block" /> Picks
             </h2>
-            <p className="text-xl text-zinc-400 max-w-lg font-medium leading-relaxed pt-2">
-              A curated selection from your library, served fresh every time you visit.
+            <p className="text-xl text-on-surface-variant max-w-lg font-medium leading-relaxed pt-2">
+              Curated for you.
             </p>
           </div>
           
           <div className="flex gap-4 flex-wrap">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleShufflePlay}
-              disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition-colors flex items-center gap-3 text-lg"
+            <mc-button
+                variant="tonal"
+                onClick={handleShufflePlay}
+                disabled={isLoading || filteredTracks.length === 0}
+                style={{ height: '56px', borderRadius: '28px', paddingLeft: '24px', paddingRight: '24px', fontSize: '16px' } as any}
             >
-              <Shuffle className="w-6 h-6" />
-              <span>Shuffle</span>
-            </motion.button>
+                <mc-icon slot="icon" name="shuffle"></mc-icon>
+                Shuffle
+            </mc-button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-              disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-10 rounded-full bg-white text-black font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] transition-all flex items-center gap-3 text-lg disabled:opacity-50"
+            <mc-button
+                variant="filled"
+                onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
+                disabled={isLoading || filteredTracks.length === 0}
+                style={{ height: '56px', borderRadius: '28px', paddingLeft: '32px', paddingRight: '32px', fontSize: '18px' } as any}
             >
-              <Play className="w-6 h-6 fill-current" />
-              <span>Play</span>
-            </motion.button>
+                <mc-icon slot="icon" name="play_arrow"></mc-icon>
+                Play
+            </mc-button>
           </div>
         </header>
 
-        {/* Recently Played Section */}
+        {/* Recently Played */}
         {recentlyPlayed.length > 0 && (
             <section className="space-y-6">
                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-white"
+                  className="flex items-center gap-3 text-on-surface"
                 >
-                    <Clock className="w-6 h-6 text-primary" />
+                    <mc-icon name="history" style={{ color: 'var(--md-sys-color-primary)' } as any}></mc-icon>
                     <h3 className="text-2xl font-bold">Recently Played</h3>
                 </motion.div>
 
@@ -204,7 +191,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-12"
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8"
                 >
                      <AnimatePresence mode="popLayout">
                       {recentlyPlayed.map((track) => (
@@ -224,16 +211,16 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-white"
+                  className="flex items-center gap-3 text-on-surface"
                 >
-                    <Sparkles className="w-6 h-6 text-secondary" />
+                    <mc-icon name="explore" style={{ color: 'var(--md-sys-color-secondary)' } as any}></mc-icon>
                     <h3 className="text-2xl font-bold">Just For You</h3>
             </motion.div>
              <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-12"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8"
             >
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, i) => (
@@ -257,13 +244,13 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-zinc-500"
+            className="flex flex-col items-center justify-center py-32 text-on-surface-variant"
           >
-            <div className="w-32 h-32 rounded-[40px] bg-zinc-900 flex items-center justify-center mb-6">
-              <Music className="w-16 h-16 opacity-30" />
+            <div className="w-32 h-32 rounded-[40px] bg-surface-variant flex items-center justify-center mb-6">
+                <mc-icon name="library_music" style={{ fontSize: '64px', opacity: 0.5 } as any}></mc-icon>
             </div>
-            <p className="text-2xl font-bold text-white">No tracks found</p>
-            <p className="text-lg mt-2 text-zinc-400">Import music to get started.</p>
+            <p className="text-2xl font-bold text-on-surface">No tracks found</p>
+            <p className="text-lg mt-2 opacity-70">Import music to get started.</p>
           </motion.div>
         )}
       </div>

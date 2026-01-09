@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@xujunhao2010/material_components": "^0.2.0",
     "buffer": "^6.0.3",
     "framer-motion": "^12.23.26",
     "jszip": "3.10.1",
     "lucide-react": "^0.562.0",
+    "material-colors": "^1.2.6",
     "music-metadata-browser": "^2.5.11",
     "process": "^0.11.10",
     "react": "^19.2.3",
