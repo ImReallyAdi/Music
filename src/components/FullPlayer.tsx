@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   motion,
   AnimatePresence,
-  useMotionValue,
-  useTransform,
   useDragControls,
-  useSpring
 } from 'framer-motion';
 import {
   Shuffle,
@@ -18,8 +15,9 @@ import {
   ChevronDown,
   Mic2,
   Heart,
-  Globe, // Added icon
-  Youtube, // Added YouTube icon
+  Youtube,
+  X,
+  Volume2
 } from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
@@ -27,6 +25,7 @@ import QueueList from './QueueList';
 import LyricsView from './LyricsView';
 import { ThemePalette } from '../utils/colors';
 import { AudioAnalysis } from '../hooks/useAudioAnalyzer';
+import { PixelButton, PixelCard, PixelSlider, PixelArtFrame, PixelBadge } from './PixelComponents';
 
 // Helper to format time (mm:ss)
 const formatTime = (seconds: number) => {
@@ -59,7 +58,7 @@ interface FullPlayerProps {
   onTrackUpdate?: (track: Track) => void;
   theme: ThemePalette | null;
   themeColor?: string;
-  analyzerData?: AudioAnalysis; // Accept data from prop
+  analyzerData?: AudioAnalysis;
 }
 
 const FullPlayer: React.FC<FullPlayerProps> = ({
@@ -76,7 +75,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   duration,
   handleSeek,
   startScrub,
-  scrub,
   endScrub,
   toggleShuffle,
   onRemoveTrack,
@@ -88,42 +86,24 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const [showLyrics, setShowLyrics] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
 
-  // Local state for the slider to ensure immediate feedback
+  // Local state for the slider
   const [localScrubValue, setLocalScrubValue] = useState<number | null>(null);
   const isScrubbing = localScrubValue !== null;
 
   const { beat } = analyzerData || { beat: false };
 
-  // Memoize color values
+  // Memoize colors
   const colors = useMemo(() => ({
-    primary: theme?.primary || '#ffffff',
+    primary: theme?.primary || '#ff4d4d',
     secondary: theme?.secondary || '#a1a1aa',
     muted: theme?.muted || '#71717a',
-    background: theme?.background || '#09090b'
-  }), [theme?.primary, theme?.secondary, theme?.muted, theme?.background]);
-
-  // Beat Animations
-  const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
-  const glowOpacity = useSpring(0, { stiffness: 200, damping: 20 });
-
-  useEffect(() => {
-      if (beat && isPlayerOpen) {
-          beatScale.set(1.03); // Pop
-          glowOpacity.set(0.6); // Flash
-          setTimeout(() => {
-              beatScale.set(1);
-              glowOpacity.set(0);
-          }, 100);
-      }
-  }, [beat, beatScale, glowOpacity, isPlayerOpen]);
+    background: theme?.background || '#18181b'
+  }), [theme]);
 
   const safeDuration = Math.max(duration, 0.01);
   const isSeekable = duration > 0 && !isNaN(duration);
   const dragControls = useDragControls();
-  const dragY = useMotionValue(0);
-  const opacity = useTransform(dragY, [0, 200], [1, 0]);
 
-  // Display value
   const displayValue = isScrubbing ? localScrubValue : currentTime;
 
   // --- SCRUBBING HANDLERS ---
@@ -131,13 +111,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       if (startScrub) startScrub();
   };
 
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
-      // Allow scrubbing even if duration is unknown for streams?
-      // YouTube streams might have duration. If 0, seekable is false.
+  const handleScrubChange = (val: number) => {
       if (!isSeekable && currentTrack?.source !== 'youtube') return;
-
-      const value = Number((e.target as HTMLInputElement).value);
-      setLocalScrubValue(value);
+      setLocalScrubValue(val);
   };
 
   const handleScrubEnd = () => {
@@ -146,20 +122,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       }
       setLocalScrubValue(null);
       if (endScrub) endScrub();
-  };
-
-  const handleScrubInteractionStart = (e: React.PointerEvent<HTMLInputElement>) => {
-      e.stopPropagation();
-      handleScrubStart();
-
-      const onPointerUp = () => {
-          handleScrubEnd();
-          window.removeEventListener('pointerup', onPointerUp);
-          window.removeEventListener('pointercancel', onPointerUp);
-      };
-
-      window.addEventListener('pointerup', onPointerUp);
-      window.addEventListener('pointercancel', onPointerUp);
   };
 
   useEffect(() => {
@@ -207,8 +169,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   if (!currentTrack) return null;
 
-  const { primary: primaryColor, secondary: secondaryColor, muted: mutedColor, background: backgroundColor } = colors;
-
   return (
     <AnimatePresence>
       {isPlayerOpen && (
@@ -217,281 +177,237 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          drag="y"
-          dragControls={dragControls}
-          dragListener={false}
-          dragConstraints={{ top: 0 }}
-          dragElastic={0.05}
-          style={{ opacity, y: dragY, background: backgroundColor, willChange: 'transform, opacity' }}
-          onDragEnd={(_, i) => {
-            if (i.offset.y > 100 || i.velocity.y > 500) onClose();
-            else dragY.set(0);
-          }}
-          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
+          transition={{ type: 'spring', damping: 20, stiffness: 100 }} // Slower, more mechanical slide
+          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden bg-zinc-900 pt-safe pb-safe"
         >
-          {/* Dynamic Background */}
-          <motion.div
-            animate={{ background: `linear-gradient(to bottom, ${primaryColor}40, ${backgroundColor})` }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 -z-20"
+          {/* Pattern Background */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none"
+               style={{
+                   backgroundImage: 'radial-gradient(#555 1px, transparent 1px)',
+                   backgroundSize: '20px 20px'
+               }}
           />
 
-          {/* Background Blur Image */}
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <motion.img
-              key={currentTrack.coverArt}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              transition={{ duration: 1 }}
-              src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[100px] scale-125 brightness-75"
-              alt=""
-            />
-            {/* Grain Overlay */}
-            <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
-                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-            />
-          </div>
-
-          {/* Drag Handle */}
+          {/* Header / Drag Handle */}
           <div 
+            className="relative h-16 w-full flex items-center justify-between px-6 z-20 shrink-0 border-b-2 border-black bg-zinc-800 shadow-[0_4px_0_0_rgba(0,0,0,0.3)]"
             onPointerDown={(e) => dragControls.start(e)}
-            className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors" />
+             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded active:translate-y-1 transition-transform">
+                <ChevronDown size={28} strokeWidth={2.5} />
+             </button>
+
+             <div className="font-pixel-header text-sm text-zinc-400 tracking-widest uppercase">
+                 Now Playing
+             </div>
+
+             <div className="w-10" /> {/* Spacer */}
           </div>
 
-          <main className="flex-1 px-8 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
+          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-12 min-h-0 overflow-y-auto landscape:overflow-hidden no-scrollbar">
             
-            {/* Left: Artwork */}
-            <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
+            {/* Left: Artwork / Visuals */}
+            <div className="w-full max-w-[340px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0 mt-4 md:mt-0">
               <AnimatePresence mode="wait">
                 {showLyrics ? (
-                  <motion.div
-                     key="lyrics"
-                     initial={{ opacity: 0, scale: 0.95 }}
-                     animate={{ opacity: 1, scale: 1 }}
-                     exit={{ opacity: 0, scale: 0.95 }}
-                     className="absolute inset-0 rounded-2xl overflow-hidden"
-                     onPointerDown={(e) => e.stopPropagation()}
-                  >
+                  <PixelCard className="absolute inset-0 bg-zinc-900 p-2 overflow-hidden">
                      <LyricsView
                        track={currentTrack}
                        currentTime={currentTime}
                        onSeek={handleSeek}
                        onClose={() => setShowLyrics(false)}
                        onTrackUpdate={onTrackUpdate}
-                       lyricOffset={playerState.lyricOffset} // PASS OFFSET
-                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))} // UPDATE
+                       lyricOffset={playerState.lyricOffset}
+                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))}
                      />
-                  </motion.div>
+                  </PixelCard>
                 ) : showQueue ? (
-                  <motion.div
-                    key="queue"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col"
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <QueueList
-                      queue={playerState.queue}
-                      currentTrackId={playerState.currentTrackId}
-                      tracks={tracks}
-                      onReorder={handleReorder}
-                      onPlay={(id) => playTrack(id, { fromQueue: true })}
-                      onRemove={onRemoveTrack || (() => {})}
-                      onPlayNext={handleQueuePlayNext}
-                      onClose={() => setShowQueue(false)}
-                    />
-                  </motion.div>
+                  <PixelCard className="absolute inset-0 bg-zinc-900 overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between p-3 border-b-2 border-black bg-zinc-800">
+                        <span className="font-pixel font-bold">QUEUE</span>
+                        <button onClick={() => setShowQueue(false)}><X size={20}/></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        <QueueList
+                        queue={playerState.queue}
+                        currentTrackId={playerState.currentTrackId}
+                        tracks={tracks}
+                        onReorder={handleReorder}
+                        onPlay={(id) => playTrack(id, { fromQueue: true })}
+                        onRemove={onRemoveTrack || (() => {})}
+                        onPlayNext={handleQueuePlayNext}
+                        onClose={() => setShowQueue(false)}
+                        />
+                    </div>
+                  </PixelCard>
                 ) : (
                   <motion.div
                     key="art"
-                    layoutId="albumArt"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{
-                        opacity: 1,
-                        scale: playerState.isPlaying ? 1 : 0.9
-                    }}
-                    style={{ scale: playerState.isPlaying ? beatScale : 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                    className="relative w-full h-full"
                   >
-                     <img
-                      src={currentTrack.coverArt}
-                      className="w-full h-full object-cover"
-                      alt="Album Art"
-                    />
+                     <PixelArtFrame src={currentTrack.coverArt || ''} className="w-full h-full" />
 
-                    {/* WEB MODE BADGE */}
-                    {currentTrack.source === 'youtube' && (
-                        <div className="absolute top-4 right-4 bg-red-600/90 text-white p-2 rounded-full shadow-lg backdrop-blur-sm z-10">
-                            <Youtube size={20} />
+                     {/* Beat Effect Overlay */}
+                     {beat && playerState.isPlaying && (
+                         <div className="absolute inset-0 border-4 border-white opacity-50 pointer-events-none mix-blend-overlay" />
+                     )}
+
+                     {currentTrack.source === 'youtube' && (
+                        <div className="absolute top-2 right-2">
+                             <PixelBadge color="#ff0000">WEB</PixelBadge>
                         </div>
-                    )}
-
-                    {/* Beat Glow Flash */}
-                    <motion.div
-                        style={{ opacity: glowOpacity, background: primaryColor }}
-                        className="absolute inset-0 mix-blend-overlay pointer-events-none"
-                    />
+                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Right: Info & Controls */}
-            <div className="w-full max-w-[380px] flex flex-col justify-center gap-6 shrink-0">
+            <div className="w-full max-w-[360px] flex flex-col justify-center gap-6 shrink-0 pb-8 md:pb-0">
               
-              {/* Text Info & Favorite */}
-              <div className="flex items-center justify-between">
-                  <div className="text-left flex-1 min-w-0">
-                    <motion.h1
-                        animate={{ color: theme?.primary ? '#ffffff' : '#ffffff' }}
-                        className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1"
-                        title={currentTrack.title}
-                    >
-                      {currentTrack.title}
-                    </motion.h1>
-                    <motion.p
-                        animate={{ color: mutedColor }}
-                        className="text-lg line-clamp-1 mt-1 font-medium"
-                        title={currentTrack.artist}
-                    >
+              {/* Info Block */}
+              <div className="flex items-center justify-between bg-zinc-800 p-4 border-2 border-black shadow-[4px_4px_0_0_#000]">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <div className="overflow-hidden">
+                        <motion.h1
+                            className="text-xl md:text-2xl font-pixel-header leading-tight truncate text-white"
+                            title={currentTrack.title}
+                        >
+                        {currentTrack.title}
+                        </motion.h1>
+                    </div>
+                    <p className="text-base font-pixel text-zinc-400 truncate mt-1">
                       {currentTrack.artist}
-                    </motion.p>
+                    </p>
                   </div>
 
                   <button
                     onClick={(e) => {
                         e.stopPropagation();
                         dbService.toggleFavorite(currentTrack.id).then(updatedTrack => {
-                            if (updatedTrack && onTrackUpdate) {
-                                onTrackUpdate(updatedTrack);
-                            }
+                            if (updatedTrack && onTrackUpdate) onTrackUpdate(updatedTrack);
                         });
                     }}
-                    className="p-3 rounded-full hover:bg-white/10 active:scale-90 transition-all"
-                    style={{ color: currentTrack.isFavorite ? primaryColor : mutedColor }}
+                    className={`p-2 transition-transform active:scale-90 ${currentTrack.isFavorite ? 'text-red-500' : 'text-zinc-600'}`}
                   >
-                     <Heart size={24} fill={currentTrack.isFavorite ? "currentColor" : "none"} strokeWidth={currentTrack.isFavorite ? 0 : 2} />
+                     <Heart size={24} fill={currentTrack.isFavorite ? "currentColor" : "none"} strokeWidth={3} />
                   </button>
               </div>
 
-              {/* Progress Slider */}
-              <div className="group relative pt-4 pb-2">
-                <div className="relative h-1.5 w-full bg-white/10 rounded-full group-hover:h-2 transition-all overflow-visible">
-                  <motion.div
-                    animate={{ backgroundColor: primaryColor }}
-                    className="absolute h-full rounded-full pointer-events-none origin-left"
-                    style={{ width: `${(displayValue / safeDuration) * 100}%`, willChange: 'width' }}
-                  />
-                  {/* Beat Pulse Overlay on Bar */}
-                  {playerState.isPlaying && (
-                      <motion.div
-                        animate={{ opacity: beat ? 0.5 : 0 }}
-                        transition={{ duration: 0.1 }}
-                        className="absolute h-full w-full bg-white mix-blend-overlay pointer-events-none"
-                      />
-                  )}
-                </div>
-
-                <input
-                    type="range"
+              {/* Progress */}
+              <div className="space-y-2">
+                 <PixelSlider
+                    value={displayValue}
                     min={0}
                     max={safeDuration}
-                    step={0.1} // High resolution for smooth dragging
-                    value={displayValue}
-                    disabled={!isSeekable && currentTrack.source !== 'youtube'}
+                    step={0.1}
+                    color={colors.primary}
+                    height={24}
                     onChange={handleScrubChange}
-                    onPointerDown={(e) => (isSeekable || currentTrack.source === 'youtube') && handleScrubInteractionStart(e)}
-                    className={`absolute -inset-x-0 -top-2.5 w-full h-8 opacity-0 z-50 ${isSeekable || currentTrack.source === 'youtube' ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                    style={{ pointerEvents: 'auto', bottom: '-8px', touchAction: 'none' }}
-                  />
-
-                <div className="flex justify-between mt-2 text-xs font-medium font-mono" style={{ color: mutedColor }}>
-                  <span>{formatTime(displayValue)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
+                    onScrubStart={handleScrubStart}
+                    onScrubEnd={handleScrubEnd}
+                    disabled={!isSeekable && currentTrack.source !== 'youtube'}
+                 />
+                 <div className="flex justify-between text-sm font-pixel text-zinc-500 px-1">
+                    <span>{formatTime(displayValue)}</span>
+                    <span>{formatTime(duration)}</span>
+                 </div>
               </div>
 
               {/* Main Controls */}
-              <div className="flex items-center justify-between">
-                <button 
+              <div className="grid grid-cols-5 gap-4 items-center justify-items-center">
+
+                <PixelButton
+                    variant="ghost"
+                    square
                     onClick={toggleShuffle} 
-                    className={`p-3 rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.shuffle ? primaryColor : mutedColor, backgroundColor: playerState.shuffle ? `${primaryColor}20` : 'transparent' }}
+                    className={playerState.shuffle ? "text-primary" : "text-zinc-600"}
                 >
-                  <Shuffle size={20} />
-                </button>
+                    <Shuffle size={20} />
+                    {playerState.shuffle && <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-primary border border-black" />}
+                </PixelButton>
 
-                <div className="flex items-center gap-6">
-                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipBack size={32} fill="currentColor" />
-                  </button>
-                  
-                  <motion.button
+                <PixelButton variant="secondary" square onClick={prevTrack} className="w-12 h-12">
+                   <SkipBack size={24} fill="currentColor" />
+                </PixelButton>
+
+                <PixelButton
+                    variant="primary"
+                    square
                     onClick={togglePlay}
-                    whileTap={{ scale: 0.9 }}
-                    animate={{ scale: beat ? 1.05 : 1 }}
-                    style={{ backgroundColor: primaryColor, color: backgroundColor }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors active:opacity-90"
-                  >
-                    {playerState.isPlaying ? 
-                      <Pause size={36} fill="currentColor" /> :
-                      <Play size={36} fill="currentColor" className="ml-1" />
-                    }
-                  </motion.button>
-                  
-                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipForward size={32} fill="currentColor" />
-                  </button>
-                </div>
-
-                <button 
-                    onClick={toggleRepeat} 
-                    className={`p-3 relative rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.repeat !== 'OFF' ? primaryColor : mutedColor, backgroundColor: playerState.repeat !== 'OFF' ? `${primaryColor}20` : 'transparent' }}
+                    className="w-16 h-16 border-4"
+                    style={{ backgroundColor: colors.primary, color: '#fff' }}
                 >
-                  <Repeat size={20} />
-                  {playerState.repeat === 'ONE' && (
-                    <span className="absolute top-1.5 right-2 text-[7px] px-0.5 rounded-[2px] font-bold leading-none" style={{ backgroundColor: primaryColor, color: backgroundColor }}>1</span>
-                  )}
-                </button>
+                    {playerState.isPlaying ? (
+                        <Pause size={32} fill="currentColor" />
+                    ) : (
+                        <Play size={32} fill="currentColor" />
+                    )}
+                </PixelButton>
+
+                <PixelButton variant="secondary" square onClick={nextTrack} className="w-12 h-12">
+                   <SkipForward size={24} fill="currentColor" />
+                </PixelButton>
+
+                <PixelButton
+                    variant="ghost"
+                    square
+                    onClick={toggleRepeat}
+                    className={playerState.repeat !== 'OFF' ? "text-primary" : "text-zinc-600"}
+                >
+                    <Repeat size={20} />
+                    {playerState.repeat === 'ONE' && (
+                        <span className="absolute -top-1 -right-1 bg-black text-white text-[8px] px-1 border border-white">1</span>
+                    )}
+                </PixelButton>
+
               </div>
 
-              {/* Bottom Row (Queue & Lyrics) */}
-              <div className="flex items-center justify-between mt-4 px-1">
-                <button
-                  onClick={() => {
-                    setShowLyrics(!showLyrics);
-                    if (!showLyrics) setShowQueue(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showLyrics ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showLyrics ? backgroundColor : mutedColor
-                  }}
-                >
-                  <Mic2 size={20} />
-                </button>
+              {/* Volume Slider */}
+              {onVolumeChange && (
+                  <div className="flex items-center gap-3 px-2">
+                      <Volume2 size={20} className="text-zinc-500" />
+                      <div className="flex-1">
+                          <PixelSlider
+                              value={playerState.volume * 100}
+                              min={0}
+                              max={100}
+                              step={1}
+                              height={16}
+                              color={colors.secondary}
+                              onChange={(val) => onVolumeChange(val / 100)}
+                          />
+                      </div>
+                  </div>
+              )}
 
-                <button 
-                  onClick={() => {
-                    setShowQueue(!showQueue);
-                    if (!showQueue) setShowLyrics(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showQueue ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showQueue ? backgroundColor : mutedColor
-                  }}
-                >
-                  {showQueue ? <ChevronDown size={20} /> : <ListMusic size={20} />}
-                </button>
+              {/* Toggles */}
+              <div className="flex gap-4">
+                 <PixelButton
+                    variant={showLyrics ? "primary" : "secondary"}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => {
+                        setShowLyrics(!showLyrics);
+                        if (!showLyrics) setShowQueue(false);
+                    }}
+                 >
+                    <Mic2 size={16} /> <span className="text-xs">LYRICS</span>
+                 </PixelButton>
+
+                 <PixelButton
+                    variant={showQueue ? "primary" : "secondary"}
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => {
+                        setShowQueue(!showQueue);
+                        if (!showQueue) setShowLyrics(false);
+                    }}
+                 >
+                    <ListMusic size={16} /> <span className="text-xs">QUEUE</span>
+                 </PixelButton>
               </div>
 
             </div>
