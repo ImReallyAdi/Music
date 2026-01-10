@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Music, Play, Shuffle, ListFilter, Settings, Trash2, 
   PlusCircle, Loader2, X, Mic2, Users, ChevronLeft, 
-  Disc, Heart, Check, Sparkles, Key, FileText
+  Disc, Heart, Check, Sparkles, Key, FileText, Download, ListMusic
 } from 'lucide-react';
 import { Track, PlayerState, Playlist } from '../types';
 import { dbService } from '../db';
@@ -14,7 +14,7 @@ import { parseLrc } from '../utils/lyrics';
 import { useToast } from './Toast';
 
 // --- TYPES ---
-type LibraryTab = 'Songs' | 'Favorites' | 'Albums' | 'Artists' | 'Playlists' | 'Settings';
+type LibraryTab = 'All' | 'Playlists' | 'Liked Songs' | 'Artists' | 'Albums' | 'Settings';
 type SortOption = 'added' | 'title' | 'artist';
 
 interface LibraryProps {
@@ -82,22 +82,22 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
-            className="flex items-center gap-4 p-2 rounded-2xl cursor-pointer hover:bg-surface-variant/40 transition-colors group"
+            className="flex items-center gap-4 p-2 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors group"
         >
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-variant flex-shrink-0 shadow-sm relative">
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0 shadow-sm relative ring-2 ring-white/5">
                 {image ? (
                     <img src={image} alt={displayArtist} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-variant to-surface-variant-dim">
-                        <Users className="w-6 h-6 text-on-surface/40" />
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                        <Users className="w-6 h-6 text-zinc-600" />
                     </div>
                 )}
             </div>
             <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate text-on-surface">{displayArtist}</h3>
-                <p className="text-sm text-on-surface/60">{trackCount} {trackCount === 1 ? 'Song' : 'Songs'}</p>
+                <h3 className="text-lg font-semibold truncate text-white">{displayArtist}</h3>
+                <p className="text-sm text-zinc-400">{trackCount} {trackCount === 1 ? 'Song' : 'Songs'}</p>
             </div>
-            <div className="w-10 h-10 rounded-full border border-surface-variant/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Play className="w-5 h-5 fill-current text-primary ml-0.5" />
             </div>
         </motion.div>
@@ -125,15 +125,15 @@ const TrackRow = memo(({
             transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
             className={`group relative flex items-center gap-4 p-2 rounded-2xl transition-all cursor-pointer border border-transparent ${
                 isCurrentTrack 
-                ? 'bg-primary/10 border-primary/5' 
-                : 'hover:bg-surface-variant/30'
+                ? 'bg-primary/10 border-primary/5 shadow-[0_0_15px_-5px_rgba(163,230,53,0.1)]'
+                : 'hover:bg-white/5'
             }`}
             onClick={() => onPlay(track.id)}
         >
             {/* Thumbnail */}
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
-                <div className={`w-full h-full rounded-[12px] overflow-hidden shadow-sm transition-all ${
-                    isCurrentTrack ? 'ring-2 ring-primary/30' : 'bg-surface-variant'
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 group/thumb">
+                <div className={`w-full h-full rounded-[14px] overflow-hidden shadow-sm transition-all ${
+                    isCurrentTrack ? 'ring-2 ring-primary/30' : 'bg-zinc-800'
                 }`}>
                     {track.coverArt ? (
                         <img 
@@ -143,58 +143,67 @@ const TrackRow = memo(({
                             loading="lazy" 
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-surface-variant">
-                            <Music className={`w-6 h-6 ${isCurrentTrack ? 'text-primary' : 'text-on-surface/40'}`} />
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                            <Music className={`w-6 h-6 ${isCurrentTrack ? 'text-primary' : 'text-zinc-600'}`} />
                         </div>
                     )}
                 </div>
                 
-                {/* Overlay Icon */}
+                {/* Overlay Icon - Always visible on hover for easier play */}
                 <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-                    isCurrentTrack && isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 bg-black/20 rounded-[12px]'
+                    isCurrentTrack && isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 bg-black/20 rounded-[14px] backdrop-blur-[1px]'
                 }`}>
                     {isCurrentTrack && isPlaying ? (
-                        <Loader2 className="w-6 h-6 text-primary animate-spin drop-shadow-md" />
+                         <div className="flex gap-0.5 items-end h-4 pb-1">
+                            <motion.div animate={{ height: [4, 12, 6, 14, 8] }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-1 bg-primary rounded-full" />
+                            <motion.div animate={{ height: [10, 4, 14, 6, 10] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-1 bg-primary rounded-full" />
+                            <motion.div animate={{ height: [6, 14, 8, 4, 12] }} transition={{ repeat: Infinity, duration: 0.7 }} className="w-1 bg-primary rounded-full" />
+                         </div>
                     ) : (
-                        <Play className="w-6 h-6 fill-white text-white drop-shadow-md ml-0.5" />
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover/thumb:scale-100 transition-transform">
+                             <Play className="w-4 h-4 fill-black text-black ml-0.5" />
+                        </div>
                     )}
                 </div>
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                <h3 className={`text-base font-semibold truncate ${isCurrentTrack ? 'text-primary' : 'text-on-surface'}`}>
+                <h3 className={`text-[15px] font-semibold truncate ${isCurrentTrack ? 'text-primary' : 'text-zinc-100'}`}>
                     {track.title}
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-on-surface/60 truncate">
-                    <span className="truncate hover:text-on-surface transition-colors">{track.artist}</span>
+                <div className="flex items-center gap-2 text-[13px] text-zinc-400 truncate">
+                    <span className="truncate group-hover:text-zinc-200 transition-colors">{track.artist}</span>
                 </div>
             </div>
 
-            {/* Duration (Hidden on small screens) */}
-            <span className="hidden sm:block text-xs text-on-surface/40 font-mono tracking-wider">
-                {formatDuration(track.duration)}
-            </span>
+            {/* Play Button (Right Side - Requested) */}
+            <button
+                className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isCurrentTrack && isPlaying ? 'text-primary' : 'text-zinc-400 hover:text-white'}`}
+                onClick={(e) => { e.stopPropagation(); onPlay(track.id); }}
+            >
+               {isCurrentTrack && isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+            </button>
 
             {/* Actions */}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button
                     onClick={(e) => { e.stopPropagation(); onUploadLyrics(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
+                    className="p-2 rounded-full text-zinc-500 hover:bg-white/10 hover:text-primary transition-all"
                     title="Upload Lyrics (.lrc)"
                 >
                     <FileText className="w-5 h-5" />
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onAddToPlaylist(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
+                    className="p-2 rounded-full text-zinc-500 hover:bg-white/10 hover:text-primary transition-all"
                     title="Add to Playlist"
                 >
                     <PlusCircle className="w-5 h-5" />
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-error/10 hover:text-error transition-all"
+                    className="p-2 rounded-full text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-all"
                     title="Delete Track"
                 >
                     <Trash2 className="w-5 h-5" />
@@ -211,12 +220,12 @@ const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
     <div className="flex flex-col gap-3 py-2">
         <div className="flex items-center justify-between">
             <div className="flex flex-col">
-                <span className="text-base font-medium text-on-surface">{label}</span>
-                {subLabel && <span className="text-xs text-on-surface/60">{subLabel}</span>}
+                <span className="text-base font-medium text-white">{label}</span>
+                {subLabel && <span className="text-xs text-zinc-400">{subLabel}</span>}
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-                <div className="w-11 h-6 bg-surface-variant rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                <div className="w-11 h-6 bg-zinc-800 rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
         </div>
         {checked && children && (
@@ -245,8 +254,8 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             className="flex flex-col gap-6 p-1 max-w-2xl mx-auto w-full"
         >
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">Playback</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
+                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-3">Playback</h2>
+                <div className="bg-white/5 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
                     <ToggleRow 
                         label="Automix" 
                         subLabel="Smart transitions & AI blending" 
@@ -254,7 +263,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         onChange={(val: boolean) => setPlayerState(p => ({ ...p, automixEnabled: val }))}
                     >
                         <div className="flex flex-col gap-3 pt-2">
-                            <span className="text-xs font-medium text-on-surface/80">Transition Style</span>
+                            <span className="text-xs font-medium text-zinc-300">Transition Style</span>
                             <div className="grid grid-cols-3 gap-2">
                                 {['classic', 'smart', 'shuffle'].map((mode) => (
                                     <button
@@ -263,7 +272,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                                         className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all border ${
                                             playerState.automixMode === mode
                                             ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-surface-variant/50 border-transparent text-on-surface/70 hover:bg-surface-variant'
+                                            : 'bg-white/5 border-transparent text-zinc-400 hover:bg-white/10'
                                         }`}
                                     >
                                         {mode}
@@ -273,7 +282,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-surface-variant/50" />
+                    <div className="h-px bg-white/10" />
 
                     <ToggleRow 
                         label="Crossfade" 
@@ -282,7 +291,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         onChange={(val: boolean) => setPlayerState(p => ({ ...p, crossfadeEnabled: val }))}
                     >
                         <div className="flex flex-col gap-2 pt-1">
-                            <div className="flex justify-between text-xs text-on-surface/70">
+                            <div className="flex justify-between text-xs text-zinc-400">
                                 <span>Overlap</span>
                                 <span>{playerState.crossfadeDuration || 5}s</span>
                             </div>
@@ -290,12 +299,12 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                                 type="range" min="1" max="12" step="1"
                                 value={playerState.crossfadeDuration || 5}
                                 onChange={(e) => setPlayerState(p => ({ ...p, crossfadeDuration: Number(e.target.value) }))}
-                                className="w-full h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary"
+                                className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
                             />
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-surface-variant/50" />
+                    <div className="h-px bg-white/10" />
                     
                     <ToggleRow 
                         label="Normalize Volume" 
@@ -307,8 +316,8 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">Experimental</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
+                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-3">Experimental</h2>
+                <div className="bg-white/5 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
                      <ToggleRow
                         label="Word-by-word Lyrics"
                         subLabel="Automatically estimate word timings for Karaoke mode"
@@ -319,10 +328,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">About</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 text-center">
-                    <p className="font-bold text-on-surface">Adi Music</p>
-                    <p className="text-xs text-on-surface/50 mt-1">v1.2.0 • Build 2024</p>
+                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-3">About</h2>
+                <div className="bg-white/5 border border-white/5 rounded-3xl p-5 text-center">
+                    <p className="font-bold text-white">Adi Music</p>
+                    <p className="text-xs text-zinc-500 mt-1">v1.2.0 • Build 2024</p>
                 </div>
             </section>
         </motion.div>
@@ -404,7 +413,7 @@ const Library: React.FC<LibraryProps> = ({
   // Derived: Sorted Tracks
   const sortedTracks = useMemo(() => {
       let base = [...filteredTracks];
-      if (libraryTab === 'Favorites') {
+      if (libraryTab === 'Liked Songs') {
           base = base.filter(t => t.isFavorite);
       }
 
@@ -511,6 +520,15 @@ const Library: React.FC<LibraryProps> = ({
     ? sortedTracks.filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey)
     : sortedTracks;
 
+  // Tabs Configuration
+  const tabs = [
+      { id: 'All', icon: Music, label: 'All' },
+      { id: 'Playlists', icon: ListMusic, label: 'Playlists' },
+      { id: 'Liked Songs', icon: Heart, label: 'Liked' },
+      { id: 'Artists', icon: Users, label: 'Artists' },
+      { id: 'Albums', icon: Disc, label: 'Albums' } // Kept Albums for completeness
+  ];
+
   return (
     <>
         {/* Hidden File Input for Lyrics */}
@@ -524,53 +542,54 @@ const Library: React.FC<LibraryProps> = ({
 
         <div className="flex flex-col h-full px-4 md:px-8 max-w-5xl mx-auto w-full">
             {/* Header & Tabs */}
-            <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
+            <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-3xl font-bold text-on-surface tracking-tight">Library</h1>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Library</h1>
                     <button 
                         onClick={() => setLibraryTab('Settings')}
-                        className={`p-2.5 rounded-full transition-all duration-300 ${libraryTab === 'Settings' ? 'bg-primary text-on-primary rotate-90' : 'hover:bg-surface-variant text-on-surface'}`}
+                        className={`p-2.5 rounded-full transition-all duration-300 ${libraryTab === 'Settings' ? 'bg-primary text-black rotate-90' : 'hover:bg-white/10 text-white'}`}
                     >
                         <Settings className="w-6 h-6" />
                     </button>
                 </div>
 
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-                    {(['Songs', 'Favorites', 'Albums', 'Artists', 'Playlists'] as LibraryTab[]).map((tab) => (
+                    {tabs.map((tab) => (
                     <button
-                        key={tab}
-                        onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
-                        className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
-                        libraryTab === tab
-                            ? 'bg-primary text-on-primary border-primary'
-                            : 'bg-surface-variant/30 text-on-surface/70 border-transparent hover:bg-surface-variant hover:text-on-surface'
+                        key={tab.id}
+                        onClick={() => { setLibraryTab(tab.id as LibraryTab); setSelectedArtist(null); setSelectedArtistKey(null); }}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${
+                        libraryTab === tab.id
+                            ? 'bg-primary text-black border-primary'
+                            : 'bg-zinc-800/50 text-zinc-400 border-transparent hover:bg-zinc-800 hover:text-white'
                         }`}
                     >
-                        {tab === 'Favorites' ? <div className="flex items-center gap-1.5"><Heart size={14} fill={libraryTab === 'Favorites' ? 'currentColor' : 'none'} /> Favorites</div> : tab}
+                        <tab.icon size={16} fill={libraryTab === tab.id && (tab.id === 'Liked Songs' || tab.id === 'Playlists') ? 'currentColor' : 'none'} />
+                        {tab.label}
                     </button>
                     ))}
                 </div>
             </div>
 
-            {/* Controls Row (Songs & Favorites View) */}
-            {(libraryTab === 'Songs' || libraryTab === 'Favorites') && !selectedArtistKey && (
+            {/* Controls Row (Songs & Liked Songs View) */}
+            {(libraryTab === 'All' || libraryTab === 'Liked Songs') && !selectedArtistKey && (
                 <div className="flex items-center gap-3 my-4 animate-in slide-in-from-top-2 fade-in duration-300">
                     <button 
                         onClick={handleShuffleAll}
                         disabled={sortedTracks.length === 0}
-                        className="flex-1 h-12 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 h-12 rounded-2xl bg-primary text-black hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Shuffle className="w-5 h-5" />
                         <span>Shuffle Library</span>
                     </button>
 
                     <div className="relative group">
-                        <button className="h-12 w-12 rounded-2xl bg-surface-variant/50 text-on-surface flex items-center justify-center hover:bg-surface-variant transition-colors">
+                        <button className="h-12 w-12 rounded-2xl bg-zinc-800 text-white flex items-center justify-center hover:bg-zinc-700 transition-colors">
                             <ListFilter className="w-5 h-5" />
                         </button>
                         {/* Hover Menu */}
                         <div className="absolute right-0 top-12 pt-2 w-48 hidden group-hover:block z-30">
-                            <div className="bg-surface-container-high border border-white/10 rounded-xl shadow-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 backdrop-blur-xl">
+                            <div className="bg-zinc-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 backdrop-blur-xl">
                                 {[
                                     { label: 'Recently Added', val: 'added' },
                                     { label: 'Title (A-Z)', val: 'title' },
@@ -580,7 +599,7 @@ const Library: React.FC<LibraryProps> = ({
                                         key={opt.val}
                                         onClick={() => setSortOption(opt.val as SortOption)}
                                         className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between group/item ${
-                                            sortOption === opt.val ? 'bg-primary/10 text-primary' : 'text-on-surface hover:bg-white/5'
+                                            sortOption === opt.val ? 'bg-primary/10 text-primary' : 'text-white hover:bg-white/5'
                                         }`}
                                     >
                                         {opt.label}
@@ -600,7 +619,7 @@ const Library: React.FC<LibraryProps> = ({
                 ) : (
                     <AnimatePresence mode="wait">
                         {/* VIEW: SONGS OR FAVORITES */}
-                        {(libraryTab === 'Songs' || libraryTab === 'Favorites') && (
+                        {(libraryTab === 'All' || libraryTab === 'Liked Songs') && (
                             <motion.div 
                                 key="songs-list"
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -621,9 +640,9 @@ const Library: React.FC<LibraryProps> = ({
                                         />
                                     ))
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-on-surface/40">
-                                        {libraryTab === 'Favorites' ? <Heart className="w-16 h-16 mb-4 opacity-50 stroke-1" /> : <Music className="w-16 h-16 mb-4 opacity-50 stroke-1" />}
-                                        <p>{libraryTab === 'Favorites' ? "No favorite tracks yet" : "Your library is empty"}</p>
+                                    <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                                        {libraryTab === 'Liked Songs' ? <Heart className="w-16 h-16 mb-4 opacity-50 stroke-1" /> : <Music className="w-16 h-16 mb-4 opacity-50 stroke-1" />}
+                                        <p>{libraryTab === 'Liked Songs' ? "No favorite tracks yet" : "Your library is empty"}</p>
                                     </div>
                                 )}
                             </motion.div>
@@ -634,10 +653,9 @@ const Library: React.FC<LibraryProps> = ({
                             selectedArtistKey ? (
                                 <motion.div key="artist-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
                                     <div className="flex items-center gap-4 mb-6 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2">
-                                        <button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }} className="p-2 -ml-2 rounded-full hover:bg-surface-variant/50">
+                                        <button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }} className="p-2 -ml-2 rounded-full hover:bg-white/10">
                                             <ChevronLeft className="w-6 h-6" />
                                         </button>
-                                        {/* We can use the Artist Image here too, but for now just name */}
                                         <h2 className="text-2xl font-bold">{selectedArtist}</h2>
                                     </div>
                                     <div className="flex flex-col gap-1">

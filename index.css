@@ -3,12 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: 250 80 80; /* Apple Music Red-ish default */
+  /* Lime / Neon Green - ~Lime-400/300ish for punchy dark mode contrast */
+  --color-primary: 163 230 53;
 }
 
 @layer base {
   body {
-    @apply bg-background text-on-background font-sans overflow-hidden select-none antialiased;
+    @apply bg-zinc-950 text-white font-sans overflow-hidden select-none antialiased;
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none; /* Prevents pull-to-refresh on mobile */
@@ -24,7 +25,7 @@
   @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface-variant rounded-full hover:bg-outline/50 transition-colors;
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -36,20 +37,27 @@
   scrollbar-width: none;
 }
 
-/* Premium Glassmorphism */
+/* Premium Glassmorphism & Gradients */
 .glass {
-  background: rgba(24, 24, 27, 0.65); /* Zinc 950 with opacity */
+  background: rgba(24, 24, 27, 0.7); /* Dark Zinc */
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card {
-  background: rgba(39, 39, 42, 0.4); /* Zinc 800 with opacity */
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Cinematic Soft Gradients for Backgrounds */
+.bg-cinematic {
+  background: radial-gradient(circle at 50% 0%, rgba(163, 230, 53, 0.15), transparent 70%),
+              radial-gradient(circle at 0% 50%, rgba(139, 92, 246, 0.1), transparent 50%), /* Soft Purple */
+              linear-gradient(to bottom, #09090b, #000000);
 }
 
 /* Material 3 / iOS Expressive Utils */
@@ -60,7 +68,7 @@
   @apply text-3xl font-semibold tracking-tight;
 }
 .text-label-medium {
-  @apply text-xs font-semibold tracking-widest uppercase text-on-surface/60;
+  @apply text-xs font-semibold tracking-widest uppercase text-white/60;
 }
 
 /* Safe Area Utilities */

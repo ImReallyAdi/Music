@@ -318,13 +318,18 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{ scale: playerState.isPlaying ? beatScale : 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+                    className="relative w-full h-full shadow-[0_30px_60px_rgba(0,0,0,0.6)] rounded-full overflow-hidden ring-4 ring-white/5"
                   >
                      <img
                       src={currentTrack.coverArt}
                       className="w-full h-full object-cover"
                       alt="Album Art"
                     />
+
+                    {/* Rotating Vinyl Effect for Circular Art */}
+                    {playerState.isPlaying && (
+                         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 to-transparent pointer-events-none mix-blend-overlay" />
+                    )}
 
                     {/* WEB MODE BADGE */}
                     {currentTrack.source === 'youtube' && (
