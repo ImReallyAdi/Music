@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { Reorder, useDragControls, motion, AnimatePresence } from 'framer-motion';
 import { Track } from '../types';
-import { Play, X, GripVertical, ArrowUpToLine, Trash2, ListMusic, Disc3, Pause } from 'lucide-react';
+import { GripVertical, ArrowUpToLine, Disc3, ListMusic } from 'lucide-react';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/list/list.js';
@@ -57,36 +57,37 @@ const QueueItem = memo(({
             '--md-list-item-leading-image-height': '56px',
             '--md-list-item-leading-image-width': '56px',
             '--md-list-item-leading-image-shape': '12px',
-            backgroundColor: isCurrent ? 'var(--md-sys-color-primary-container)' : 'transparent',
-            color: isCurrent ? 'var(--md-sys-color-on-primary-container)' : 'inherit',
+            '--md-list-item-headline-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
+            '--md-list-item-supporting-text-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
+            backgroundColor: isCurrent ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
             borderRadius: '16px',
             marginBottom: '4px',
-            opacity: isHistory ? 0.5 : 1
+            opacity: isHistory ? 0.6 : 1
         }}
       >
         {/* Drag Handle */}
         {canDrag && (
-            <div slot="start" className="pr-2 cursor-grab active:cursor-grabbing text-on-surface-variant" onPointerDown={(e) => controls.start(e)}>
-                 <GripVertical size={20} />
+            <div slot="start" className="pr-2 cursor-grab active:cursor-grabbing text-on-surface-variant opacity-60 hover:opacity-100" onPointerDown={(e) => controls.start(e)}>
+                 <GripVertical size={24} />
             </div>
         )}
 
         {/* Artwork */}
-        <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center">
+        <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5">
             <img
                 src={track.coverArt}
                 alt={track.title}
                 className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
             />
             {isCurrent && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                   <div className="flex gap-0.5 items-end h-3 pb-1">
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                   <div className="flex gap-1 items-end h-4 pb-1">
                         {[0.6, 0.8, 1.0].map((d, i) => (
                             <motion.span
                                 key={i}
                                 animate={{ height: ["20%", "100%", "20%"] }}
                                 transition={{ duration: d, repeat: Infinity, ease: "easeInOut" }}
-                                className="w-1 bg-white rounded-full"
+                                className="w-1 bg-primary rounded-full"
                             />
                         ))}
                     </div>
@@ -95,14 +96,14 @@ const QueueItem = memo(({
         </div>
 
         {/* Actions */}
-        <div slot="end" className="flex items-center" onClick={(e) => e.stopPropagation()}>
+        <div slot="end" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
              {!isCurrent && onPlayNext && (
                 <md-icon-button onClick={onPlayNext} title="Play Next">
                     <md-icon><ArrowUpToLine size={20} /></md-icon>
                 </md-icon-button>
              )}
              <md-icon-button onClick={onRemove} title="Remove">
-                 <md-icon><X size={20} /></md-icon>
+                 <md-icon class="material-symbols-rounded">close</md-icon>
              </md-icon-button>
         </div>
       </md-list-item>
@@ -174,16 +175,16 @@ const QueueList: React.FC<QueueListProps> = ({
   if (!queue || queue.length === 0) {
     return (
       <div className="flex flex-col h-full bg-surface text-on-surface">
-        <div className="flex w-full justify-between items-center px-4 pt-4">
+        <div className="flex w-full justify-between items-center px-6 pt-6">
           <h3 className="text-headline-small font-bold">Queue</h3>
           {onClose && (
             <md-icon-button onClick={onClose}>
-              <md-icon><X /></md-icon>
+              <md-icon class="material-symbols-rounded">close</md-icon>
             </md-icon-button>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <div className="w-32 h-32 rounded-full bg-surface-variant flex items-center justify-center">
+          <div className="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center">
              <Disc3 size={64} className="text-on-surface-variant/50" />
           </div>
           <div>
@@ -199,14 +200,14 @@ const QueueList: React.FC<QueueListProps> = ({
     <div className="h-full flex flex-col relative bg-surface text-on-surface">
       
       {/* --- Header --- */}
-      <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-surface/90 backdrop-blur-xl z-30 border-b border-outline-variant/20">
+      <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface/95 backdrop-blur-xl z-30 border-b border-outline-variant/10">
         <div className="flex items-baseline gap-3">
            <h3 className="text-headline-small font-bold">Queue</h3>
-           <span className="text-body-small text-on-surface-variant">{queue.length} tracks</span>
+           <span className="text-body-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
         </div>
         {onClose && (
           <md-icon-button onClick={onClose}>
-            <md-icon><X /></md-icon>
+            <md-icon class="material-symbols-rounded">close</md-icon>
           </md-icon-button>
         )}
       </div>
@@ -224,7 +225,7 @@ const QueueList: React.FC<QueueListProps> = ({
             >
               <div className="flex items-center gap-3 px-4 mb-2 opacity-60">
                  <span className="text-label-small font-bold uppercase tracking-widest text-on-surface-variant">History</span>
-                 <div className="h-px bg-outline-variant flex-1" />
+                 <div className="h-px bg-outline-variant flex-1 opacity-50" />
               </div>
               <md-list>
                 {history.map((trackId, i) => tracks[trackId] && (
@@ -245,7 +246,7 @@ const QueueList: React.FC<QueueListProps> = ({
 
         {/* Current Track (Hero Section) */}
         {current && tracks[current] && (
-          <div ref={activeTrackRef} className="my-6 sticky top-0 z-20 pt-2 -mx-2 px-2 pb-4 bg-surface/95 backdrop-blur-sm shadow-sm rounded-b-3xl">
+          <div ref={activeTrackRef} className="my-6 sticky top-0 z-20 pt-2 -mx-2 px-2 pb-4 bg-surface/95 backdrop-blur-md shadow-sm rounded-b-3xl ring-1 ring-white/5">
              <div className="text-label-small font-bold text-primary uppercase tracking-widest mb-3 px-4 flex items-center gap-2">
                Now Playing
              </div>
@@ -276,7 +277,7 @@ const QueueList: React.FC<QueueListProps> = ({
           </div>
 
           {!canReorder && upcoming.length > 0 && (
-             <div className="mx-2 mb-4 p-3 bg-error-container text-on-error-container rounded-xl flex items-center gap-2 text-xs">
+             <div className="mx-2 mb-4 p-3 bg-error-container text-on-error-container rounded-xl flex items-center gap-2 text-xs font-medium">
                <span>⚠️ Shuffle active or duplicates present. Reordering disabled.</span>
              </div>
           )}

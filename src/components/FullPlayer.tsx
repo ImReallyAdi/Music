@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -79,7 +79,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   duration,
   handleSeek,
   startScrub,
-  scrub,
   endScrub,
   toggleShuffle,
   onRemoveTrack,
@@ -101,7 +100,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const colors = useMemo(() => ({
     primary: theme?.primary || 'var(--md-sys-color-primary)',
     secondary: theme?.secondary || 'var(--md-sys-color-secondary)',
-    muted: theme?.muted || 'var(--md-sys-color-on-surface-variant)',
+    muted: 'var(--md-sys-color-on-surface-variant)', // Force high contrast muted
     background: theme?.background || 'var(--md-sys-color-background)'
   }), [theme]);
 
@@ -121,7 +120,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   }, [beat, beatScale, glowOpacity, isPlayerOpen]);
 
   const safeDuration = Math.max(duration, 0.01);
-  const isSeekable = duration > 0 && !isNaN(duration);
   const dragControls = useDragControls();
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
@@ -132,12 +130,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   // --- SCRUBBING HANDLERS ---
   const handleScrubStart = () => {
       if (startScrub) startScrub();
-  };
-
-  const handleScrubChange = (e: Event) => {
-      // @ts-ignore
-      const value = e.target.value as number;
-      setLocalScrubValue(value);
   };
 
   const handleScrubInput = (e: Event) => {
@@ -220,26 +212,31 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           }}
           className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
         >
-          {/* Dynamic Background */}
-          <motion.div
-            animate={{ background: `linear-gradient(to bottom, ${colors.primary}40, ${colors.background})` }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 -z-20"
-          />
+          {/* Dynamic Background with improved gradient for visibility */}
+          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+             {/* Base Color wash */}
+             <motion.div
+                animate={{ background: `linear-gradient(to bottom, ${colors.primary}20, ${colors.background} 90%)` }}
+                transition={{ duration: 1 }}
+                className="absolute inset-0"
+             />
 
-          {/* Background Blur Image */}
-          <div className="absolute inset-0 -z-10 overflow-hidden">
+            {/* Blurred Artwork */}
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 0.3 }}
               transition={{ duration: 1 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[100px] scale-125 brightness-75"
+              className="w-full h-full object-cover blur-[100px] scale-125 brightness-50" // Lower brightness for contrast
               alt=""
             />
+
+            {/* Gradient Overlay for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/80" />
+
             {/* Grain Overlay */}
-            <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
+            <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             />
           </div>
@@ -249,10 +246,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             onPointerDown={(e) => dragControls.start(e)}
             className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors" />
+            <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors backdrop-blur-md shadow-sm" />
           </div>
 
-          <main className="flex-1 px-8 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
+          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
             
             {/* Left: Artwork */}
             <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
@@ -263,7 +260,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                      initial={{ opacity: 0, scale: 0.95 }}
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
-                     className="absolute inset-0 rounded-2xl overflow-hidden"
+                     className="absolute inset-0 rounded-3xl overflow-hidden bg-black/20 backdrop-blur-md border border-white/5"
                      onPointerDown={(e) => e.stopPropagation()}
                   >
                      <LyricsView
@@ -272,8 +269,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                        onSeek={handleSeek}
                        onClose={() => setShowLyrics(false)}
                        onTrackUpdate={onTrackUpdate}
-                       lyricOffset={playerState.lyricOffset} // PASS OFFSET
-                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))} // UPDATE
+                       lyricOffset={playerState.lyricOffset}
+                       setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))}
                      />
                   </motion.div>
                 ) : showQueue ? (
@@ -282,7 +279,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden flex flex-col"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <QueueList
@@ -303,12 +300,13 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{
                         opacity: 1,
-                        scale: playerState.isPlaying ? 1 : 0.9
+                        scale: playerState.isPlaying ? 1 : 0.95,
+                        rotate: playerState.isPlaying ? 0 : 0
                     }}
                     style={{ scale: playerState.isPlaying ? beatScale : 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+                    className="relative w-full h-full shadow-[0_24px_64px_rgba(0,0,0,0.6)] rounded-[24px] overflow-hidden bg-surface-container-high ring-1 ring-white/10"
                   >
                      <img
                       src={currentTrack.coverArt}
@@ -318,8 +316,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
                     {/* WEB MODE BADGE */}
                     {currentTrack.source === 'youtube' && (
-                        <div className="absolute top-4 right-4 bg-red-600/90 text-white p-2 rounded-full shadow-lg backdrop-blur-sm z-10">
-                            <md-icon class="material-symbols-rounded" style={{ fontSize: '20px' }}>smart_display</md-icon>
+                        <div className="absolute top-4 right-4 bg-error-container text-on-error-container px-3 py-1 rounded-full shadow-lg backdrop-blur-md z-10 font-bold text-label-small flex items-center gap-1 border border-white/10">
+                            <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>smart_display</md-icon>
+                            <span>WEB</span>
                         </div>
                     )}
 
@@ -334,21 +333,21 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             </div>
 
             {/* Right: Info & Controls */}
-            <div className="w-full max-w-[380px] flex flex-col justify-center gap-6 shrink-0">
+            <div className="w-full max-w-[380px] flex flex-col justify-end gap-8 shrink-0 pb-4">
               
               {/* Text Info & Favorite */}
-              <div className="flex items-center justify-between">
-                  <div className="text-left flex-1 min-w-0 pr-4">
+              <div className="flex items-center justify-between gap-4">
+                  <div className="text-left flex-1 min-w-0">
                     <motion.h1
                         animate={{ color: '#ffffff' }}
-                        className="text-headline-medium md:text-headline-large font-bold leading-tight line-clamp-1 tracking-tight"
+                        className="text-[28px] md:text-[32px] font-bold leading-tight line-clamp-1 tracking-tight drop-shadow-md"
                         title={currentTrack.title}
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
-                        animate={{ color: colors.muted }}
-                        className="text-title-medium md:text-title-large line-clamp-1 mt-1 font-medium tracking-tight opacity-90"
+                        animate={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                        className="text-title-medium md:text-title-large line-clamp-1 mt-1 font-medium tracking-tight"
                         title={currentTrack.artist}
                     >
                       {currentTrack.artist}
@@ -364,70 +363,70 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             }
                         });
                     }}
-                    style={{ '--md-icon-button-icon-color': currentTrack.isFavorite ? colors.primary : colors.muted }}
+                    style={{ '--md-icon-button-icon-color': currentTrack.isFavorite ? colors.primary : 'rgba(255,255,255,0.7)' }}
                   >
-                     <md-icon class="material-symbols-rounded">
+                     <md-icon class="material-symbols-rounded" style={{ fontSize: '28px' }}>
                         {currentTrack.isFavorite ? "favorite" : "favorite_border"}
                      </md-icon>
                   </md-icon-button>
               </div>
 
               {/* Material Progress Slider */}
-              <div className="w-full flex flex-col gap-2 pt-2">
-                 {/*
-                     md-slider requires some handling for controlled input.
-                     It doesn't support 'value' binding directly in all versions the same way React does.
-                     We use onInput for real-time updates and onChange for commit.
-                 */}
+              <div className="w-full flex flex-col gap-1">
                  <md-slider
                     min="0"
                     max={safeDuration}
                     value={displayValue}
                     step="0.1"
                     labeled
-                    // We need to attach listeners via ref or use native events if React 19 handles it.
-                    // Given React 19, we try direct props.
                     onInput={handleScrubInput}
                     onChange={handleScrubEnd}
                     onPointerDown={handleScrubStart}
                     style={{
                       width: '100%',
                       '--md-slider-handle-color': colors.primary,
+                      '--md-slider-handle-width': '16px',
+                      '--md-slider-handle-height': '16px',
                       '--md-slider-active-track-color': colors.primary,
-                      '--md-slider-inactive-track-color': 'rgba(255,255,255,0.2)'
+                      '--md-slider-inactive-track-color': 'rgba(255,255,255,0.25)', // Increased visibility
+                      '--md-slider-active-track-height': '4px',
+                      '--md-slider-inactive-track-height': '4px'
                     }}
                  ></md-slider>
 
-                <div className="flex justify-between text-label-medium font-medium font-mono tracking-wider opacity-80" style={{ color: colors.muted }}>
+                <div className="flex justify-between text-label-medium font-medium font-mono tracking-wider opacity-80 px-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
               {/* Main Controls */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-2">
                 <md-icon-button
                     onClick={toggleShuffle} 
                     toggle
                     selected={playerState.shuffle}
-                    style={{ '--md-icon-button-selected-icon-color': colors.primary }}
+                    style={{
+                        '--md-icon-button-icon-color': 'rgba(255,255,255,0.6)',
+                        '--md-icon-button-selected-icon-color': colors.primary
+                    }}
                 >
-                   <md-icon class="material-symbols-rounded">shuffle</md-icon>
+                   <md-icon class="material-symbols-rounded" style={{ fontSize: '24px' }}>shuffle</md-icon>
                 </md-icon-button>
 
-                <div className="flex items-center gap-4">
-                  <md-icon-button onClick={prevTrack} style={{ '--md-icon-size': '32px' }}>
+                <div className="flex items-center gap-6">
+                  <md-icon-button onClick={prevTrack} style={{ '--md-icon-size': '36px', '--md-icon-button-icon-color': '#ffffff' }}>
                     <md-icon class="material-symbols-rounded">skip_previous</md-icon>
                   </md-icon-button>
                   
                   <md-filled-icon-button
                     onClick={togglePlay}
                     style={{
-                        '--md-filled-icon-button-container-width': '80px',
-                        '--md-filled-icon-button-container-height': '80px',
+                        '--md-filled-icon-button-container-width': '72px',
+                        '--md-filled-icon-button-container-height': '72px',
                         '--md-filled-icon-button-icon-size': '36px',
-                        '--md-sys-color-primary': colors.primary,
-                        '--md-sys-color-on-primary': colors.background
+                        '--md-sys-color-primary': '#ffffff',
+                        '--md-sys-color-on-primary': '#000000' // High contrast play button
                     }}
                   >
                     <md-icon class="material-symbols-rounded">
@@ -435,17 +434,17 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     </md-icon>
                   </md-filled-icon-button>
                   
-                  <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '32px' }}>
+                  <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '36px', '--md-icon-button-icon-color': '#ffffff' }}>
                      <md-icon class="material-symbols-rounded">skip_next</md-icon>
                   </md-icon-button>
                 </div>
 
                 <md-icon-button
                     onClick={toggleRepeat}
-                    style={{ '--md-icon-button-icon-color': playerState.repeat !== 'OFF' ? colors.primary : colors.muted }}
+                    style={{ '--md-icon-button-icon-color': playerState.repeat !== 'OFF' ? colors.primary : 'rgba(255,255,255,0.6)' }}
                 >
                    <div className="relative">
-                       <md-icon class="material-symbols-rounded">
+                       <md-icon class="material-symbols-rounded" style={{ fontSize: '24px' }}>
                            {playerState.repeat === 'ONE' ? 'repeat_one' : 'repeat'}
                        </md-icon>
                    </div>
@@ -453,7 +452,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </div>
 
               {/* Bottom Row (Queue & Lyrics) */}
-              <div className="flex items-center justify-between mt-4 px-1">
+              <div className="flex items-center justify-between mt-2 px-4 gap-4">
                  <md-filled-tonal-icon-button
                     onClick={() => {
                         setShowLyrics(!showLyrics);
@@ -462,8 +461,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     toggle
                     selected={showLyrics}
                     style={{
+                        width: '100%',
+                        borderRadius: '16px',
                         '--md-sys-color-secondary-container': showLyrics ? colors.primary : 'rgba(255,255,255,0.1)',
-                        '--md-sys-color-on-secondary-container': showLyrics ? colors.background : colors.muted
+                        '--md-sys-color-on-secondary-container': showLyrics ? 'var(--md-sys-color-surface)' : '#ffffff'
                     }}
                  >
                     <md-icon class="material-symbols-rounded">lyrics</md-icon>
@@ -477,8 +478,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     toggle
                     selected={showQueue}
                     style={{
+                        width: '100%',
+                        borderRadius: '16px',
                         '--md-sys-color-secondary-container': showQueue ? colors.primary : 'rgba(255,255,255,0.1)',
-                        '--md-sys-color-on-secondary-container': showQueue ? colors.background : colors.muted
+                        '--md-sys-color-on-secondary-container': showQueue ? 'var(--md-sys-color-surface)' : '#ffffff'
                     }}
                  >
                     <md-icon class="material-symbols-rounded">

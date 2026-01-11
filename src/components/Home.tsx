@@ -5,6 +5,7 @@ import '@material/web/button/filled-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/elevation/elevation.js';
+import '@material/web/chips/assist-chip.js';
 
 // Material Web Types
 declare global {
@@ -14,6 +15,7 @@ declare global {
         'md-filled-tonal-button': any;
         'md-elevation': any;
         'md-icon': any;
+        'md-assist-chip': any;
     }
   }
 }
@@ -38,14 +40,14 @@ const containerVariants: any = {
 };
 
 const cardVariants: any = {
-  hidden: { opacity: 0, y: 30, scale: 0.9 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: { 
     opacity: 1, 
     y: 0, 
     scale: 1,
-    transition: { type: "spring", stiffness: 350, damping: 25, mass: 0.8 }
+    transition: { type: "spring", stiffness: 350, damping: 30, mass: 1 }
   },
-  hover: { scale: 1.03, y: -5, transition: { type: "spring", stiffness: 400, damping: 20 } },
+  hover: { y: -8, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 20 } },
   tap: { scale: 0.96 }
 };
 
@@ -68,55 +70,57 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
     variants={cardVariants}
     whileHover="hover"
     whileTap="tap"
-    className="group cursor-pointer flex flex-col gap-4 relative"
+    className="group cursor-pointer flex flex-col gap-3 relative"
     onClick={() => onPlay(track.id)}
   >
     {/* Image Container */}
-    <div className="aspect-square rounded-[24px] bg-surface-container-highest overflow-hidden relative isolate">
-      <md-elevation></md-elevation>
+    <div className="aspect-square rounded-[24px] bg-surface-container-highest overflow-hidden relative isolate shadow-elevation-1 group-hover:shadow-elevation-3 transition-shadow duration-300">
+      <div className="absolute inset-0 bg-surface-container-highest z-0" />
       {track.coverArt ? (
         <motion.img 
           src={track.coverArt} 
           alt={track.title}
-          className="w-full h-full object-cover transition-transform duration-500 will-change-transform"
+          className="w-full h-full object-cover transition-transform duration-500 will-change-transform z-10 relative"
           variants={{
-             hover: { scale: 1.05 }
+             hover: { scale: 1.08 }
           }}
           loading="lazy"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-surface-container-highest">
+        <div className="w-full h-full flex items-center justify-center bg-surface-container-highest z-10 relative">
           <md-icon class="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: '48px' }}>music_note</md-icon>
         </div>
       )}
       
-      {/* Play Overlay - Only visible on hover/focus */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        variants={{
-          hover: { opacity: 1 },
-          tap: { opacity: 1 }
-        }}
-        className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center transition-opacity"
-      >
+      {/* Play Overlay - Material State Layer */}
+      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center backdrop-blur-[2px]">
         <motion.div
           variants={{
             hover: { scale: 1, opacity: 1 },
             hidden: { scale: 0.8, opacity: 0 }
           }}
-          className="w-14 h-14 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"
+          className="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-elevation-3"
         >
-          <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>play_arrow</md-icon>
+          <md-icon class="material-symbols-rounded" style={{ fontSize: '36px' }}>play_arrow</md-icon>
         </motion.div>
-      </motion.div>
+      </div>
+
+      {/* Web Badge */}
+      {track.source === 'youtube' && (
+         <div className="absolute top-3 right-3 z-30">
+            <div className="bg-black/60 backdrop-blur-md rounded-full p-1.5 text-white shadow-sm border border-white/10">
+                <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>smart_display</md-icon>
+            </div>
+         </div>
+      )}
     </div>
 
     {/* Text Content */}
     <div className="px-1 flex flex-col gap-0.5">
-      <h3 className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight">
+      <h3 className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight group-hover:text-primary transition-colors">
         {track.title}
       </h3>
-      <p className="text-body-medium text-on-surface-variant font-medium truncate group-hover:text-primary group-hover:opacity-100 transition-all opacity-80">
+      <p className="text-body-medium text-on-surface-variant font-medium truncate opacity-80">
         {track.artist}
       </p>
     </div>
@@ -156,38 +160,47 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full h-full overflow-y-auto pt-safe pb-40 px-6 scrollbar-hide"
+      className="w-full h-full overflow-y-auto pt-safe pb-40 px-4 md:px-8 scrollbar-hide"
     >
       <div className="max-w-[1400px] mx-auto space-y-16 py-8">
 
         {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-          <div className="space-y-4">
+        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[32px] bg-surface-container-low p-8 md:p-12 border border-white/5">
+          {/* Decorative Background */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/10 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
+
+          <div className="space-y-6 relative z-10">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium shadow-sm"
             >
-              <md-icon class="material-symbols-rounded" style={{ fontSize: '18px' }}>auto_awesome</md-icon>
-              <span>Discovery Mix</span>
+                <md-assist-chip label="Discovery Mix" style={{ '--md-sys-color-primary': 'var(--md-sys-color-tertiary)' }}>
+                    <md-icon slot="icon" class="material-symbols-rounded filled">auto_awesome</md-icon>
+                </md-assist-chip>
             </motion.div>
-            <h2 className="text-headline-large md:text-display-large font-bold text-on-surface tracking-tight">
-              Fresh <br className="hidden md:block" /> Picks
-            </h2>
-            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2 opacity-90">
-              A curated selection from your library, served fresh every time you visit.
-            </p>
+
+            <div>
+                <h2 className="text-display-medium md:text-display-large font-bold text-on-surface tracking-tight leading-tight">
+                Fresh Picks
+                </h2>
+                <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2 opacity-90">
+                A curated selection from your library, served fresh every time you visit.
+                </p>
+            </div>
           </div>
           
-          <div className="flex gap-4 flex-wrap">
-            <md-filled-tonal-button onClick={handleShufflePlay}>
+          <div className="flex gap-4 flex-wrap relative z-10">
+            <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '56px' }}>
                 <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
                 Shuffle
             </md-filled-tonal-button>
 
-            <md-filled-button onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}>
+            <md-filled-button
+                onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
+                style={{ height: '56px', '--md-filled-button-container-color': 'var(--md-sys-color-primary)', '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' }}
+            >
                 <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
-                Play
+                Play All
             </md-filled-button>
           </div>
         </header>
@@ -198,17 +211,17 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-on-surface"
+                  className="flex items-center gap-3 text-on-surface px-2"
                 >
                     <md-icon class="material-symbols-rounded text-primary">schedule</md-icon>
-                    <h3 className="text-headline-medium">Recently Played</h3>
+                    <h3 className="text-headline-medium font-bold">Recently Played</h3>
                 </motion.div>
 
                 <motion.div
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10"
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12"
                 >
                      <AnimatePresence mode="popLayout">
                       {recentlyPlayed.map((track) => (
@@ -228,16 +241,16 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-on-surface"
+                  className="flex items-center gap-3 text-on-surface px-2"
                 >
                     <md-icon class="material-symbols-rounded text-tertiary">auto_awesome</md-icon>
-                    <h3 className="text-headline-medium">Just For You</h3>
+                    <h3 className="text-headline-medium font-bold">Just For You</h3>
             </motion.div>
              <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12"
             >
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, i) => (

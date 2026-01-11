@@ -108,7 +108,7 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
                 '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
             }}
         >
-             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center relative border border-outline-variant/10">
+             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center relative border border-outline-variant/10 shadow-sm">
                 {image ? (
                     <img src={image} alt={displayArtist} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
@@ -139,6 +139,7 @@ const TrackRow = memo(({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
+            className="group"
         >
             <md-list-item
                 type="button"
@@ -154,16 +155,19 @@ const TrackRow = memo(({
                     '--md-list-item-headline-type': '500 16px/24px var(--md-sys-typescale-body-large-font)',
                     '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
                     '--md-list-item-trailing-supporting-text-type': '400 12px/16px var(--md-sys-typescale-label-medium-font)',
-                    backgroundColor: isCurrentTrack ? 'var(--md-sys-color-surface-container-high)' : 'transparent'
+                    backgroundColor: isCurrentTrack ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
+                    '--md-list-item-headline-color': isCurrentTrack ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-on-surface)',
+                    marginBottom: '4px',
+                    borderRadius: '16px'
                 }}
             >
                 {/* Thumbnail */}
-                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-container-highest flex items-center justify-center border border-outline-variant/10">
+                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-container-highest flex items-center justify-center border border-outline-variant/10 shadow-sm">
                     {track.coverArt ? (
                         <img 
                             src={track.coverArt} 
                             alt={track.title}
-                            className={`w-full h-full object-cover transition-opacity ${isCurrentTrack && isPlaying ? 'opacity-40' : 'opacity-100'}`} 
+                            className={`w-full h-full object-cover transition-opacity duration-300 ${isCurrentTrack && isPlaying ? 'opacity-40' : 'opacity-100 group-hover:scale-110'}`}
                             loading="lazy" 
                         />
                     ) : (
@@ -208,6 +212,7 @@ const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
             type="button"
             headline={label}
             supporting-text={subLabel}
+            style={{ borderRadius: '16px' }}
         >
              <md-switch slot="end" selected={checked} onClick={(e: any) => {
                  onChange(!checked);
@@ -237,11 +242,11 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
     return (
         <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
-            className="flex flex-col gap-6 p-1 max-w-2xl mx-auto w-full"
+            className="flex flex-col gap-6 p-1 max-w-2xl mx-auto w-full pb-32"
         >
             <section>
-                <h2 className="text-label-large font-bold text-primary px-4 mb-2">Playback</h2>
-                <div className="bg-surface-container rounded-3xl overflow-hidden">
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">Playback</h2>
+                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
                     <ToggleRow 
                         label="Automix" 
                         subLabel="Smart transitions & AI blending" 
@@ -268,7 +273,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-outline-variant mx-4" />
+                    <div className="h-px bg-outline-variant mx-4 opacity-50" />
 
                     <ToggleRow 
                         label="Crossfade" 
@@ -277,7 +282,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         onChange={(val: boolean) => setPlayerState(p => ({ ...p, crossfadeEnabled: val }))}
                     >
                         <div className="flex flex-col gap-2 pt-1 px-2">
-                            <div className="flex justify-between text-xs text-on-surface-variant">
+                            <div className="flex justify-between text-xs text-on-surface-variant font-medium">
                                 <span>Overlap Duration</span>
                                 <span>{playerState.crossfadeDuration || 5}s</span>
                             </div>
@@ -290,7 +295,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-outline-variant mx-4" />
+                    <div className="h-px bg-outline-variant mx-4 opacity-50" />
                     
                     <ToggleRow 
                         label="Normalize Volume" 
@@ -302,8 +307,8 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-label-large font-bold text-primary px-4 mb-2">Experimental</h2>
-                <div className="bg-surface-container rounded-3xl overflow-hidden">
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">Experimental</h2>
+                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
                      <ToggleRow
                         label="Word-by-word Lyrics"
                         subLabel="Automatically estimate word timings for Karaoke mode"
@@ -314,10 +319,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-label-large font-bold text-primary px-4 mb-2">About</h2>
-                <div className="bg-surface-container rounded-3xl p-5 text-center">
-                    <p className="font-bold text-on-surface">Adi Music</p>
-                    <p className="text-xs text-on-surface-variant mt-1">v1.2.0 • Material Design 3</p>
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">About</h2>
+                <div className="bg-surface-container rounded-3xl p-6 text-center shadow-sm border border-outline-variant/10">
+                    <p className="font-bold text-headline-small text-on-surface">Adi Music</p>
+                    <p className="text-body-small text-on-surface-variant mt-1">v1.2.0 • Material Design 3 Expressive</p>
                 </div>
             </section>
         </motion.div>
@@ -538,7 +543,7 @@ const Library: React.FC<LibraryProps> = ({
             </div>
 
             {/* Content Area */}
-            <div className="flex flex-col flex-1 min-h-0 w-full pb-20 mt-4">
+            <div className="flex flex-col flex-1 min-h-0 w-full pb-32 mt-4">
                 {isLoading ? (
                     Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
                 ) : (
@@ -551,7 +556,7 @@ const Library: React.FC<LibraryProps> = ({
                                 className="flex flex-col gap-1 w-full"
                             >
                                 {/* Shuffle Button */}
-                                {!selectedArtistKey && (
+                                {(!selectedArtistKey && tracksToRender.length > 0) && (
                                     <div className="mb-4">
                                         <md-list-item type="button" onClick={handleShuffleAll} style={{ backgroundColor: 'var(--md-sys-color-primary-container)', borderRadius: '16px' }}>
                                             <div slot="headline" className="font-bold text-on-primary-container">Shuffle All Tracks</div>
@@ -589,7 +594,7 @@ const Library: React.FC<LibraryProps> = ({
                         {libraryTab === 'Artists' && (
                             selectedArtistKey ? (
                                 <motion.div key="artist-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
-                                    <div className="flex items-center gap-4 mb-4 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2">
+                                    <div className="flex items-center gap-4 mb-4 sticky top-14 bg-surface/95 backdrop-blur-md z-10 py-2">
                                         <md-icon-button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }}>
                                             <md-icon class="material-symbols-rounded">arrow_back</md-icon>
                                         </md-icon-button>

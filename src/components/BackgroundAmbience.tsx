@@ -37,7 +37,7 @@ export const BackgroundAmbience: React.FC<BackgroundAmbienceProps> = ({
              />
 
              {/* Dark overlay to ensure text readability */}
-             <div className="absolute inset-0 bg-black/40" />
+             <div className="absolute inset-0 bg-background/50" />
           </motion.div>
         ) : (
           <motion.div
@@ -46,11 +46,11 @@ export const BackgroundAmbience: React.FC<BackgroundAmbienceProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
-            className="absolute inset-0 bg-[#09090b]"
+            className="absolute inset-0 bg-background"
           >
-             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/20 via-black to-rose-900/20" />
-             <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-indigo-500/10 blur-[180px] rounded-full mix-blend-screen animate-pulse-slow" />
-             <div className="absolute bottom-[-20%] right-[-10%] w-[80%] h-[80%] bg-rose-500/10 blur-[180px] rounded-full mix-blend-screen animate-pulse-slow" style={{ animationDelay: '2s' }} />
+             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary-container/20 via-background to-secondary-container/20" />
+             <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-primary/10 blur-[180px] rounded-full mix-blend-screen animate-pulse-slow" />
+             <div className="absolute bottom-[-20%] right-[-10%] w-[80%] h-[80%] bg-tertiary/10 blur-[180px] rounded-full mix-blend-screen animate-pulse-slow" style={{ animationDelay: '2s' }} />
           </motion.div>
         )}
       </AnimatePresence>
