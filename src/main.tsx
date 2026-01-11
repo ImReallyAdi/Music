@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './material-registry'; // Register Material Web Components
 import { Buffer } from 'buffer';
 import process from 'process';
 

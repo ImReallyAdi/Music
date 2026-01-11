@@ -3,6 +3,25 @@ import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion
 import { Play, Trash2, Plus, Shuffle, Music, X, ChevronLeft, GripVertical, Edit2, Save, Search, Clock } from 'lucide-react';
 import { Playlist, Track } from '../types';
 import { dbService } from '../db';
+import '@material/web/list/list.js';
+import '@material/web/list/list-item.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/filled-tonal-button.js';
+import '@material/web/textfield/outlined-text-field.js';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-list': any;
+      'md-list-item': any;
+      'md-filled-button': any;
+      'md-filled-tonal-button': any;
+      'md-outlined-text-field': any;
+    }
+  }
+}
 
 interface PlaylistsProps {
   playlists: Record<string, Playlist>;
@@ -21,7 +40,6 @@ const formatTime = (seconds: number) => {
 
 // --- Helper Component: Dynamic Playlist Cover Art ---
 const PlaylistCover = ({ playlist, tracks }: { playlist: Playlist; tracks: Record<string, Track> }) => {
-  // Get first 4 valid cover arts
   const covers = useMemo(() => {
     return playlist.trackIds
       .map(id => tracks[id]?.coverArt)
@@ -31,13 +49,12 @@ const PlaylistCover = ({ playlist, tracks }: { playlist: Playlist; tracks: Recor
 
   if (covers.length === 0) {
     return (
-      <div className="w-full h-full bg-surface-variant-dim flex items-center justify-center text-on-surface/20">
+      <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant/20">
         <Music size={48} />
       </div>
     );
   }
 
-  // 4-grid collage
   if (covers.length >= 4) {
     return (
       <div className="w-full h-full grid grid-cols-2 grid-rows-2">
@@ -48,7 +65,6 @@ const PlaylistCover = ({ playlist, tracks }: { playlist: Playlist; tracks: Recor
     );
   }
 
-  // Single full cover
   return <img src={covers[0]} className="w-full h-full object-cover" alt="Playlist cover" />;
 };
 
@@ -70,7 +86,7 @@ const PlaylistCard = ({
     className="group relative cursor-pointer"
   >
     {/* Card Image */}
-    <div className="aspect-square w-full rounded-2xl overflow-hidden bg-surface-variant mb-3 shadow-sm group-hover:shadow-md transition-all relative">
+    <div className="aspect-square w-full rounded-2xl overflow-hidden bg-surface-container-high mb-3 shadow-sm group-hover:shadow-md transition-all relative">
       <PlaylistCover playlist={playlist} tracks={tracks} />
       
       {/* Hover Overlay */}
@@ -78,13 +94,12 @@ const PlaylistCard = ({
         <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             whileHover={{ scale: 1.1 }}
-            className="group-hover:opacity-100 transition-all bg-primary text-primary-on-container p-3 rounded-full shadow-lg"
+            className="group-hover:opacity-100 transition-all bg-primary-container text-on-primary-container p-3 rounded-full shadow-lg"
         >
            <Play fill="currentColor" size={20} />
         </motion.div>
       </div>
 
-      {/* Delete Button (Top Right) */}
       <button
         onClick={onDelete}
         className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-error hover:text-white transition-all transform scale-90 hover:scale-100"
@@ -96,8 +111,8 @@ const PlaylistCard = ({
 
     {/* Metadata */}
     <div>
-      <h3 className="font-bold text-on-surface truncate">{playlist.name}</h3>
-      <p className="text-sm text-on-surface/60 truncate">
+      <h3 className="font-bold text-title-medium text-on-surface truncate">{playlist.name}</h3>
+      <p className="text-body-small text-on-surface-variant truncate">
         {playlist.trackIds.length} {playlist.trackIds.length === 1 ? 'track' : 'tracks'}
         {playlist.description ? ` • ${playlist.description}` : ''}
       </p>
@@ -127,50 +142,29 @@ const PlaylistTrackItem = ({
       id={item.key} // Unique key for reorder
       dragListener={false}
       dragControls={controls}
-      className="group flex items-center gap-4 p-2 md:p-3 hover:bg-surface-variant/40 rounded-xl transition-colors select-none"
+      style={{ listStyle: 'none' }}
     >
-      {/* Drag Handle */}
-      <div
-        onPointerDown={(e) => controls.start(e)}
-        className="text-on-surface/20 hover:text-on-surface cursor-grab active:cursor-grabbing p-1 touch-none"
+      <md-list-item
+          type="button"
+          headline={track.title}
+          supportingText={track.artist}
+          trailingSupportingText={formatTime(track.duration)}
+          style={{ cursor: 'pointer', '--md-list-item-leading-image-shape': '8px' }}
+          onClick={() => onPlay()}
       >
-        <GripVertical size={16} />
-      </div>
+          {/* Drag Handle */}
+          <div slot="start" onPointerDown={(e) => controls.start(e)} className="pr-3 cursor-grab active:cursor-grabbing text-on-surface-variant">
+             <GripVertical size={20} />
+          </div>
 
-      <span className="text-on-surface/40 w-6 text-center font-mono text-sm hidden md:block">{index + 1}</span>
+          <div slot="start" className="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant">
+             {track.coverArt ? <img src={track.coverArt} className="w-full h-full object-cover" /> : <Music className="p-2 w-full h-full text-on-surface-variant"/>}
+          </div>
 
-      <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-surface-variant-dim overflow-hidden flex-shrink-0 relative group/cover">
-        {track.coverArt ? (
-            <img src={track.coverArt} className="w-full h-full object-cover" alt="" />
-        ) : (
-            <div className="w-full h-full flex items-center justify-center"><Music size={16} className="text-on-surface/20"/></div>
-        )}
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity cursor-pointer"
-              onClick={(e) => { e.stopPropagation(); onPlay(); }}>
-            <Play fill="white" className="text-white" size={16} />
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <h4 className="text-on-surface font-medium truncate">{track.title}</h4>
-        <div className="flex items-center gap-2 text-on-surface/60 text-sm truncate">
-            <span>{track.artist}</span>
-            <span className="hidden md:inline">•</span>
-            <span className="hidden md:inline">{track.album}</span>
-        </div>
-      </div>
-
-      <div className="text-on-surface/40 text-sm font-mono mr-2 hidden sm:block">
-        {formatTime(track.duration)}
-      </div>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="p-2 text-on-surface/30 hover:text-error hover:bg-error/10 rounded-full opacity-0 group-hover:opacity-100 transition-all"
-        title="Remove from playlist"
-      >
-        <Trash2 size={18} />
-      </button>
+          <md-icon-button slot="end" onClick={(e: any) => { e.stopPropagation(); onRemove(); }}>
+             <md-icon><Trash2 size={20}/></md-icon>
+          </md-icon-button>
+      </md-list-item>
     </Reorder.Item>
   );
 };
@@ -193,15 +187,9 @@ const PlaylistDetail = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(playlist.name);
   const [editDesc, setEditDesc] = useState(playlist.description || '');
-  
-  // Local state for reordering (wrapped in unique objects to handle duplicates)
   const [items, setItems] = useState<{key: string, trackId: string}[]>([]);
 
-  // Sync with playlist prop changes (e.g. if updated externally)
   useEffect(() => {
-    // Generate new keys only when the underlying ID list actually changes length or content
-    // This is a simple approximation. For true stability we'd need a more complex diff.
-    // But for this app, generating new keys on load/refresh is acceptable.
     setItems(playlist.trackIds.map((id) => ({ key: `${id}-${crypto.randomUUID()}`, trackId: id })));
     setEditName(playlist.name);
     setEditDesc(playlist.description || '');
@@ -217,8 +205,6 @@ const PlaylistDetail = ({
   const handleReorder = async (newItems: {key: string, trackId: string}[]) => {
     setItems(newItems);
     const newTrackIds = newItems.map(i => i.trackId);
-
-    // Save to DB
     const updated = { ...playlist, trackIds: newTrackIds, updatedAt: Date.now() };
     await dbService.savePlaylist(updated);
     refreshLibrary();
@@ -227,10 +213,7 @@ const PlaylistDetail = ({
   const handleRemoveTrack = async (indexToRemove: number) => {
     const newItems = [...items];
     newItems.splice(indexToRemove, 1);
-
-    // Optimistic update
     setItems(newItems);
-
     const newTrackIds = newItems.map(i => i.trackId);
     const updated = { ...playlist, trackIds: newTrackIds, updatedAt: Date.now() };
     await dbService.savePlaylist(updated);
@@ -271,73 +254,67 @@ const PlaylistDetail = ({
         {/* Info & Actions */}
         <div className="flex flex-col justify-end items-center md:items-start flex-1 gap-4 min-w-0 w-full">
           <div className="w-full text-center md:text-left">
-            <button onClick={onBack} className="text-on-surface/60 hover:text-on-surface flex items-center justify-center md:justify-start gap-2 mb-4 transition-colors">
+            <button onClick={onBack} className="text-on-surface-variant hover:text-on-surface flex items-center justify-center md:justify-start gap-2 mb-4 transition-colors">
               <ChevronLeft size={20} /> Back to Playlists
             </button>
 
             {isEditing ? (
-                <div className="space-y-3 w-full max-w-lg">
-                    <input
+                <div className="space-y-4 w-full max-w-lg">
+                    <md-outlined-text-field
+                        label="Name"
                         value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        className="w-full bg-surface-variant text-2xl md:text-4xl font-black text-on-surface p-2 rounded-lg outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Playlist Name"
-                    />
-                    <input
+                        onInput={(e: any) => setEditName(e.target.value)}
+                        style={{ width: '100%' }}
+                    ></md-outlined-text-field>
+                    <md-outlined-text-field
+                        label="Description"
                         value={editDesc}
-                        onChange={e => setEditDesc(e.target.value)}
-                        className="w-full bg-surface-variant text-on-surface/80 p-2 rounded-lg outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Description (optional)"
-                    />
+                        onInput={(e: any) => setEditDesc(e.target.value)}
+                        style={{ width: '100%' }}
+                    ></md-outlined-text-field>
+
                     <div className="flex gap-2 justify-center md:justify-start pt-2">
-                        <button onClick={handleSaveDetails} className="bg-primary text-primary-on-container px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                            <Save size={18} /> Save
-                        </button>
-                        <button onClick={() => { setIsEditing(false); setEditName(playlist.name); setEditDesc(playlist.description || ''); }} className="bg-surface-variant text-on-surface px-4 py-2 rounded-lg font-medium">
+                        <md-filled-button onClick={handleSaveDetails}>
+                            <md-icon slot="icon"><Save /></md-icon>
+                            Save
+                        </md-filled-button>
+                        <md-filled-tonal-button onClick={() => { setIsEditing(false); setEditName(playlist.name); setEditDesc(playlist.description || ''); }}>
                             Cancel
-                        </button>
+                        </md-filled-tonal-button>
                     </div>
                 </div>
             ) : (
                 <>
                     <div className="group relative inline-block">
-                        <h1 className="text-4xl md:text-5xl font-black text-on-surface mb-2 break-words">{playlist.name}</h1>
-                        <button
+                        <h1 className="text-display-small font-black text-on-surface mb-2 break-words">{playlist.name}</h1>
+                        <md-icon-button
                             onClick={() => setIsEditing(true)}
-                            className="absolute -right-8 top-2 text-on-surface/20 hover:text-primary opacity-0 group-hover:opacity-100 transition-all p-1"
+                            className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-all"
                         >
-                            <Edit2 size={20} />
-                        </button>
+                            <md-icon><Edit2 size={20} /></md-icon>
+                        </md-icon-button>
                     </div>
                     {playlist.description && (
-                        <p className="text-lg text-on-surface/70 mb-2 max-w-2xl">{playlist.description}</p>
+                        <p className="text-body-large text-on-surface-variant mb-2 max-w-2xl">{playlist.description}</p>
                     )}
-                    <p className="text-on-surface/50 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base mt-2">
+                    <p className="text-on-surface-variant/50 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base mt-2">
                       <span>{items.length} tracks</span>
                       <span>•</span>
                       <span className="flex items-center gap-1"><Clock size={14}/> {formattedDuration}</span>
-                      <span>•</span>
-                      <span>Updated {new Date(playlist.updatedAt).toLocaleDateString()}</span>
                     </p>
                 </>
             )}
           </div>
 
           <div className="flex gap-3 mt-4">
-            <button 
-                onClick={() => handlePlay(false)}
-                disabled={items.length === 0}
-                className="bg-primary text-primary-on-container px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
-            >
-              <Play fill="currentColor" size={20} /> Play
-            </button>
-            <button 
-                onClick={() => handlePlay(true)}
-                disabled={items.length === 0}
-                className="bg-surface-variant text-on-surface px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-surface-variant-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Shuffle size={20} /> Shuffle
-            </button>
+            <md-filled-button onClick={() => handlePlay(false)} disabled={items.length === 0 ? true : undefined}>
+                <md-icon slot="icon"><Play /></md-icon>
+                Play
+            </md-filled-button>
+            <md-filled-tonal-button onClick={() => handlePlay(true)} disabled={items.length === 0 ? true : undefined}>
+                <md-icon slot="icon"><Shuffle /></md-icon>
+                Shuffle
+            </md-filled-tonal-button>
           </div>
         </div>
       </div>
@@ -345,13 +322,14 @@ const PlaylistDetail = ({
       {/* Track List */}
       <div className="space-y-1">
         {items.length === 0 ? (
-            <div className="text-center py-20 text-on-surface/40 bg-surface-variant/20 rounded-3xl border border-dashed border-on-surface/10">
+            <div className="text-center py-20 text-on-surface-variant/40 bg-surface-container rounded-3xl border border-dashed border-outline-variant">
                 <Music size={48} className="mx-auto mb-4 opacity-50" />
                 <p className="text-lg font-medium">This playlist is empty.</p>
                 <p className="text-sm">Add songs from your library to get started.</p>
             </div>
         ) : (
-            <Reorder.Group axis="y" values={items} onReorder={handleReorder}>
+            <md-list>
+            <Reorder.Group axis="y" values={items} onReorder={handleReorder} style={{ listStyle: 'none', padding: 0 }}>
                 {items.map((item, index) => {
                     const track = tracks[item.trackId];
                     if (!track) return null;
@@ -368,6 +346,7 @@ const PlaylistDetail = ({
                     );
                 })}
             </Reorder.Group>
+            </md-list>
         )}
       </div>
     </motion.div>
@@ -431,27 +410,23 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                  <h2 className="text-4xl font-bold text-on-surface">Your Playlists</h2>
-                  <p className="text-on-surface/60 mt-1">{Object.keys(playlists).length} collections</p>
+                  <h2 className="text-display-small font-bold text-on-surface">Your Playlists</h2>
+                  <p className="text-on-surface-variant mt-1">{Object.keys(playlists).length} collections</p>
               </div>
 
-              <div className="flex gap-3 w-full md:w-auto">
-                  <div className="flex-1 md:w-64 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40" size={18} />
-                      <input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search playlists..."
-                        className="w-full bg-surface-variant/50 text-on-surface pl-10 pr-4 py-2.5 rounded-full border border-transparent focus:bg-surface-variant focus:border-primary/50 outline-none transition-all"
-                      />
-                  </div>
-                  <button
-                    onClick={() => setIsCreating(true)}
-                    className="flex items-center gap-2 bg-primary text-primary-on-container px-5 py-2.5 rounded-full hover:brightness-110 transition-all font-bold shadow-lg shadow-primary/20 shrink-0"
+              <div className="flex gap-3 w-full md:w-auto items-center">
+                  <md-outlined-text-field
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onInput={(e: any) => setSearchQuery(e.target.value)}
                   >
-                    <Plus size={20} />
-                    <span className="hidden sm:inline">New Playlist</span>
-                  </button>
+                      <md-icon slot="leading-icon"><Search /></md-icon>
+                  </md-outlined-text-field>
+
+                  <md-filled-button onClick={() => setIsCreating(true)}>
+                      <md-icon slot="icon"><Plus /></md-icon>
+                      New Playlist
+                  </md-filled-button>
               </div>
             </div>
 
@@ -464,18 +439,15 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="bg-surface-variant/30 border border-surface-variant-dim rounded-2xl p-4 flex gap-3 items-center mb-6">
-                    <input
-                      type="text"
-                      value={newPlaylistName}
-                      onChange={(e) => setNewPlaylistName(e.target.value)}
-                      placeholder="Give your playlist a name..."
-                      className="flex-1 bg-surface-variant text-on-surface px-4 py-3 rounded-xl border-none focus:ring-2 focus:ring-primary outline-none placeholder:text-on-surface/30"
-                      autoFocus
-                      onKeyDown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
-                    />
-                    <button onClick={handleCreatePlaylist} className="bg-primary text-primary-on-container px-6 py-3 rounded-xl font-bold hover:brightness-110">Create</button>
-                    <button onClick={() => setIsCreating(false)} className="px-4 py-3 text-on-surface/60 hover:text-on-surface">Cancel</button>
+                  <div className="bg-surface-container rounded-2xl p-4 flex gap-3 items-center mb-6">
+                    <md-outlined-text-field
+                        placeholder="Playlist Name"
+                        value={newPlaylistName}
+                        onInput={(e: any) => setNewPlaylistName(e.target.value)}
+                        style={{ flex: 1 }}
+                    ></md-outlined-text-field>
+                    <md-filled-button onClick={handleCreatePlaylist}>Create</md-filled-button>
+                    <md-filled-tonal-button onClick={() => setIsCreating(false)}>Cancel</md-filled-tonal-button>
                   </div>
                 </motion.div>
               )}
@@ -492,19 +464,6 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
                     onDelete={(e) => handleDeletePlaylist(playlist.id, e)}
                   />
               ))}
-              
-              {/* Empty State Helper */}
-              {filteredPlaylists.length === 0 && !isCreating && (
-                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-on-surface/40">
-                      <Music size={64} strokeWidth={1} className="mb-4"/>
-                      <p className="text-lg">No playlists found.</p>
-                      {searchQuery ? (
-                          <button onClick={() => setSearchQuery('')} className="text-primary mt-2 hover:underline">Clear search</button>
-                      ) : (
-                          <button onClick={() => setIsCreating(true)} className="text-primary mt-2 hover:underline">Create one now</button>
-                      )}
-                  </div>
-              )}
             </div>
           </motion.div>
         ) : (

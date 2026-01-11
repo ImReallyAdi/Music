@@ -2,6 +2,21 @@ import React, { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Play, Sparkles, Shuffle, Clock } from 'lucide-react';
 import { Track } from '../types';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/filled-tonal-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/elevation/elevation.js';
+
+// Material Web Types
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+        'md-filled-button': any;
+        'md-filled-tonal-button': any;
+        'md-elevation': any;
+    }
+  }
+}
 
 interface HomeProps {
   filteredTracks: Track[];
@@ -37,12 +52,12 @@ const cardVariants: any = {
 // --- SKELETON LOADER ---
 const SkeletonCard = () => (
   <div className="flex flex-col gap-4">
-    <div className="aspect-square rounded-[32px] bg-zinc-800/50 relative overflow-hidden isolate">
+    <div className="aspect-square rounded-[24px] bg-surface-container-high relative overflow-hidden isolate">
       <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_1.5s_infinite] z-10" />
     </div>
-    <div className="space-y-2 px-2">
-      <div className="h-5 w-3/4 bg-zinc-800/50 rounded-full animate-pulse" />
-      <div className="h-4 w-1/2 bg-zinc-800/30 rounded-full animate-pulse" />
+    <div className="space-y-2 px-1">
+      <div className="h-5 w-3/4 bg-surface-container-high rounded-full animate-pulse" />
+      <div className="h-4 w-1/2 bg-surface-container-high/50 rounded-full animate-pulse" />
     </div>
   </div>
 );
@@ -57,7 +72,8 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
     onClick={() => onPlay(track.id)}
   >
     {/* Image Container */}
-    <div className="aspect-square rounded-[32px] bg-zinc-900 overflow-hidden relative shadow-lg ring-1 ring-white/5 isolate">
+    <div className="aspect-square rounded-[24px] bg-surface-container-highest overflow-hidden relative isolate">
+      <md-elevation></md-elevation>
       {track.coverArt ? (
         <motion.img 
           src={track.coverArt} 
@@ -69,8 +85,8 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
           loading="lazy"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-          <Music className="w-20 h-20 text-zinc-700" />
+        <div className="w-full h-full flex items-center justify-center bg-surface-container-highest">
+          <Music className="w-20 h-20 text-on-surface-variant/50" />
         </div>
       )}
       
@@ -81,26 +97,26 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
           hover: { opacity: 1 },
           tap: { opacity: 1 }
         }}
-        className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center transition-opacity"
+        className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center transition-opacity"
       >
         <motion.div
           variants={{
             hover: { scale: 1, opacity: 1 },
             hidden: { scale: 0.8, opacity: 0 }
           }}
-          className="w-16 h-16 bg-white/90 text-black rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"
+          className="w-14 h-14 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"
         >
-          <Play className="w-7 h-7 fill-current ml-1" />
+          <Play className="w-6 h-6 fill-current ml-1" />
         </motion.div>
       </motion.div>
     </div>
 
     {/* Text Content */}
-    <div className="px-2 flex flex-col gap-1">
-      <h3 className="text-[17px] font-bold text-white truncate leading-tight tracking-tight">
+    <div className="px-1 flex flex-col gap-0.5">
+      <h3 className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight">
         {track.title}
       </h3>
-      <p className="text-[15px] text-zinc-400 font-medium truncate group-hover:text-zinc-200 transition-colors">
+      <p className="text-body-medium text-on-surface-variant font-medium truncate group-hover:text-primary transition-colors">
         {track.artist}
       </p>
     </div>
@@ -146,45 +162,33 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
         {/* Expressive Header */}
         <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
               <span>Discovery Mix</span>
             </motion.div>
-            <h2 className="text-5xl md:text-7xl font-bold text-white tracking-tighter leading-[0.9]">
+            <h2 className="text-display-large font-bold text-on-surface">
               Fresh <br className="hidden md:block" /> Picks
             </h2>
-            <p className="text-xl text-zinc-400 max-w-lg font-medium leading-relaxed pt-2">
+            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2">
               A curated selection from your library, served fresh every time you visit.
             </p>
           </div>
           
           <div className="flex gap-4 flex-wrap">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleShufflePlay}
-              disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition-colors flex items-center gap-3 text-lg"
-            >
-              <Shuffle className="w-6 h-6" />
-              <span>Shuffle</span>
-            </motion.button>
+            <md-filled-tonal-button onClick={handleShufflePlay}>
+                <md-icon slot="icon"><Shuffle /></md-icon>
+                Shuffle
+            </md-filled-tonal-button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-              disabled={isLoading || filteredTracks.length === 0}
-              className="h-14 px-10 rounded-full bg-white text-black font-bold shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] transition-all flex items-center gap-3 text-lg disabled:opacity-50"
-            >
-              <Play className="w-6 h-6 fill-current" />
-              <span>Play</span>
-            </motion.button>
+            <md-filled-button onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}>
+                <md-icon slot="icon"><Play /></md-icon>
+                Play
+            </md-filled-button>
           </div>
         </header>
 
@@ -194,17 +198,17 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-white"
+                  className="flex items-center gap-3 text-on-surface"
                 >
                     <Clock className="w-6 h-6 text-primary" />
-                    <h3 className="text-2xl font-bold">Recently Played</h3>
+                    <h3 className="text-headline-medium">Recently Played</h3>
                 </motion.div>
 
                 <motion.div
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-12"
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10"
                 >
                      <AnimatePresence mode="popLayout">
                       {recentlyPlayed.map((track) => (
@@ -224,16 +228,16 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-white"
+                  className="flex items-center gap-3 text-on-surface"
                 >
-                    <Sparkles className="w-6 h-6 text-secondary" />
-                    <h3 className="text-2xl font-bold">Just For You</h3>
+                    <Sparkles className="w-6 h-6 text-tertiary" />
+                    <h3 className="text-headline-medium">Just For You</h3>
             </motion.div>
              <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-12"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10"
             >
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, i) => (
@@ -257,13 +261,13 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-zinc-500"
+            className="flex flex-col items-center justify-center py-32 text-on-surface-variant"
           >
-            <div className="w-32 h-32 rounded-[40px] bg-zinc-900 flex items-center justify-center mb-6">
+            <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center mb-6">
               <Music className="w-16 h-16 opacity-30" />
             </div>
-            <p className="text-2xl font-bold text-white">No tracks found</p>
-            <p className="text-lg mt-2 text-zinc-400">Import music to get started.</p>
+            <p className="text-headline-small font-bold text-on-surface">No tracks found</p>
+            <p className="text-body-large mt-2">Import music to get started.</p>
           </motion.div>
         )}
       </div>

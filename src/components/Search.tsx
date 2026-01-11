@@ -3,6 +3,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Search as SearchIcon, X, Disc, Youtube, Download, AlertCircle, Loader2, Check } from 'lucide-react';
 import { Track, Playlist } from '../types';
 import { getYouTubeVideo, getYouTubePlaylist, extractVideoId, extractPlaylistId, YouTubeTrack } from '../utils/youtube';
+import '@material/web/textfield/outlined-text-field.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/text-button.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/chips/filter-chip.js';
+
+// Declare Material Web Components
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-outlined-text-field': any;
+      'md-filled-button': any;
+      'md-text-button': any;
+      'md-icon-button': any;
+      'md-icon': any;
+      'md-filter-chip': any;
+    }
+  }
+}
 
 interface SearchProps {
   activeTab: string;
@@ -28,7 +48,7 @@ const Search: React.FC<SearchProps> = ({
   libraryTracks,
   onAddYouTubeTrack
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<any>(null); // Use any for web component ref
   const [isWebMode, setIsWebMode] = useState(false);
 
   // Import State
@@ -40,17 +60,18 @@ const Search: React.FC<SearchProps> = ({
   // Auto-focus input when tab becomes active
   useEffect(() => {
     if (activeTab === 'search') {
-      inputRef.current?.focus();
+      // Material Text Field exposes focus() method
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [activeTab]);
 
-  // Handle Escape key
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleClearSearch();
-    }
+  // Handle Search Input Change
+  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
+    // @ts-ignore
+    setSearchQuery(e.target.value);
   };
 
+  // Handle Clear
   const handleClearSearch = () => {
     setSearchQuery('');
     setImportStatus('idle');
@@ -92,14 +113,12 @@ const Search: React.FC<SearchProps> = ({
 
             for (let i = 0; i < tracks.length; i++) {
                 const track = tracks[i];
-                // Check if already exists to avoid duplicates (optional, but good UX)
                 const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
                 if (!exists) {
                     onAddYouTubeTrack(track);
                 }
                 setImportedCount(i + 1);
                 setImportMessage(`Importing ${i + 1}/${tracks.length} tracks...`);
-                // Small delay to prevent UI freezing if needed, but react state updates are async anyway
                 await new Promise(resolve => setTimeout(resolve, 10));
             }
 
@@ -118,7 +137,7 @@ const Search: React.FC<SearchProps> = ({
 
             const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
             if (exists) {
-                setImportStatus('error'); // Or success with different message
+                setImportStatus('error');
                 setImportMessage('Track already in library.');
                 return;
             }
@@ -144,63 +163,50 @@ const Search: React.FC<SearchProps> = ({
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="space-y-6 pt-2 h-full flex flex-col"
+      className="space-y-6 pt-2 h-full flex flex-col px-4"
     >
       {/* Search Bar - Sticky Header */}
-      <div className="sticky top-0 z-20 pt-2 pb-4 bg-surface/95 backdrop-blur-md">
-        <div className="flex flex-col gap-2">
-            <div className="relative group rounded-full bg-surface-container-high focus-within:bg-surface-container-highest transition-colors flex items-center h-14 px-4 shadow-sm ring-1 ring-white/5">
-            {isWebMode ? (
-                 <Youtube className="text-red-500 w-6 h-6 mr-3 transition-colors" />
-            ) : (
-                 <SearchIcon className="text-surface-on-variant w-6 h-6 mr-3 transition-colors group-focus-within:text-primary" />
-            )}
+      <div className="sticky top-0 z-20 pt-2 pb-2 bg-surface">
+        <div className="flex flex-col gap-4">
 
-            <input
-                ref={inputRef}
+            {/* Material Text Field */}
+            <md-outlined-text-field
+                label={isWebMode ? "Paste YouTube Link" : "Search Library"}
+                placeholder={isWebMode ? "Video or Playlist URL..." : "Songs, Artists, Albums"}
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isWebMode ? "Paste YouTube Video or Playlist Link..." : "Find your frequency..."}
-                className="flex-1 bg-transparent text-body-large text-surface-on placeholder:text-surface-on-variant/50 outline-none"
-                style={{ fontSize: '16px' }} // Prevent iOS zoom
-            />
-            <AnimatePresence>
-                {searchQuery && (
-                <motion.button
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    onClick={handleClearSearch}
-                    className="p-2 text-surface-on-variant hover:text-surface-on hover:bg-surface-container-highest/50 rounded-full transition-colors active:scale-90"
-                >
-                    <X className="w-5 h-5" />
-                </motion.button>
-                )}
-            </AnimatePresence>
-            </div>
+                onInput={handleInput}
+                ref={inputRef}
+                style={{ width: '100%' }}
+            >
+                 <md-icon slot="leading-icon">
+                    {isWebMode ? <Youtube size={20} /> : <SearchIcon size={20} />}
+                 </md-icon>
 
-            {/* Mode Toggle */}
-             <div className="flex items-center justify-end px-2">
-                <button
-                    onClick={() => {
-                        setIsWebMode(!isWebMode);
-                        setSearchQuery('');
-                        setImportStatus('idle');
-                        setImportMessage('');
-                    }}
-                    className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-                        isWebMode ? 'bg-red-500/20 text-red-500' : 'text-surface-on-variant hover:text-surface-on'
-                    }`}
-                >
-                    {isWebMode ? 'Switch to Local Search' : 'Switch to YouTube Import'}
-                </button>
+                 {searchQuery && (
+                    <md-icon-button slot="trailing-icon" onClick={handleClearSearch}>
+                        <md-icon><X size={20} /></md-icon>
+                    </md-icon-button>
+                 )}
+            </md-outlined-text-field>
+
+            {/* Mode Toggle Chips */}
+             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <md-filter-chip
+                    label="Library"
+                    selected={!isWebMode}
+                    onClick={() => setIsWebMode(false)}
+                />
+                <md-filter-chip
+                    label="YouTube Import"
+                    selected={isWebMode}
+                    onClick={() => setIsWebMode(true)}
+                />
             </div>
         </div>
       </div>
 
       {/* Results List */}
-      <div className="flex-1 flex flex-col gap-2 pb-24">
+      <div className="flex-1 flex flex-col gap-2 pb-24 overflow-y-auto">
 
         {/* Web Mode UI */}
         {isWebMode && (
@@ -211,8 +217,8 @@ const Search: React.FC<SearchProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         className="text-surface-on-variant space-y-4 max-w-sm"
                     >
-                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-                            <Youtube className="w-10 h-10 text-red-500" />
+                        <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center mx-auto mb-6 text-primary">
+                            <Youtube className="w-10 h-10" />
                         </div>
                         <h3 className="text-title-medium font-bold text-surface-on">Import from YouTube</h3>
                         <p className="text-body-medium">
@@ -222,29 +228,24 @@ const Search: React.FC<SearchProps> = ({
                  )}
 
                  {searchQuery && importStatus === 'idle' && (
-                     <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={handleImport}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-medium transition-all active:scale-95 shadow-lg shadow-red-500/20"
-                     >
-                         <Download className="w-5 h-5" />
+                     <md-filled-button onClick={handleImport}>
+                         <div slot="icon"><Download size={18} /></div>
                          Import Link
-                     </motion.button>
+                     </md-filled-button>
                  )}
 
                 {importStatus === 'loading' && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="flex flex-col items-center gap-4"
+                        className="flex flex-col items-center gap-4 w-full"
                     >
-                        <Loader2 className="w-10 h-10 text-red-500 animate-spin" />
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
                         <div className="text-body-large font-medium text-surface-on">{importMessage}</div>
                         {totalToImport > 0 && (
                             <div className="w-64 h-2 bg-surface-container-highest rounded-full overflow-hidden">
                                 <motion.div
-                                    className="h-full bg-red-500"
+                                    className="h-full bg-primary"
                                     initial={{ width: 0 }}
                                     animate={{ width: `${(importedCount / totalToImport) * 100}%` }}
                                     transition={{ type: "spring", stiffness: 50 }}
@@ -265,15 +266,12 @@ const Search: React.FC<SearchProps> = ({
                         </div>
                         <h3 className="text-title-medium font-bold text-surface-on">Success!</h3>
                         <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
-                        <button
-                            onClick={() => {
+                        <md-text-button onClick={() => {
                                 setSearchQuery('');
                                 setImportStatus('idle');
-                            }}
-                            className="mt-4 text-primary font-medium hover:underline"
-                        >
+                            }}>
                             Import another link
-                        </button>
+                        </md-text-button>
                     </motion.div>
                 )}
 
@@ -288,12 +286,9 @@ const Search: React.FC<SearchProps> = ({
                         </div>
                         <h3 className="text-title-medium font-bold text-surface-on">Oops!</h3>
                         <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
-                         <button
-                            onClick={() => setImportStatus('idle')}
-                            className="mt-4 text-surface-on font-medium hover:underline"
-                        >
+                         <md-text-button onClick={() => setImportStatus('idle')}>
                             Try again
-                        </button>
+                        </md-text-button>
                     </motion.div>
                 )}
             </div>
@@ -314,18 +309,12 @@ const Search: React.FC<SearchProps> = ({
                 className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98]"
                 >
                 {/* Cover Art */}
-                <div className="w-14 h-14 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative">
+                <div className="w-14 h-14 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative elevation-1">
                     {t.coverArt ? (
                     <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                     ) : (
                     <Music className="w-6 h-6 text-surface-on-variant/50" />
                     )}
-                    {/* Play Overlay on Hover */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="bg-surface-on text-surface-inverse p-1.5 rounded-full">
-                        <Music className="w-4 h-4" />
-                    </div>
-                    </div>
                 </div>
 
                 {/* Text Info */}
