@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipForward, Music } from 'lucide-react';
 import { Track, PlayerState } from '../types';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-icon-button': any;
+      'md-icon': any;
+    }
+  }
+}
 
 interface MiniPlayerProps {
   currentTrack: Track | null;
@@ -48,15 +58,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.8 }}
       onClick={onOpen}
       className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 md:left-auto md:right-6 md:w-[420px]
-                 h-[64px] bg-[#1c1c1e]/80 backdrop-blur-[32px] saturate-[180%] rounded-[20px]
-                 flex items-center pl-2 pr-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-[500] cursor-pointer
-                 border border-white/10 overflow-hidden group hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] transition-shadow"
+                 h-[64px] bg-surface-container/90 backdrop-blur-[32px] saturate-[180%] rounded-[20px]
+                 flex items-center pl-2 pr-2 shadow-elevation-2 z-[500] cursor-pointer
+                 border border-outline-variant/20 overflow-hidden group hover:shadow-elevation-3 transition-shadow"
       layoutId="mini-player"
     >
       {/* Subtle Progress Bar at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/5 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-surface-variant/20 pointer-events-none">
          <motion.div
-            className="h-full bg-white/80 rounded-r-full"
+            className="h-full bg-primary rounded-r-full"
             style={{ width: `${progress * 100}%` }}
             transition={{ type: 'tween', ease: 'linear', duration: 0.2 }}
          />
@@ -65,7 +75,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       {/* Album Art */}
       <motion.div
         layoutId={`artwork-${currentTrack.id}`}
-        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0 shadow-lg ring-1 ring-white/10"
+        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0 shadow-sm ring-1 ring-outline/10 bg-surface-variant flex items-center justify-center"
       >
         {!imgError && currentTrack.coverArt ? (
           <img
@@ -75,9 +85,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-            <Music className="w-6 h-6 text-zinc-500" />
-          </div>
+          <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
         )}
       </motion.div>
 
@@ -85,40 +93,30 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       <div className="flex-1 min-w-0 flex flex-col justify-center px-3 gap-0.5">
         <motion.h4
            layoutId={`title-${currentTrack.id}`}
-           className="text-[15px] font-semibold text-white truncate leading-tight tracking-tight"
+           className="text-label-large font-bold text-on-surface truncate leading-tight tracking-tight"
         >
           {currentTrack.title}
         </motion.h4>
         <motion.p
            layoutId={`artist-${currentTrack.id}`}
-           className="text-[13px] text-zinc-400 truncate leading-tight font-medium"
+           className="text-body-medium text-on-surface-variant truncate leading-tight"
         >
           {currentTrack.artist}
         </motion.p>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2">
-         <motion.button
-           onClick={handleTogglePlay}
-           whileTap={{ scale: 0.85 }}
-           className="w-9 h-9 flex items-center justify-center rounded-full bg-white text-black shadow-sm active:scale-90 transition-transform"
-         >
-            {playerState.isPlaying ? (
-              <Pause size={18} fill="currentColor" />
-            ) : (
-              <Play size={18} fill="currentColor" className="ml-0.5" />
-            )}
-         </motion.button>
+      <div className="flex items-center gap-1">
+         <md-icon-button onClick={handleTogglePlay} style={{ '--md-icon-button-icon-color': 'var(--md-sys-color-primary)' }}>
+            <md-icon class="material-symbols-rounded">
+                {playerState.isPlaying ? 'pause' : 'play_arrow'}
+            </md-icon>
+         </md-icon-button>
 
          {onNext && (
-           <motion.button
-             onClick={handleNext}
-             whileTap={{ scale: 0.85 }}
-             className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors active:scale-90"
-           >
-             <SkipForward size={22} fill="currentColor" />
-           </motion.button>
+           <md-icon-button onClick={handleNext}>
+             <md-icon class="material-symbols-rounded">skip_next</md-icon>
+           </md-icon-button>
          )}
       </div>
 

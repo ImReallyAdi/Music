@@ -1,6 +1,5 @@
 import React, { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Play, Sparkles, Shuffle, Clock } from 'lucide-react';
 import { Track } from '../types';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/filled-tonal-button.js';
@@ -14,6 +13,7 @@ declare global {
         'md-filled-button': any;
         'md-filled-tonal-button': any;
         'md-elevation': any;
+        'md-icon': any;
     }
   }
 }
@@ -86,7 +86,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-surface-container-highest">
-          <Music className="w-20 h-20 text-on-surface-variant/50" />
+          <md-icon class="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: '48px' }}>music_note</md-icon>
         </div>
       )}
       
@@ -106,7 +106,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
           }}
           className="w-14 h-14 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-xl backdrop-blur-md"
         >
-          <Play className="w-6 h-6 fill-current ml-1" />
+          <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>play_arrow</md-icon>
         </motion.div>
       </motion.div>
     </div>
@@ -168,7 +168,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               animate={{ opacity: 1, x: 0 }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium"
             >
-              <Sparkles className="w-4 h-4" />
+              <md-icon class="material-symbols-rounded" style={{ fontSize: '18px' }}>auto_awesome</md-icon>
               <span>Discovery Mix</span>
             </motion.div>
             <h2 className="text-display-large font-bold text-on-surface">
@@ -181,12 +181,12 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
           
           <div className="flex gap-4 flex-wrap">
             <md-filled-tonal-button onClick={handleShufflePlay}>
-                <md-icon slot="icon"><Shuffle /></md-icon>
+                <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
                 Shuffle
             </md-filled-tonal-button>
 
             <md-filled-button onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}>
-                <md-icon slot="icon"><Play /></md-icon>
+                <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
                 Play
             </md-filled-button>
           </div>
@@ -200,7 +200,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-3 text-on-surface"
                 >
-                    <Clock className="w-6 h-6 text-primary" />
+                    <md-icon class="material-symbols-rounded text-primary">schedule</md-icon>
                     <h3 className="text-headline-medium">Recently Played</h3>
                 </motion.div>
 
@@ -230,7 +230,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-3 text-on-surface"
                 >
-                    <Sparkles className="w-6 h-6 text-tertiary" />
+                    <md-icon class="material-symbols-rounded text-tertiary">auto_awesome</md-icon>
                     <h3 className="text-headline-medium">Just For You</h3>
             </motion.div>
              <motion.div
@@ -264,7 +264,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             className="flex flex-col items-center justify-center py-32 text-on-surface-variant"
           >
             <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center mb-6">
-              <Music className="w-16 h-16 opacity-30" />
+              <md-icon class="material-symbols-rounded" style={{ fontSize: '64px', opacity: 0.3 }}>music_off</md-icon>
             </div>
             <p className="text-headline-small font-bold text-on-surface">No tracks found</p>
             <p className="text-body-large mt-2">Import music to get started.</p>

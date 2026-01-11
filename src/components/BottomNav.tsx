@@ -1,6 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, Library, BarChart2 } from 'lucide-react';
 import '@material/web/labs/navigationbar/navigation-bar.js';
 import '@material/web/labs/navigationtab/navigation-tab.js';
 import '@material/web/icon/icon.js';
@@ -23,10 +22,10 @@ interface BottomNavProps {
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisible }) => {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Home' },
-    { id: 'search', icon: Search, label: 'Search' },
-    { id: 'library', icon: Library, label: 'Library' },
-    { id: 'stats', icon: BarChart2, label: 'Stats' },
+    { id: 'home', icon: 'home', label: 'Home' },
+    { id: 'search', icon: 'search', label: 'Search' },
+    { id: 'library', icon: 'library_music', label: 'Library' },
+    { id: 'stats', icon: 'bar_chart', label: 'Stats' },
   ];
 
   const activeIndex = tabs.findIndex(t => t.id === activeTab);
@@ -42,25 +41,18 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
             className="fixed bottom-0 w-full z-40 bg-surface"
         >
           {/* @ts-ignore */}
-          <md-navigation-bar activeIndex={activeIndex} hideInactiveLabels={false}>
-            {tabs.map((tab, index) => {
-               const Icon = tab.icon;
-               return (
-                 <md-navigation-tab
-                    key={tab.id}
-                    label={tab.label}
-                    active={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                 >
-                   <md-icon slot="activeIcon">
-                      <Icon size={24} color="#E8DEF8" strokeWidth={2.5} />
-                   </md-icon>
-                   <md-icon slot="inactiveIcon">
-                      <Icon size={24} color="#CAC4D0" strokeWidth={2} />
-                   </md-icon>
-                 </md-navigation-tab>
-               );
-            })}
+          <md-navigation-bar active-index={activeIndex} hide-inactive-labels="false">
+            {tabs.map((tab) => (
+               <md-navigation-tab
+                  key={tab.id}
+                  label={tab.label}
+                  active={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+               >
+                 <md-icon slot="active-icon" class="material-symbols-rounded">{tab.icon}</md-icon>
+                 <md-icon slot="inactive-icon" class="material-symbols-rounded">{tab.icon}</md-icon>
+               </md-navigation-tab>
+            ))}
           </md-navigation-bar>
         </motion.div>
       )}

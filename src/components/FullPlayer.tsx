@@ -7,20 +7,6 @@ import {
   useDragControls,
   useSpring
 } from 'framer-motion';
-import {
-  Shuffle,
-  SkipBack,
-  Play,
-  Pause,
-  SkipForward,
-  Repeat,
-  ListMusic,
-  ChevronDown,
-  Mic2,
-  Heart,
-  Globe,
-  Youtube,
-} from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
 import QueueList from './QueueList';
@@ -39,6 +25,8 @@ declare global {
       'md-slider': any;
       'md-filled-icon-button': any;
       'md-filled-tonal-icon-button': any;
+      'md-icon-button': any;
+      'md-icon': any;
     }
   }
 }
@@ -331,7 +319,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     {/* WEB MODE BADGE */}
                     {currentTrack.source === 'youtube' && (
                         <div className="absolute top-4 right-4 bg-red-600/90 text-white p-2 rounded-full shadow-lg backdrop-blur-sm z-10">
-                            <Youtube size={20} />
+                            <md-icon class="material-symbols-rounded" style={{ fontSize: '20px' }}>smart_display</md-icon>
                         </div>
                     )}
 
@@ -378,8 +366,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     }}
                     style={{ '--md-icon-button-icon-color': currentTrack.isFavorite ? colors.primary : colors.muted }}
                   >
-                     <md-icon>
-                        <Heart fill={currentTrack.isFavorite ? "currentColor" : "none"} />
+                     <md-icon class="material-symbols-rounded">
+                        {currentTrack.isFavorite ? "favorite" : "favorite_border"}
                      </md-icon>
                   </md-icon-button>
               </div>
@@ -419,12 +407,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     selected={playerState.shuffle}
                     style={{ '--md-icon-button-selected-icon-color': colors.primary }}
                 >
-                   <md-icon><Shuffle /></md-icon>
+                   <md-icon class="material-symbols-rounded">shuffle</md-icon>
                 </md-icon-button>
 
                 <div className="flex items-center gap-4">
                   <md-icon-button onClick={prevTrack} style={{ '--md-icon-size': '32px' }}>
-                    <md-icon><SkipBack fill="currentColor" /></md-icon>
+                    <md-icon class="material-symbols-rounded">skip_previous</md-icon>
                   </md-icon-button>
                   
                   <md-filled-icon-button
@@ -437,13 +425,13 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         '--md-sys-color-on-primary': colors.background
                     }}
                   >
-                    <md-icon>
-                        {playerState.isPlaying ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                    <md-icon class="material-symbols-rounded">
+                        {playerState.isPlaying ? 'pause' : 'play_arrow'}
                     </md-icon>
                   </md-filled-icon-button>
                   
                   <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '32px' }}>
-                     <md-icon><SkipForward fill="currentColor" /></md-icon>
+                     <md-icon class="material-symbols-rounded">skip_next</md-icon>
                   </md-icon-button>
                 </div>
 
@@ -452,10 +440,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{ '--md-icon-button-icon-color': playerState.repeat !== 'OFF' ? colors.primary : colors.muted }}
                 >
                    <div className="relative">
-                       <md-icon><Repeat /></md-icon>
-                       {playerState.repeat === 'ONE' && (
-                        <span className="absolute top-0 right-0 text-[10px] font-bold">1</span>
-                      )}
+                       <md-icon class="material-symbols-rounded">
+                           {playerState.repeat === 'ONE' ? 'repeat_one' : 'repeat'}
+                       </md-icon>
                    </div>
                 </md-icon-button>
               </div>
@@ -474,7 +461,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         '--md-sys-color-on-secondary-container': showLyrics ? colors.background : colors.muted
                     }}
                  >
-                    <md-icon><Mic2 /></md-icon>
+                    <md-icon class="material-symbols-rounded">lyrics</md-icon>
                  </md-filled-tonal-icon-button>
 
                  <md-filled-tonal-icon-button
@@ -489,8 +476,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         '--md-sys-color-on-secondary-container': showQueue ? colors.background : colors.muted
                     }}
                  >
-                    <md-icon>
-                        {showQueue ? <ChevronDown /> : <ListMusic />}
+                    <md-icon class="material-symbols-rounded">
+                        {showQueue ? 'expand_more' : 'queue_music'}
                     </md-icon>
                  </md-filled-tonal-icon-button>
               </div>
