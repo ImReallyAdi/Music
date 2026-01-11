@@ -115,18 +115,18 @@
 
 /* Premium Glassmorphism */
 .glass {
-  background: rgba(24, 24, 27, 0.65);
+  background: color-mix(in srgb, var(--md-sys-color-surface) 75%, transparent);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid color-mix(in srgb, var(--md-sys-color-on-surface) 10%, transparent);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
 }
 
 .glass-card {
-  background: rgba(39, 39, 42, 0.4);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container) 60%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 10%, transparent);
 }
 
 /* Utils */

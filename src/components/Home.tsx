@@ -161,25 +161,25 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       <div className="max-w-[1400px] mx-auto space-y-16 py-8">
 
         {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8">
-          <div className="space-y-4">
+        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 mb-12">
+          <div className="space-y-2">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium mb-2"
             >
               <Sparkles className="w-4 h-4" />
               <span>Discovery Mix</span>
             </motion.div>
-            <h2 className="text-display-large font-bold text-on-surface">
-              Fresh <br className="hidden md:block" /> Picks
+            <h2 className="text-display-medium md:text-display-large font-bold text-on-surface tracking-tight">
+              Fresh Picks
             </h2>
-            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2">
+            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed">
               A curated selection from your library, served fresh every time you visit.
             </p>
           </div>
           
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4 flex-wrap pb-2">
             <md-filled-tonal-button onClick={handleShufflePlay}>
                 <md-icon slot="icon"><Shuffle /></md-icon>
                 Shuffle

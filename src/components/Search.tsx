@@ -166,8 +166,8 @@ const Search: React.FC<SearchProps> = ({
       className="space-y-6 pt-2 h-full flex flex-col px-4"
     >
       {/* Search Bar - Sticky Header */}
-      <div className="sticky top-0 z-20 pt-2 pb-2 bg-surface">
-        <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-20 pt-2 pb-4 bg-background/95 backdrop-blur-md -mx-4 px-4 transition-all shadow-sm border-b border-outline-variant/10">
+        <div className="flex flex-col gap-3">
 
             {/* Material Text Field */}
             <md-outlined-text-field
@@ -176,7 +176,7 @@ const Search: React.FC<SearchProps> = ({
                 value={searchQuery}
                 onInput={handleInput}
                 ref={inputRef}
-                style={{ width: '100%' }}
+                style={{ width: '100%', '--md-outlined-text-field-container-shape': '16px' }}
             >
                  <md-icon slot="leading-icon">
                     {isWebMode ? <Youtube size={20} /> : <SearchIcon size={20} />}
@@ -190,7 +190,7 @@ const Search: React.FC<SearchProps> = ({
             </md-outlined-text-field>
 
             {/* Mode Toggle Chips */}
-             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                 <md-filter-chip
                     label="Library"
                     selected={!isWebMode}

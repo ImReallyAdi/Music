@@ -48,15 +48,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.8 }}
       onClick={onOpen}
       className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 md:left-auto md:right-6 md:w-[420px]
-                 h-[64px] bg-[#1c1c1e]/80 backdrop-blur-[32px] saturate-[180%] rounded-[20px]
-                 flex items-center pl-2 pr-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-[500] cursor-pointer
-                 border border-white/10 overflow-hidden group hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] transition-shadow"
+                 h-[64px] glass rounded-[20px]
+                 flex items-center pl-2 pr-4 z-[500] cursor-pointer
+                 overflow-hidden group hover:shadow-[0_12px_48px_rgba(0,0,0,0.5)] transition-shadow"
       layoutId="mini-player"
     >
       {/* Subtle Progress Bar at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/5 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-on-surface/5 pointer-events-none">
          <motion.div
-            className="h-full bg-white/80 rounded-r-full"
+            className="h-full bg-primary rounded-r-full"
             style={{ width: `${progress * 100}%` }}
             transition={{ type: 'tween', ease: 'linear', duration: 0.2 }}
          />
@@ -75,8 +75,8 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-            <Music className="w-6 h-6 text-zinc-500" />
+          <div className="w-full h-full bg-surface-variant flex items-center justify-center">
+            <Music className="w-6 h-6 text-on-surface-variant" />
           </div>
         )}
       </motion.div>
@@ -85,13 +85,13 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       <div className="flex-1 min-w-0 flex flex-col justify-center px-3 gap-0.5">
         <motion.h4
            layoutId={`title-${currentTrack.id}`}
-           className="text-[15px] font-semibold text-white truncate leading-tight tracking-tight"
+           className="text-[15px] font-semibold text-on-surface truncate leading-tight tracking-tight"
         >
           {currentTrack.title}
         </motion.h4>
         <motion.p
            layoutId={`artist-${currentTrack.id}`}
-           className="text-[13px] text-zinc-400 truncate leading-tight font-medium"
+           className="text-[13px] text-on-surface-variant truncate leading-tight font-medium"
         >
           {currentTrack.artist}
         </motion.p>
@@ -102,7 +102,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
          <motion.button
            onClick={handleTogglePlay}
            whileTap={{ scale: 0.85 }}
-           className="w-9 h-9 flex items-center justify-center rounded-full bg-white text-black shadow-sm active:scale-90 transition-transform"
+           className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-on-primary shadow-sm active:scale-90 transition-transform"
          >
             {playerState.isPlaying ? (
               <Pause size={18} fill="currentColor" />
@@ -115,7 +115,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
            <motion.button
              onClick={handleNext}
              whileTap={{ scale: 0.85 }}
-             className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors active:scale-90"
+             className="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-on-surface/10 transition-colors active:scale-90"
            >
              <SkipForward size={22} fill="currentColor" />
            </motion.button>

@@ -53,10 +53,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
                     onClick={() => setActiveTab(tab.id)}
                  >
                    <md-icon slot="activeIcon">
-                      <Icon size={24} color="#E8DEF8" strokeWidth={2.5} />
+                      <Icon size={24} className="text-on-secondary-container" strokeWidth={2.5} />
                    </md-icon>
                    <md-icon slot="inactiveIcon">
-                      <Icon size={24} color="#CAC4D0" strokeWidth={2} />
+                      <Icon size={24} className="text-on-surface-variant" strokeWidth={2} />
                    </md-icon>
                  </md-navigation-tab>
                );

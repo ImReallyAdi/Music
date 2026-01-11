@@ -54,25 +54,26 @@ const QueueItem = memo(({
         onClick={onPlay}
         style={{
             cursor: 'pointer',
-            '--md-list-item-leading-image-height': '56px',
-            '--md-list-item-leading-image-width': '56px',
-            '--md-list-item-leading-image-shape': '12px',
-            backgroundColor: isCurrent ? 'var(--md-sys-color-primary-container)' : 'transparent',
-            color: isCurrent ? 'var(--md-sys-color-on-primary-container)' : 'inherit',
-            borderRadius: '16px',
+            '--md-list-item-leading-image-height': '48px',
+            '--md-list-item-leading-image-width': '48px',
+            '--md-list-item-leading-image-shape': '8px',
+            '--md-list-item-container-color': isCurrent ? 'var(--md-sys-color-primary-container)' : 'transparent',
+            '--md-list-item-label-text-color': isCurrent ? 'var(--md-sys-color-on-primary-container)' : 'var(--md-sys-color-on-surface)',
+            '--md-list-item-supporting-text-color': isCurrent ? 'var(--md-sys-color-on-primary-container)' : 'var(--md-sys-color-on-surface-variant)',
+            borderRadius: '12px',
             marginBottom: '4px',
             opacity: isHistory ? 0.5 : 1
         }}
       >
         {/* Drag Handle */}
         {canDrag && (
-            <div slot="start" className="pr-2 cursor-grab active:cursor-grabbing text-on-surface-variant" onPointerDown={(e) => controls.start(e)}>
+            <div slot="start" className="pr-3 cursor-grab active:cursor-grabbing text-on-surface-variant" onPointerDown={(e) => controls.start(e)}>
                  <GripVertical size={20} />
             </div>
         )}
 
         {/* Artwork */}
-        <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center">
+        <div slot="start" className="relative w-12 h-12 rounded-[8px] overflow-hidden bg-surface-variant flex items-center justify-center">
             <img
                 src={track.coverArt}
                 alt={track.title}
