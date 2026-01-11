@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
-import { Play, Trash2, Plus, Shuffle, Music, X, ChevronLeft, GripVertical, Edit2, Save, Search, Clock } from 'lucide-react';
+import { Play, Trash2, Plus, Shuffle, Music, ChevronLeft, GripVertical, Edit2, Save, Search, Clock } from 'lucide-react';
 import { Playlist, Track } from '../types';
 import { dbService } from '../db';
+import { LibraryCard } from './library/LibraryCard';
 import '@material/web/list/list.js';
 import '@material/web/list/list-item.js';
 import '@material/web/iconbutton/icon-button.js';
@@ -50,7 +51,7 @@ const PlaylistCover = ({ playlist, tracks }: { playlist: Playlist; tracks: Recor
   if (covers.length === 0) {
     return (
       <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-on-surface-variant/20">
-        <Music size={48} />
+        <md-icon style={{ fontSize: '48px' }}>music_note</md-icon>
       </div>
     );
   }
@@ -67,58 +68,6 @@ const PlaylistCover = ({ playlist, tracks }: { playlist: Playlist; tracks: Recor
 
   return <img src={covers[0]} className="w-full h-full object-cover" alt="Playlist cover" />;
 };
-
-// --- Sub-Component: Playlist Card ---
-const PlaylistCard = ({ 
-  playlist, 
-  tracks, 
-  onClick, 
-  onDelete 
-}: { 
-  playlist: Playlist; 
-  tracks: Record<string, Track>; 
-  onClick: () => void; 
-  onDelete: (e: React.MouseEvent) => void; 
-}) => (
-  <motion.div
-    whileHover={{ y: -4 }}
-    onClick={onClick}
-    className="group relative cursor-pointer"
-  >
-    {/* Card Image */}
-    <div className="aspect-square w-full rounded-2xl overflow-hidden bg-surface-container-high mb-3 shadow-sm group-hover:shadow-md transition-all relative">
-      <PlaylistCover playlist={playlist} tracks={tracks} />
-      
-      {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-        <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            whileHover={{ scale: 1.1 }}
-            className="group-hover:opacity-100 transition-all bg-primary-container text-on-primary-container p-3 rounded-full shadow-lg"
-        >
-           <Play fill="currentColor" size={20} />
-        </motion.div>
-      </div>
-
-      <button
-        onClick={onDelete}
-        className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-error hover:text-white transition-all transform scale-90 hover:scale-100"
-        title="Delete Playlist"
-      >
-        <Trash2 size={16} />
-      </button>
-    </div>
-
-    {/* Metadata */}
-    <div>
-      <h3 className="font-bold text-title-medium text-on-surface truncate">{playlist.name}</h3>
-      <p className="text-body-small text-on-surface-variant truncate">
-        {playlist.trackIds.length} {playlist.trackIds.length === 1 ? 'track' : 'tracks'}
-        {playlist.description ? ` • ${playlist.description}` : ''}
-      </p>
-    </div>
-  </motion.div>
-);
 
 // --- Sub-Component: Playlist Track Item (Reorderable) ---
 const PlaylistTrackItem = ({
@@ -162,7 +111,7 @@ const PlaylistTrackItem = ({
           </div>
 
           <md-icon-button slot="end" onClick={(e: any) => { e.stopPropagation(); onRemove(); }}>
-             <md-icon><Trash2 size={20}/></md-icon>
+             <md-icon>delete</md-icon>
           </md-icon-button>
       </md-list-item>
     </Reorder.Item>
@@ -275,7 +224,7 @@ const PlaylistDetail = ({
 
                     <div className="flex gap-2 justify-center md:justify-start pt-2">
                         <md-filled-button onClick={handleSaveDetails}>
-                            <md-icon slot="icon"><Save /></md-icon>
+                            <md-icon slot="icon"><Save size={18} /></md-icon>
                             Save
                         </md-filled-button>
                         <md-filled-tonal-button onClick={() => { setIsEditing(false); setEditName(playlist.name); setEditDesc(playlist.description || ''); }}>
@@ -291,7 +240,7 @@ const PlaylistDetail = ({
                             onClick={() => setIsEditing(true)}
                             className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-all"
                         >
-                            <md-icon><Edit2 size={20} /></md-icon>
+                            <md-icon>edit</md-icon>
                         </md-icon-button>
                     </div>
                     {playlist.description && (
@@ -308,11 +257,11 @@ const PlaylistDetail = ({
 
           <div className="flex gap-3 mt-4">
             <md-filled-button onClick={() => handlePlay(false)} disabled={items.length === 0 ? true : undefined}>
-                <md-icon slot="icon"><Play /></md-icon>
+                <md-icon slot="icon"><Play size={18} fill="currentColor" /></md-icon>
                 Play
             </md-filled-button>
             <md-filled-tonal-button onClick={() => handlePlay(true)} disabled={items.length === 0 ? true : undefined}>
-                <md-icon slot="icon"><Shuffle /></md-icon>
+                <md-icon slot="icon"><Shuffle size={18} /></md-icon>
                 Shuffle
             </md-filled-tonal-button>
           </div>
@@ -378,7 +327,7 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
   };
 
   const handleDeletePlaylist = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevents opening the playlist
     if (confirm('Are you sure you want to delete this playlist? This cannot be undone.')) {
         await dbService.deletePlaylist(id);
         if (selectedPlaylistId === id) setSelectedPlaylistId(null);
@@ -394,8 +343,16 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
         .sort((a, b) => b.updatedAt - a.updatedAt);
   }, [playlists, searchQuery]);
 
+  // Handle playing a playlist directly from the card (Play button)
+  const handlePlayPlaylist = (playlist: Playlist, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (playlist.trackIds.length > 0) {
+        playTrack(playlist.trackIds[0], { customQueue: playlist.trackIds });
+    }
+  };
+
   return (
-    <div className="w-full pb-32 px-4 md:px-8 max-w-7xl mx-auto">
+    <div className="w-full pb-32">
       <AnimatePresence mode="wait">
         
         {/* VIEW: Playlist List */}
@@ -409,23 +366,19 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
           >
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div>
-                  <h2 className="text-display-small font-bold text-on-surface">Your Playlists</h2>
-                  <p className="text-on-surface-variant mt-1">{Object.keys(playlists).length} collections</p>
-              </div>
-
-              <div className="flex gap-3 w-full md:w-auto items-center">
+              <div className="flex gap-3 w-full md:w-auto items-center flex-1">
                   <md-outlined-text-field
-                      placeholder="Search..."
+                      placeholder="Search playlists..."
                       value={searchQuery}
                       onInput={(e: any) => setSearchQuery(e.target.value)}
+                      style={{ flex: 1 }}
                   >
-                      <md-icon slot="leading-icon"><Search /></md-icon>
+                      <md-icon slot="leading-icon">search</md-icon>
                   </md-outlined-text-field>
 
                   <md-filled-button onClick={() => setIsCreating(true)}>
-                      <md-icon slot="icon"><Plus /></md-icon>
-                      New Playlist
+                      <md-icon slot="icon">add</md-icon>
+                      New
                   </md-filled-button>
               </div>
             </div>
@@ -456,12 +409,18 @@ const Playlists: React.FC<PlaylistsProps> = ({ playlists, tracks, playTrack, ref
             {/* Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredPlaylists.map(playlist => (
-                  <PlaylistCard 
+                  <LibraryCard
                     key={playlist.id} 
-                    playlist={playlist} 
-                    tracks={tracks}
+                    title={playlist.name}
+                    subtitle={`${playlist.trackIds.length} tracks`}
+                    customImage={<PlaylistCover playlist={playlist} tracks={tracks} />}
                     onClick={() => setSelectedPlaylistId(playlist.id)}
-                    onDelete={(e) => handleDeletePlaylist(playlist.id, e)}
+                    onPlay={(e) => handlePlayPlaylist(playlist, e)}
+                    actions={
+                        <md-icon-button onClick={(e: any) => handleDeletePlaylist(playlist.id, e)}>
+                            <md-icon>delete</md-icon>
+                        </md-icon-button>
+                    }
                   />
               ))}
             </div>
