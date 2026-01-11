@@ -338,17 +338,17 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               
               {/* Text Info & Favorite */}
               <div className="flex items-center justify-between">
-                  <div className="text-left flex-1 min-w-0">
+                  <div className="text-left flex-1 min-w-0 pr-4">
                     <motion.h1
                         animate={{ color: '#ffffff' }}
-                        className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1"
+                        className="text-headline-medium md:text-headline-large font-bold leading-tight line-clamp-1 tracking-tight"
                         title={currentTrack.title}
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
                         animate={{ color: colors.muted }}
-                        className="text-lg line-clamp-1 mt-1 font-medium"
+                        className="text-title-medium md:text-title-large line-clamp-1 mt-1 font-medium tracking-tight opacity-90"
                         title={currentTrack.artist}
                     >
                       {currentTrack.artist}
@@ -373,7 +373,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </div>
 
               {/* Material Progress Slider */}
-              <div className="w-full flex flex-col gap-1">
+              <div className="w-full flex flex-col gap-2 pt-2">
                  {/*
                      md-slider requires some handling for controlled input.
                      It doesn't support 'value' binding directly in all versions the same way React does.
@@ -390,10 +390,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     onInput={handleScrubInput}
                     onChange={handleScrubEnd}
                     onPointerDown={handleScrubStart}
-                    style={{ width: '100%', '--md-slider-handle-color': colors.primary, '--md-slider-active-track-color': colors.primary }}
+                    style={{
+                      width: '100%',
+                      '--md-slider-handle-color': colors.primary,
+                      '--md-slider-active-track-color': colors.primary,
+                      '--md-slider-inactive-track-color': 'rgba(255,255,255,0.2)'
+                    }}
                  ></md-slider>
 
-                <div className="flex justify-between text-xs font-medium font-mono" style={{ color: colors.muted }}>
+                <div className="flex justify-between text-label-medium font-medium font-mono tracking-wider opacity-80" style={{ color: colors.muted }}>
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
