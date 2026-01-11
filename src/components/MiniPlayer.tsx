@@ -64,9 +64,9 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       layoutId="mini-player"
     >
       {/* Subtle Progress Bar at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-surface-variant/20 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-surface-variant/20 pointer-events-none">
          <motion.div
-            className="h-full bg-primary rounded-r-full"
+            className="h-full bg-primary rounded-r-full shadow-[0_0_8px_color-mix(in_srgb,var(--md-sys-color-primary),transparent_50%)]"
             style={{ width: `${progress * 100}%` }}
             transition={{ type: 'tween', ease: 'linear', duration: 0.2 }}
          />
@@ -75,7 +75,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       {/* Album Art */}
       <motion.div
         layoutId={`artwork-${currentTrack.id}`}
-        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0 shadow-sm ring-1 ring-outline/10 bg-surface-variant flex items-center justify-center"
+        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0 shadow-sm ring-1 ring-outline/10 bg-surface-container-highest flex items-center justify-center"
       >
         {!imgError && currentTrack.coverArt ? (
           <img
@@ -93,13 +93,13 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       <div className="flex-1 min-w-0 flex flex-col justify-center px-3 gap-0.5">
         <motion.h4
            layoutId={`title-${currentTrack.id}`}
-           className="text-label-large font-bold text-on-surface truncate leading-tight tracking-tight"
+           className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight"
         >
           {currentTrack.title}
         </motion.h4>
         <motion.p
            layoutId={`artist-${currentTrack.id}`}
-           className="text-body-medium text-on-surface-variant truncate leading-tight"
+           className="text-body-medium text-on-surface-variant truncate leading-tight opacity-80"
         >
           {currentTrack.artist}
         </motion.p>

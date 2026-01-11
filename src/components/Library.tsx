@@ -60,12 +60,13 @@ const formatDuration = (seconds?: number) => {
 // --- COMPONENTS ---
 
 const SkeletonRow = () => (
-  <div className="flex items-center gap-4 py-2 px-2 opacity-50">
-    <div className="w-14 h-14 rounded-[12px] bg-surface-variant animate-pulse" />
-    <div className="flex-1 space-y-2">
-      <div className="h-4 w-1/3 bg-surface-variant rounded-full animate-pulse" />
-      <div className="h-3 w-1/4 bg-surface-variant/50 rounded-full animate-pulse" />
+  <div className="flex items-center gap-4 py-3 px-4 opacity-60">
+    <div className="w-14 h-14 rounded-[12px] bg-surface-container-highest animate-pulse" />
+    <div className="flex-1 space-y-2.5">
+      <div className="h-4 w-1/3 bg-surface-container-highest rounded-full animate-pulse" />
+      <div className="h-3 w-1/4 bg-surface-container-highest/60 rounded-full animate-pulse" />
     </div>
+    <div className="h-3 w-8 bg-surface-container-highest/60 rounded-full animate-pulse" />
   </div>
 );
 
@@ -98,9 +99,16 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
             onClick={onClick}
             headline={displayArtist}
             supporting-text={`${trackCount} ${trackCount === 1 ? 'Song' : 'Songs'}`}
-            style={{ cursor: 'pointer', '--md-list-item-leading-image-height': '56px', '--md-list-item-leading-image-width': '56px', '--md-list-item-leading-image-shape': '9999px' }}
+            style={{
+                cursor: 'pointer',
+                '--md-list-item-leading-image-height': '56px',
+                '--md-list-item-leading-image-width': '56px',
+                '--md-list-item-leading-image-shape': '9999px',
+                '--md-list-item-headline-type': '500 16px/24px var(--md-sys-typescale-body-large-font)',
+                '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
+            }}
         >
-             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center relative">
+             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center relative border border-outline-variant/10">
                 {image ? (
                     <img src={image} alt={displayArtist} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
@@ -143,11 +151,14 @@ const TrackRow = memo(({
                     '--md-list-item-leading-image-height': '56px',
                     '--md-list-item-leading-image-width': '56px',
                     '--md-list-item-leading-image-shape': '12px',
+                    '--md-list-item-headline-type': '500 16px/24px var(--md-sys-typescale-body-large-font)',
+                    '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
+                    '--md-list-item-trailing-supporting-text-type': '400 12px/16px var(--md-sys-typescale-label-medium-font)',
                     backgroundColor: isCurrentTrack ? 'var(--md-sys-color-surface-container-high)' : 'transparent'
                 }}
             >
                 {/* Thumbnail */}
-                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center">
+                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-container-highest flex items-center justify-center border border-outline-variant/10">
                     {track.coverArt ? (
                         <img 
                             src={track.coverArt} 
@@ -172,7 +183,7 @@ const TrackRow = memo(({
                 </div>
 
                 {/* Actions */}
-                <div slot="end" className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                <div slot="end" className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     <md-icon-button onClick={() => onUploadLyrics(track.id)}>
                         <md-icon class="material-symbols-rounded">lyrics</md-icon>
                     </md-icon-button>
@@ -244,10 +255,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                                     <button
                                         key={mode}
                                         onClick={() => setPlayerState(p => ({ ...p, automixMode: mode as any }))}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
+                                        className={`px-3 py-1.5 rounded-lg text-label-medium font-medium capitalize transition-all border ${
                                             playerState.automixMode === mode
-                                            ? 'bg-primary-container text-on-primary-container'
-                                            : 'bg-surface-container-high text-on-surface-variant'
+                                            ? 'bg-primary-container text-on-primary-container border-primary-container'
+                                            : 'bg-surface-container-high text-on-surface-variant border-transparent hover:border-outline-variant'
                                         }`}
                                     >
                                         {mode}

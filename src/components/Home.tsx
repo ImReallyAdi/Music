@@ -116,7 +116,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
       <h3 className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight">
         {track.title}
       </h3>
-      <p className="text-body-medium text-on-surface-variant font-medium truncate group-hover:text-primary transition-colors">
+      <p className="text-body-medium text-on-surface-variant font-medium truncate group-hover:text-primary group-hover:opacity-100 transition-all opacity-80">
         {track.artist}
       </p>
     </div>
@@ -166,15 +166,15 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-large font-medium shadow-sm"
             >
               <md-icon class="material-symbols-rounded" style={{ fontSize: '18px' }}>auto_awesome</md-icon>
               <span>Discovery Mix</span>
             </motion.div>
-            <h2 className="text-display-large font-bold text-on-surface">
+            <h2 className="text-headline-large md:text-display-large font-bold text-on-surface tracking-tight">
               Fresh <br className="hidden md:block" /> Picks
             </h2>
-            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2">
+            <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2 opacity-90">
               A curated selection from your library, served fresh every time you visit.
             </p>
           </div>

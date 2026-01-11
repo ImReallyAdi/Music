@@ -309,7 +309,7 @@ const Search: React.FC<SearchProps> = ({
                 className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98]"
                 >
                 {/* Cover Art */}
-                <div className="w-14 h-14 bg-surface-container-highest rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative elevation-1">
+                <div className="w-14 h-14 bg-surface-container-highest rounded-[12px] flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative border border-outline-variant/10">
                     {t.coverArt ? (
                     <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                     ) : (
@@ -319,13 +319,13 @@ const Search: React.FC<SearchProps> = ({
 
                 {/* Text Info */}
                 <div className="flex-1 min-w-0">
-                    <h4 className="text-body-large font-medium text-on-surface truncate group-hover:text-primary transition-colors flex items-center gap-2">
+                    <h4 className="text-title-medium font-bold text-on-surface truncate group-hover:text-primary transition-colors flex items-center gap-2">
                     {t.title}
                     {t.source === 'youtube' && (
-                        <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30">WEB</span>
+                         <span className="text-[10px] text-on-error-container px-1.5 py-0.5 rounded border border-error/30" style={{ backgroundColor: 'var(--md-sys-color-error-container)' }}>WEB</span>
                     )}
                     </h4>
-                    <p className="text-body-medium text-on-surface-variant truncate">
+                    <p className="text-body-medium text-on-surface-variant truncate opacity-80">
                     {t.artist}
                     </p>
                 </div>
