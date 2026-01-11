@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Track, PlayerState } from '../types';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
+import '@material/web/progress/linear-progress.js';
 
 declare global {
   namespace JSX {
     interface IntrinsicElements {
       'md-icon-button': any;
       'md-icon': any;
+      'md-linear-progress': any;
     }
   }
 }
@@ -63,13 +65,17 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
                  border border-white/10 overflow-hidden group hover:shadow-elevation-4 transition-all"
       layoutId="mini-player"
     >
-      {/* Progress Bar at Bottom - Increased visibility */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 pointer-events-none">
-         <motion.div
-            className="h-full bg-primary"
-            style={{ width: `${progress * 100}%` }}
-            transition={{ type: 'tween', ease: 'linear', duration: 0.2 }}
-         />
+      {/* Progress Bar at Bottom - Material Web */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+         <md-linear-progress
+            value={progress}
+            style={{
+                '--md-linear-progress-track-height': '3px',
+                '--md-linear-progress-active-indicator-height': '3px',
+                '--md-linear-progress-track-color': 'rgba(255,255,255,0.1)',
+                width: '100%'
+            }}
+         ></md-linear-progress>
       </div>
 
       {/* Album Art */}

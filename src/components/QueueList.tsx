@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { Reorder, useDragControls, motion, AnimatePresence } from 'framer-motion';
 import { Track } from '../types';
-import { GripVertical, ArrowUpToLine, Disc3, ListMusic } from 'lucide-react';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/list/list.js';
@@ -43,8 +42,9 @@ const QueueItem = memo(({
 }: QueueItemProps) => {
   const controls = useDragControls();
 
-  // Using Material Web List Item
-  // We wrap it in Reorder.Item if drag is enabled
+  // Content for the list item
+  // Note: We combine drag handle and artwork into one 'start' slot
+  // because md-list-item usually expects one element per slot
 
   const ListItemContent = (
       <md-list-item
@@ -55,7 +55,7 @@ const QueueItem = memo(({
         style={{
             cursor: 'pointer',
             '--md-list-item-leading-image-height': '56px',
-            '--md-list-item-leading-image-width': '56px',
+            '--md-list-item-leading-image-width': '56px', // Adjusted for extra width if drag handle present
             '--md-list-item-leading-image-shape': '12px',
             '--md-list-item-headline-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
             '--md-list-item-supporting-text-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
@@ -65,41 +65,46 @@ const QueueItem = memo(({
             opacity: isHistory ? 0.6 : 1
         }}
       >
-        {/* Drag Handle */}
-        {canDrag && (
-            <div slot="start" className="pr-2 cursor-grab active:cursor-grabbing text-on-surface-variant opacity-60 hover:opacity-100" onPointerDown={(e) => controls.start(e)}>
-                 <GripVertical size={24} />
-            </div>
-        )}
-
-        {/* Artwork */}
-        <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5">
-            <img
-                src={track.coverArt}
-                alt={track.title}
-                className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
-            />
-            {isCurrent && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                   <div className="flex gap-1 items-end h-4 pb-1">
-                        {[0.6, 0.8, 1.0].map((d, i) => (
-                            <motion.span
-                                key={i}
-                                animate={{ height: ["20%", "100%", "20%"] }}
-                                transition={{ duration: d, repeat: Infinity, ease: "easeInOut" }}
-                                className="w-1 bg-primary rounded-full"
-                            />
-                        ))}
-                    </div>
+        <div slot="start" className="flex items-center gap-3">
+             {/* Drag Handle */}
+            {canDrag && (
+                <div
+                    className="cursor-grab active:cursor-grabbing text-on-surface-variant opacity-60 hover:opacity-100 p-1 -ml-2"
+                    onPointerDown={(e) => controls.start(e)}
+                >
+                    <md-icon class="material-symbols-rounded">drag_indicator</md-icon>
                 </div>
             )}
+
+            {/* Artwork */}
+            <div className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5 shrink-0">
+                <img
+                    src={track.coverArt}
+                    alt={track.title}
+                    className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
+                />
+                {isCurrent && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="flex gap-1 items-end h-4 pb-1">
+                            {[0.6, 0.8, 1.0].map((d, i) => (
+                                <motion.span
+                                    key={i}
+                                    animate={{ height: ["20%", "100%", "20%"] }}
+                                    transition={{ duration: d, repeat: Infinity, ease: "easeInOut" }}
+                                    className="w-1 bg-primary rounded-full"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
 
         {/* Actions */}
         <div slot="end" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
              {!isCurrent && onPlayNext && (
                 <md-icon-button onClick={onPlayNext} title="Play Next">
-                    <md-icon><ArrowUpToLine size={20} /></md-icon>
+                    <md-icon class="material-symbols-rounded">queue_play_next</md-icon>
                 </md-icon-button>
              )}
              <md-icon-button onClick={onRemove} title="Remove">
@@ -185,7 +190,7 @@ const QueueList: React.FC<QueueListProps> = ({
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
           <div className="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center">
-             <Disc3 size={64} className="text-on-surface-variant/50" />
+             <md-icon class="material-symbols-rounded text-on-surface-variant/50" style={{fontSize: '64px'}}>album</md-icon>
           </div>
           <div>
             <h4 className="text-title-large font-medium">Your queue is empty</h4>
@@ -315,7 +320,7 @@ const QueueList: React.FC<QueueListProps> = ({
 
           {upcoming.length === 0 && (
              <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4 text-on-surface-variant">
-                 <ListMusic size={32} />
+                 <md-icon class="material-symbols-rounded text-on-surface-variant/50" style={{fontSize: '32px'}}>queue_music</md-icon>
                  <p className="text-body-medium font-medium">End of queue</p>
              </div>
           )}
