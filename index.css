@@ -3,31 +3,36 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Theme Color Palette - Expressive/Cinematic */
+  /* Dark Theme Color Palette - Material 3 Expressive (Cinematic) */
+  /* Primary: A vibrant, electric purple-indigo */
   --md-sys-color-primary: #D0BCFF;
   --md-sys-color-on-primary: #381E72;
   --md-sys-color-primary-container: #4F378B;
   --md-sys-color-on-primary-container: #EADDFF;
 
+  /* Secondary: A softer, complementary lavender */
   --md-sys-color-secondary: #CCC2DC;
   --md-sys-color-on-secondary: #332D41;
   --md-sys-color-secondary-container: #4A4458;
   --md-sys-color-on-secondary-container: #E8DEF8;
 
+  /* Tertiary: A pinkish accent for "Discovery" or "Special" actions */
   --md-sys-color-tertiary: #EFB8C8;
   --md-sys-color-on-tertiary: #492532;
   --md-sys-color-tertiary-container: #633B48;
   --md-sys-color-on-tertiary-container: #FFD8E4;
 
+  /* Error */
   --md-sys-color-error: #F2B8B5;
   --md-sys-color-on-error: #601410;
   --md-sys-color-error-container: #8C1D18;
   --md-sys-color-on-error-container: #F9DEDC;
 
-  --md-sys-color-background: #141218;
+  /* Neutral Surfaces - Deep, rich greys/blacks */
+  --md-sys-color-background: #100F13; /* slightly darker for OLED punch */
   --md-sys-color-on-background: #E6E1E5;
 
-  --md-sys-color-surface: #141218;
+  --md-sys-color-surface: #121016;
   --md-sys-color-on-surface: #E6E1E5;
 
   --md-sys-color-surface-variant: #49454F;
@@ -36,11 +41,14 @@
   --md-sys-color-outline: #938F99;
   --md-sys-color-outline-variant: #49454F;
 
-  --md-sys-color-surface-container: #1D1B20;
+  /* Tonal Surfaces for Cards/Containers */
+  --md-sys-color-surface-container-lowest: #0F0D13;
+  --md-sys-color-surface-container-low: #1D1B20;
+  --md-sys-color-surface-container: #211F26;
   --md-sys-color-surface-container-high: #2B2930;
   --md-sys-color-surface-container-highest: #36343B;
 
-  /* Typography */
+  /* Typography - Plus Jakarta Sans */
   --md-sys-typescale-body-large-font: 'Plus Jakarta Sans', sans-serif;
   --md-sys-typescale-body-medium-font: 'Plus Jakarta Sans', sans-serif;
   --md-sys-typescale-body-small-font: 'Plus Jakarta Sans', sans-serif;
@@ -57,7 +65,9 @@
   --md-sys-typescale-display-medium-font: 'Plus Jakarta Sans', sans-serif;
   --md-sys-typescale-display-small-font: 'Plus Jakarta Sans', sans-serif;
 
-  /* Component Overrides */
+  /* Component Overrides for @material/web */
+
+  /* Navigation Bar */
   --md-navigation-bar-container-color: var(--md-sys-color-surface-container);
   --md-navigation-bar-label-text-color: var(--md-sys-color-on-surface-variant);
   --md-navigation-bar-active-indicator-color: var(--md-sys-color-secondary-container);
@@ -67,9 +77,26 @@
   --md-navigation-bar-inactive-icon-color: var(--md-sys-color-on-surface-variant);
   --md-navigation-bar-inactive-label-text-color: var(--md-sys-color-on-surface-variant);
 
+  /* Slider */
   --md-slider-handle-color: var(--md-sys-color-primary);
+  --md-slider-focus-handle-color: var(--md-sys-color-primary);
+  --md-slider-hover-handle-color: var(--md-sys-color-primary);
   --md-slider-active-track-color: var(--md-sys-color-primary);
   --md-slider-inactive-track-color: var(--md-sys-color-surface-variant);
+  --md-slider-handle-width: 20px;
+  --md-slider-handle-height: 20px;
+
+  /* Tabs */
+  --md-primary-tab-active-indicator-color: var(--md-sys-color-primary);
+  --md-primary-tab-label-text-color: var(--md-sys-color-on-surface-variant);
+  --md-primary-tab-active-label-text-color: var(--md-sys-color-primary);
+  --md-primary-tab-active-icon-color: var(--md-sys-color-primary);
+  --md-primary-tab-icon-color: var(--md-sys-color-on-surface-variant);
+
+  /* List Items */
+  --md-list-item-label-text-color: var(--md-sys-color-on-surface);
+  --md-list-item-supporting-text-color: var(--md-sys-color-on-surface-variant);
+  --md-list-item-trailing-supporting-text-color: var(--md-sys-color-on-surface-variant);
 
   /* Shape */
   --md-sys-shape-corner-extra-small: 4px;
@@ -88,11 +115,18 @@
     overscroll-behavior-y: none;
     touch-action: pan-x pan-y;
   }
+
+  /* Force focus ring visibility for keyboard users */
+  :focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: 2px;
+  }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background-color: transparent;
@@ -100,6 +134,7 @@
 ::-webkit-scrollbar-thumb {
   background-color: var(--md-sys-color-surface-variant);
   border-radius: 9999px;
+  border: 2px solid var(--md-sys-color-background); /* Creates padding effect */
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--md-sys-color-outline);
@@ -115,23 +150,18 @@
 
 /* Premium Glassmorphism */
 .glass {
-  background: rgba(24, 24, 27, 0.65);
+  background: rgba(18, 16, 22, 0.7);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-.glass-card {
-  background: rgba(39, 39, 42, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* Utils */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .pt-safe { padding-top: env(safe-area-inset-top); }
+.pl-safe { padding-left: env(safe-area-inset-left); }
+.pr-safe { padding-right: env(safe-area-inset-right); }
 
 /* Range Input Reset */
 input[type=range] {
@@ -146,8 +176,8 @@ input[type=range]:focus {
 }
 
 .mask-image-gradient {
-  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
 }
 
 .no-scrollbar::-webkit-scrollbar {
