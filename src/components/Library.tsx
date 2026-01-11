@@ -1,10 +1,5 @@
 import React, { memo, useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Music, Play, Shuffle, ListFilter, Settings, Trash2, 
-  PlusCircle, Loader2, X, Mic2, Users, ChevronLeft, 
-  Disc, Heart, Check, Sparkles, Key, FileText, Pause
-} from 'lucide-react';
 import { Track, PlayerState, Playlist } from '../types';
 import { dbService } from '../db';
 import Playlists from './Playlists';
@@ -29,8 +24,11 @@ declare global {
       'md-primary-tab': any;
       'md-secondary-tab': any;
       'md-switch': any;
+      'md-slider': any;
       'md-list': any;
       'md-list-item': any;
+      'md-icon': any;
+      'md-icon-button': any;
     }
   }
 }
@@ -99,17 +97,17 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
             type="button"
             onClick={onClick}
             headline={displayArtist}
-            supportingText={`${trackCount} ${trackCount === 1 ? 'Song' : 'Songs'}`}
+            supporting-text={`${trackCount} ${trackCount === 1 ? 'Song' : 'Songs'}`}
             style={{ cursor: 'pointer', '--md-list-item-leading-image-height': '56px', '--md-list-item-leading-image-width': '56px', '--md-list-item-leading-image-shape': '9999px' }}
         >
              <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center relative">
                 {image ? (
                     <img src={image} alt={displayArtist} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                    <Users className="w-6 h-6 text-on-surface-variant/50" />
+                    <md-icon class="material-symbols-rounded text-on-surface-variant/50">group</md-icon>
                 )}
             </div>
-            <md-icon slot="end"><ChevronLeft className="rotate-180" /></md-icon>
+            <md-icon slot="end" class="material-symbols-rounded">chevron_right</md-icon>
         </md-list-item>
     );
 });
@@ -138,8 +136,8 @@ const TrackRow = memo(({
                 type="button"
                 onClick={() => onPlay(track.id)}
                 headline={track.title}
-                supportingText={track.artist}
-                trailingSupportingText={formatDuration(track.duration)}
+                supporting-text={track.artist}
+                trailing-supporting-text={formatDuration(track.duration)}
                 style={{
                     cursor: 'pointer',
                     '--md-list-item-leading-image-height': '56px',
@@ -158,16 +156,16 @@ const TrackRow = memo(({
                             loading="lazy" 
                         />
                     ) : (
-                        <Music className={`w-6 h-6 ${isCurrentTrack ? 'text-primary' : 'text-on-surface-variant/40'}`} />
+                        <md-icon class={`material-symbols-rounded ${isCurrentTrack ? 'text-primary' : 'text-on-surface-variant/40'}`}>music_note</md-icon>
                     )}
 
                     {/* Overlay Icon */}
                      {isCurrentTrack && (
                          <div className="absolute inset-0 flex items-center justify-center">
                               {isPlaying ? (
-                                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                                  <md-icon class="material-symbols-rounded text-primary animate-spin">progress_activity</md-icon>
                               ) : (
-                                  <Pause className="w-6 h-6 text-primary" fill="currentColor" />
+                                  <md-icon class="material-symbols-rounded text-primary">pause</md-icon>
                               )}
                          </div>
                      )}
@@ -176,13 +174,13 @@ const TrackRow = memo(({
                 {/* Actions */}
                 <div slot="end" className="flex items-center" onClick={(e) => e.stopPropagation()}>
                     <md-icon-button onClick={() => onUploadLyrics(track.id)}>
-                        <md-icon><FileText size={20} /></md-icon>
+                        <md-icon class="material-symbols-rounded">lyrics</md-icon>
                     </md-icon-button>
                      <md-icon-button onClick={() => onAddToPlaylist(track.id)}>
-                        <md-icon><PlusCircle size={20} /></md-icon>
+                        <md-icon class="material-symbols-rounded">playlist_add</md-icon>
                     </md-icon-button>
                      <md-icon-button onClick={() => onDelete(track.id)}>
-                        <md-icon><Trash2 size={20} /></md-icon>
+                        <md-icon class="material-symbols-rounded">delete</md-icon>
                     </md-icon-button>
                 </div>
             </md-list-item>
@@ -198,11 +196,9 @@ const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
         <md-list-item
             type="button"
             headline={label}
-            supportingText={subLabel}
-            // non-interactive because the switch handles it
+            supporting-text={subLabel}
         >
              <md-switch slot="end" selected={checked} onClick={(e: any) => {
-                 // Prevent bubbling if needed, though list item isn't handling click here
                  onChange(!checked);
              }}></md-switch>
         </md-list-item>
@@ -512,11 +508,11 @@ const Library: React.FC<LibraryProps> = ({
                 <div className="flex items-center justify-between mb-2">
                     <h1 className="text-display-small font-bold text-on-surface tracking-tight">Library</h1>
                     <md-icon-button onClick={() => setLibraryTab('Settings')}>
-                        <md-icon><Settings /></md-icon>
+                        <md-icon class="material-symbols-rounded">settings</md-icon>
                     </md-icon-button>
                 </div>
 
-                <md-tabs activeTabIndex={tabIndexMap[libraryTab]}>
+                <md-tabs active-tab-index={tabIndexMap[libraryTab]}>
                     {tabKeys.map((tab) => (
                         <md-primary-tab
                             key={tab}
@@ -524,7 +520,7 @@ const Library: React.FC<LibraryProps> = ({
                             selected={libraryTab === tab}
                         >
                             {tab}
-                            {tab === 'Favorites' && <md-icon slot="icon"><Heart size={16}/></md-icon>}
+                            {tab === 'Favorites' && <md-icon slot="icon" class="material-symbols-rounded">favorite</md-icon>}
                         </md-primary-tab>
                     ))}
                 </md-tabs>
@@ -548,7 +544,7 @@ const Library: React.FC<LibraryProps> = ({
                                     <div className="mb-4">
                                         <md-list-item type="button" onClick={handleShuffleAll} style={{ backgroundColor: 'var(--md-sys-color-primary-container)', borderRadius: '16px' }}>
                                             <div slot="headline" className="font-bold text-on-primary-container">Shuffle All Tracks</div>
-                                            <md-icon slot="start" className="text-on-primary-container"><Shuffle /></md-icon>
+                                            <md-icon slot="start" class="material-symbols-rounded text-on-primary-container">shuffle</md-icon>
                                         </md-list-item>
                                     </div>
                                 )}
@@ -570,7 +566,7 @@ const Library: React.FC<LibraryProps> = ({
                                     ))
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40">
-                                        {libraryTab === 'Favorites' ? <Heart className="w-16 h-16 mb-4 opacity-50 stroke-1" /> : <Music className="w-16 h-16 mb-4 opacity-50 stroke-1" />}
+                                        <md-icon class="material-symbols-rounded" style={{ fontSize: '64px', opacity: 0.5 }}>{libraryTab === 'Favorites' ? 'favorite' : 'music_off'}</md-icon>
                                         <p>{libraryTab === 'Favorites' ? "No favorite tracks yet" : "Your library is empty"}</p>
                                     </div>
                                 )}
@@ -584,7 +580,7 @@ const Library: React.FC<LibraryProps> = ({
                                 <motion.div key="artist-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
                                     <div className="flex items-center gap-4 mb-4 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2">
                                         <md-icon-button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }}>
-                                            <md-icon><ChevronLeft /></md-icon>
+                                            <md-icon class="material-symbols-rounded">arrow_back</md-icon>
                                         </md-icon-button>
                                         <h2 className="text-headline-small font-bold">{selectedArtist}</h2>
                                     </div>

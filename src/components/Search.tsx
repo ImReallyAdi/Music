@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Search as SearchIcon, X, Disc, Youtube, Download, AlertCircle, Loader2, Check } from 'lucide-react';
 import { Track, Playlist } from '../types';
 import { getYouTubeVideo, getYouTubePlaylist, extractVideoId, extractPlaylistId, YouTubeTrack } from '../utils/youtube';
 import '@material/web/textfield/outlined-text-field.js';
@@ -9,6 +8,7 @@ import '@material/web/button/text-button.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/chips/filter-chip.js';
+import '@material/web/progress/circular-progress.js';
 
 // Declare Material Web Components
 declare global {
@@ -20,6 +20,7 @@ declare global {
       'md-icon-button': any;
       'md-icon': any;
       'md-filter-chip': any;
+      'md-circular-progress': any;
     }
   }
 }
@@ -60,7 +61,6 @@ const Search: React.FC<SearchProps> = ({
   // Auto-focus input when tab becomes active
   useEffect(() => {
     if (activeTab === 'search') {
-      // Material Text Field exposes focus() method
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [activeTab]);
@@ -178,13 +178,13 @@ const Search: React.FC<SearchProps> = ({
                 ref={inputRef}
                 style={{ width: '100%' }}
             >
-                 <md-icon slot="leading-icon">
-                    {isWebMode ? <Youtube size={20} /> : <SearchIcon size={20} />}
+                 <md-icon slot="leading-icon" class="material-symbols-rounded">
+                    {isWebMode ? 'youtube_activity' : 'search'}
                  </md-icon>
 
                  {searchQuery && (
                     <md-icon-button slot="trailing-icon" onClick={handleClearSearch}>
-                        <md-icon><X size={20} /></md-icon>
+                        <md-icon class="material-symbols-rounded">close</md-icon>
                     </md-icon-button>
                  )}
             </md-outlined-text-field>
@@ -215,12 +215,12 @@ const Search: React.FC<SearchProps> = ({
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-surface-on-variant space-y-4 max-w-sm"
+                        className="text-on-surface-variant space-y-4 max-w-sm"
                     >
                         <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center mx-auto mb-6 text-primary">
-                            <Youtube className="w-10 h-10" />
+                            <md-icon class="material-symbols-rounded" style={{ fontSize: '40px' }}>youtube_activity</md-icon>
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Import from YouTube</h3>
+                        <h3 className="text-title-medium font-bold text-on-surface">Import from YouTube</h3>
                         <p className="text-body-medium">
                             Paste a link to a video or playlist to add it directly to your library.
                         </p>
@@ -229,7 +229,7 @@ const Search: React.FC<SearchProps> = ({
 
                  {searchQuery && importStatus === 'idle' && (
                      <md-filled-button onClick={handleImport}>
-                         <div slot="icon"><Download size={18} /></div>
+                         <md-icon slot="icon" class="material-symbols-rounded">download</md-icon>
                          Import Link
                      </md-filled-button>
                  )}
@@ -240,8 +240,8 @@ const Search: React.FC<SearchProps> = ({
                         animate={{ opacity: 1 }}
                         className="flex flex-col items-center gap-4 w-full"
                     >
-                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                        <div className="text-body-large font-medium text-surface-on">{importMessage}</div>
+                        <md-circular-progress indeterminate></md-circular-progress>
+                        <div className="text-body-large font-medium text-on-surface">{importMessage}</div>
                         {totalToImport > 0 && (
                             <div className="w-64 h-2 bg-surface-container-highest rounded-full overflow-hidden">
                                 <motion.div
@@ -262,10 +262,10 @@ const Search: React.FC<SearchProps> = ({
                         className="flex flex-col items-center gap-4"
                     >
                         <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center">
-                            <Check className="w-8 h-8" />
+                            <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>check</md-icon>
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Success!</h3>
-                        <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
+                        <h3 className="text-title-medium font-bold text-on-surface">Success!</h3>
+                        <p className="text-body-medium text-on-surface-variant">{importMessage}</p>
                         <md-text-button onClick={() => {
                                 setSearchQuery('');
                                 setImportStatus('idle');
@@ -282,10 +282,10 @@ const Search: React.FC<SearchProps> = ({
                         className="flex flex-col items-center gap-4"
                     >
                         <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center">
-                            <AlertCircle className="w-8 h-8" />
+                            <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>error</md-icon>
                         </div>
-                        <h3 className="text-title-medium font-bold text-surface-on">Oops!</h3>
-                        <p className="text-body-medium text-surface-on-variant">{importMessage}</p>
+                        <h3 className="text-title-medium font-bold text-on-surface">Oops!</h3>
+                        <p className="text-body-medium text-on-surface-variant">{importMessage}</p>
                          <md-text-button onClick={() => setImportStatus('idle')}>
                             Try again
                         </md-text-button>
@@ -304,7 +304,7 @@ const Search: React.FC<SearchProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 key={t.id}
-                whileTap={{ scale: 0.98, backgroundColor: 'var(--surface-container-highest)' }}
+                whileTap={{ scale: 0.98, backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}
                 onClick={() => handleTrackClick(t.id)}
                 className="group flex items-center gap-4 p-2 pr-4 rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98]"
                 >
@@ -313,19 +313,19 @@ const Search: React.FC<SearchProps> = ({
                     {t.coverArt ? (
                     <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                     ) : (
-                    <Music className="w-6 h-6 text-surface-on-variant/50" />
+                    <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
                     )}
                 </div>
 
                 {/* Text Info */}
                 <div className="flex-1 min-w-0">
-                    <h4 className="text-body-large font-medium text-surface-on truncate group-hover:text-primary transition-colors flex items-center gap-2">
+                    <h4 className="text-body-large font-medium text-on-surface truncate group-hover:text-primary transition-colors flex items-center gap-2">
                     {t.title}
                     {t.source === 'youtube' && (
                         <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30">WEB</span>
                     )}
                     </h4>
-                    <p className="text-body-medium text-surface-on-variant truncate">
+                    <p className="text-body-medium text-on-surface-variant truncate">
                     {t.artist}
                     </p>
                 </div>
@@ -339,10 +339,10 @@ const Search: React.FC<SearchProps> = ({
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-surface-on-variant/60"
+            className="flex flex-col items-center justify-center py-20 text-on-surface-variant/60"
           >
             <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
-              <Disc className="w-8 h-8 opacity-50" />
+              <md-icon class="material-symbols-rounded" style={{ fontSize: '32px', opacity: 0.5 }}>album</md-icon>
             </div>
             <p className="text-body-large font-medium">No tracks found</p>
             <p className="text-body-small">Try searching for a different artist or song</p>
