@@ -508,26 +508,29 @@ const Library: React.FC<LibraryProps> = ({
 
         <div className="flex flex-col h-full px-4 md:px-8 max-w-5xl mx-auto w-full">
             {/* Header */}
-            <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
-                <div className="flex items-center justify-between mb-2">
+            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all shadow-sm border-b border-outline-variant/10">
+                <div className="flex items-center justify-between mb-4">
                     <h1 className="text-display-small font-bold text-on-surface tracking-tight">Library</h1>
                     <md-icon-button onClick={() => setLibraryTab('Settings')}>
                         <md-icon><Settings /></md-icon>
                     </md-icon-button>
                 </div>
 
-                <md-tabs activeTabIndex={tabIndexMap[libraryTab]}>
-                    {tabKeys.map((tab) => (
-                        <md-primary-tab
-                            key={tab}
-                            onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
-                            selected={libraryTab === tab}
-                        >
-                            {tab}
-                            {tab === 'Favorites' && <md-icon slot="icon"><Heart size={16}/></md-icon>}
-                        </md-primary-tab>
-                    ))}
-                </md-tabs>
+                <div className="overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                    <md-tabs activeTabIndex={tabIndexMap[libraryTab]} style={{ backgroundColor: 'transparent' }}>
+                        {tabKeys.map((tab) => (
+                            <md-primary-tab
+                                key={tab}
+                                onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
+                                selected={libraryTab === tab}
+                                inlineIcon
+                            >
+                                {tab}
+                                {tab === 'Favorites' && <md-icon slot="icon"><Heart size={18}/></md-icon>}
+                            </md-primary-tab>
+                        ))}
+                    </md-tabs>
+                </div>
             </div>
 
             {/* Content Area */}

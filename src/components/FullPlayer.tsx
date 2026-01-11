@@ -234,7 +234,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <motion.div
-            animate={{ background: `linear-gradient(to bottom, ${colors.primary}40, ${colors.background})` }}
+            animate={{ background: `linear-gradient(to bottom, ${colors.primary}33, ${colors.background})` }}
             transition={{ duration: 0.8 }}
             className="absolute inset-0 -z-20"
           />
@@ -244,10 +244,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 0.3 }}
               transition={{ duration: 1 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[100px] scale-125 brightness-75"
+              className="w-full h-full object-cover blur-[80px] scale-125 brightness-50"
               alt=""
             />
             {/* Grain Overlay */}
@@ -261,7 +261,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             onPointerDown={(e) => dragControls.start(e)}
             className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors" />
+            <div className="w-12 h-1.5 bg-on-surface-variant/20 rounded-full hover:bg-on-surface-variant/40 transition-colors" />
           </div>
 
           <main className="flex-1 px-8 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
@@ -275,7 +275,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                      initial={{ opacity: 0, scale: 0.95 }}
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
-                     className="absolute inset-0 rounded-2xl overflow-hidden"
+                     className="absolute inset-0 rounded-2xl overflow-hidden glass-card"
                      onPointerDown={(e) => e.stopPropagation()}
                   >
                      <LyricsView
@@ -294,7 +294,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col"
+                    className="absolute inset-0 bg-surface/90 backdrop-blur-xl rounded-2xl border border-outline-variant/20 overflow-hidden flex flex-col"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <QueueList
@@ -320,7 +320,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{ scale: playerState.isPlaying ? beatScale : 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden"
+                    className="relative w-full h-full shadow-[0_24px_64px_rgba(0,0,0,0.4)] rounded-[24px] overflow-hidden border border-white/5"
                   >
                      <img
                       src={currentTrack.coverArt}
@@ -330,7 +330,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
                     {/* WEB MODE BADGE */}
                     {currentTrack.source === 'youtube' && (
-                        <div className="absolute top-4 right-4 bg-red-600/90 text-white p-2 rounded-full shadow-lg backdrop-blur-sm z-10">
+                        <div className="absolute top-4 right-4 bg-error/90 text-on-error p-2 rounded-full shadow-lg backdrop-blur-sm z-10 border border-white/10">
                             <Youtube size={20} />
                         </div>
                     )}
@@ -350,17 +350,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               
               {/* Text Info & Favorite */}
               <div className="flex items-center justify-between">
-                  <div className="text-left flex-1 min-w-0">
+                  <div className="text-left flex-1 min-w-0 pr-4">
                     <motion.h1
-                        animate={{ color: '#ffffff' }}
-                        className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1"
+                        className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1 text-on-surface"
                         title={currentTrack.title}
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
-                        animate={{ color: colors.muted }}
-                        className="text-lg line-clamp-1 mt-1 font-medium"
+                        className="text-lg line-clamp-1 mt-1 font-medium text-on-surface-variant"
                         title={currentTrack.artist}
                     >
                       {currentTrack.artist}
@@ -385,7 +383,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </div>
 
               {/* Material Progress Slider */}
-              <div className="w-full flex flex-col gap-1">
+              <div className="w-full flex flex-col gap-2">
                  {/*
                      md-slider requires some handling for controlled input.
                      It doesn't support 'value' binding directly in all versions the same way React does.
@@ -405,7 +403,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{ width: '100%', '--md-slider-handle-color': colors.primary, '--md-slider-active-track-color': colors.primary }}
                  ></md-slider>
 
-                <div className="flex justify-between text-xs font-medium font-mono" style={{ color: colors.muted }}>
+                <div className="flex justify-between text-sm font-medium font-mono px-0.5" style={{ color: colors.muted }}>
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
