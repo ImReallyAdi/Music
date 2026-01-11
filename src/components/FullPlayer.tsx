@@ -18,8 +18,8 @@ import {
   ChevronDown,
   Mic2,
   Heart,
-  Globe, // Added icon
-  Youtube, // Added YouTube icon
+  Globe,
+  Youtube,
 } from 'lucide-react';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
@@ -27,6 +27,21 @@ import QueueList from './QueueList';
 import LyricsView from './LyricsView';
 import { ThemePalette } from '../utils/colors';
 import { AudioAnalysis } from '../hooks/useAudioAnalyzer';
+import '@material/web/slider/slider.js';
+import '@material/web/iconbutton/filled-icon-button.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/iconbutton/filled-tonal-icon-button.js';
+import '@material/web/icon/icon.js';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-slider': any;
+      'md-filled-icon-button': any;
+      'md-filled-tonal-icon-button': any;
+    }
+  }
+}
 
 // Helper to format time (mm:ss)
 const formatTime = (seconds: number) => {
@@ -96,11 +111,11 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   // Memoize color values
   const colors = useMemo(() => ({
-    primary: theme?.primary || '#ffffff',
-    secondary: theme?.secondary || '#a1a1aa',
-    muted: theme?.muted || '#71717a',
-    background: theme?.background || '#09090b'
-  }), [theme?.primary, theme?.secondary, theme?.muted, theme?.background]);
+    primary: theme?.primary || 'var(--md-sys-color-primary)',
+    secondary: theme?.secondary || 'var(--md-sys-color-secondary)',
+    muted: theme?.muted || 'var(--md-sys-color-on-surface-variant)',
+    background: theme?.background || 'var(--md-sys-color-background)'
+  }), [theme]);
 
   // Beat Animations
   const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
@@ -131,35 +146,24 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       if (startScrub) startScrub();
   };
 
-  const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
-      // Allow scrubbing even if duration is unknown for streams?
-      // YouTube streams might have duration. If 0, seekable is false.
-      if (!isSeekable && currentTrack?.source !== 'youtube') return;
-
-      const value = Number((e.target as HTMLInputElement).value);
+  const handleScrubChange = (e: Event) => {
+      // @ts-ignore
+      const value = e.target.value as number;
       setLocalScrubValue(value);
   };
 
-  const handleScrubEnd = () => {
-      if (localScrubValue !== null) {
-          handleSeek(localScrubValue);
-      }
-      setLocalScrubValue(null);
-      if (endScrub) endScrub();
+  const handleScrubInput = (e: Event) => {
+      // @ts-ignore
+      const value = e.target.value as number;
+      setLocalScrubValue(value);
   };
 
-  const handleScrubInteractionStart = (e: React.PointerEvent<HTMLInputElement>) => {
-      e.stopPropagation();
-      handleScrubStart();
-
-      const onPointerUp = () => {
-          handleScrubEnd();
-          window.removeEventListener('pointerup', onPointerUp);
-          window.removeEventListener('pointercancel', onPointerUp);
-      };
-
-      window.addEventListener('pointerup', onPointerUp);
-      window.addEventListener('pointercancel', onPointerUp);
+  const handleScrubEnd = (e: Event) => {
+      // @ts-ignore
+      const value = e.target.value as number;
+      handleSeek(value);
+      setLocalScrubValue(null);
+      if (endScrub) endScrub();
   };
 
   useEffect(() => {
@@ -207,8 +211,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   if (!currentTrack) return null;
 
-  const { primary: primaryColor, secondary: secondaryColor, muted: mutedColor, background: backgroundColor } = colors;
-
   return (
     <AnimatePresence>
       {isPlayerOpen && (
@@ -223,7 +225,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           dragListener={false}
           dragConstraints={{ top: 0 }}
           dragElastic={0.05}
-          style={{ opacity, y: dragY, background: backgroundColor, willChange: 'transform, opacity' }}
+          style={{ opacity, y: dragY, background: colors.background, willChange: 'transform, opacity' }}
           onDragEnd={(_, i) => {
             if (i.offset.y > 100 || i.velocity.y > 500) onClose();
             else dragY.set(0);
@@ -232,7 +234,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <motion.div
-            animate={{ background: `linear-gradient(to bottom, ${primaryColor}40, ${backgroundColor})` }}
+            animate={{ background: `linear-gradient(to bottom, ${colors.primary}40, ${colors.background})` }}
             transition={{ duration: 0.8 }}
             className="absolute inset-0 -z-20"
           />
@@ -335,7 +337,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
                     {/* Beat Glow Flash */}
                     <motion.div
-                        style={{ opacity: glowOpacity, background: primaryColor }}
+                        style={{ opacity: glowOpacity, background: colors.primary }}
                         className="absolute inset-0 mix-blend-overlay pointer-events-none"
                     />
                   </motion.div>
@@ -350,14 +352,14 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               <div className="flex items-center justify-between">
                   <div className="text-left flex-1 min-w-0">
                     <motion.h1
-                        animate={{ color: theme?.primary ? '#ffffff' : '#ffffff' }}
+                        animate={{ color: '#ffffff' }}
                         className="text-2xl md:text-3xl font-bold leading-tight line-clamp-1"
                         title={currentTrack.title}
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
-                        animate={{ color: mutedColor }}
+                        animate={{ color: colors.muted }}
                         className="text-lg line-clamp-1 mt-1 font-medium"
                         title={currentTrack.artist}
                     >
@@ -365,8 +367,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     </motion.p>
                   </div>
 
-                  <button
-                    onClick={(e) => {
+                  <md-icon-button
+                    onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         dbService.toggleFavorite(currentTrack.id).then(updatedTrack => {
                             if (updatedTrack && onTrackUpdate) {
@@ -374,45 +376,36 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             }
                         });
                     }}
-                    className="p-3 rounded-full hover:bg-white/10 active:scale-90 transition-all"
-                    style={{ color: currentTrack.isFavorite ? primaryColor : mutedColor }}
+                    style={{ '--md-icon-button-icon-color': currentTrack.isFavorite ? colors.primary : colors.muted }}
                   >
-                     <Heart size={24} fill={currentTrack.isFavorite ? "currentColor" : "none"} strokeWidth={currentTrack.isFavorite ? 0 : 2} />
-                  </button>
+                     <md-icon>
+                        <Heart fill={currentTrack.isFavorite ? "currentColor" : "none"} />
+                     </md-icon>
+                  </md-icon-button>
               </div>
 
-              {/* Progress Slider */}
-              <div className="group relative pt-4 pb-2">
-                <div className="relative h-1.5 w-full bg-white/10 rounded-full group-hover:h-2 transition-all overflow-visible">
-                  <motion.div
-                    animate={{ backgroundColor: primaryColor }}
-                    className="absolute h-full rounded-full pointer-events-none origin-left"
-                    style={{ width: `${(displayValue / safeDuration) * 100}%`, willChange: 'width' }}
-                  />
-                  {/* Beat Pulse Overlay on Bar */}
-                  {playerState.isPlaying && (
-                      <motion.div
-                        animate={{ opacity: beat ? 0.5 : 0 }}
-                        transition={{ duration: 0.1 }}
-                        className="absolute h-full w-full bg-white mix-blend-overlay pointer-events-none"
-                      />
-                  )}
-                </div>
-
-                <input
-                    type="range"
-                    min={0}
+              {/* Material Progress Slider */}
+              <div className="w-full flex flex-col gap-1">
+                 {/*
+                     md-slider requires some handling for controlled input.
+                     It doesn't support 'value' binding directly in all versions the same way React does.
+                     We use onInput for real-time updates and onChange for commit.
+                 */}
+                 <md-slider
+                    min="0"
                     max={safeDuration}
-                    step={0.1} // High resolution for smooth dragging
                     value={displayValue}
-                    disabled={!isSeekable && currentTrack.source !== 'youtube'}
-                    onChange={handleScrubChange}
-                    onPointerDown={(e) => (isSeekable || currentTrack.source === 'youtube') && handleScrubInteractionStart(e)}
-                    className={`absolute -inset-x-0 -top-2.5 w-full h-8 opacity-0 z-50 ${isSeekable || currentTrack.source === 'youtube' ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                    style={{ pointerEvents: 'auto', bottom: '-8px', touchAction: 'none' }}
-                  />
+                    step="0.1"
+                    labeled
+                    // We need to attach listeners via ref or use native events if React 19 handles it.
+                    // Given React 19, we try direct props.
+                    onInput={handleScrubInput}
+                    onChange={handleScrubEnd}
+                    onPointerDown={handleScrubStart}
+                    style={{ width: '100%', '--md-slider-handle-color': colors.primary, '--md-slider-active-track-color': colors.primary }}
+                 ></md-slider>
 
-                <div className="flex justify-between mt-2 text-xs font-medium font-mono" style={{ color: mutedColor }}>
+                <div className="flex justify-between text-xs font-medium font-mono" style={{ color: colors.muted }}>
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
@@ -420,78 +413,86 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
               {/* Main Controls */}
               <div className="flex items-center justify-between">
-                <button 
+                <md-icon-button
                     onClick={toggleShuffle} 
-                    className={`p-3 rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.shuffle ? primaryColor : mutedColor, backgroundColor: playerState.shuffle ? `${primaryColor}20` : 'transparent' }}
+                    toggle
+                    selected={playerState.shuffle}
+                    style={{ '--md-icon-button-selected-icon-color': colors.primary }}
                 >
-                  <Shuffle size={20} />
-                </button>
+                   <md-icon><Shuffle /></md-icon>
+                </md-icon-button>
 
-                <div className="flex items-center gap-6">
-                  <button onClick={prevTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipBack size={32} fill="currentColor" />
-                  </button>
+                <div className="flex items-center gap-4">
+                  <md-icon-button onClick={prevTrack} style={{ '--md-icon-size': '32px' }}>
+                    <md-icon><SkipBack fill="currentColor" /></md-icon>
+                  </md-icon-button>
                   
-                  <motion.button
+                  <md-filled-icon-button
                     onClick={togglePlay}
-                    whileTap={{ scale: 0.9 }}
-                    animate={{ scale: beat ? 1.05 : 1 }}
-                    style={{ backgroundColor: primaryColor, color: backgroundColor }}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors active:opacity-90"
+                    style={{
+                        '--md-filled-icon-button-container-width': '80px',
+                        '--md-filled-icon-button-container-height': '80px',
+                        '--md-filled-icon-button-icon-size': '36px',
+                        '--md-sys-color-primary': colors.primary,
+                        '--md-sys-color-on-primary': colors.background
+                    }}
                   >
-                    {playerState.isPlaying ? 
-                      <Pause size={36} fill="currentColor" /> :
-                      <Play size={36} fill="currentColor" className="ml-1" />
-                    }
-                  </motion.button>
+                    <md-icon>
+                        {playerState.isPlaying ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                    </md-icon>
+                  </md-filled-icon-button>
                   
-                  <button onClick={nextTrack} className="hover:scale-110 active:scale-90 transition-transform p-2" style={{ color: secondaryColor }}>
-                    <SkipForward size={32} fill="currentColor" />
-                  </button>
+                  <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '32px' }}>
+                     <md-icon><SkipForward fill="currentColor" /></md-icon>
+                  </md-icon-button>
                 </div>
 
-                <button 
-                    onClick={toggleRepeat} 
-                    className={`p-3 relative rounded-full transition-all active:scale-90`}
-                    style={{ color: playerState.repeat !== 'OFF' ? primaryColor : mutedColor, backgroundColor: playerState.repeat !== 'OFF' ? `${primaryColor}20` : 'transparent' }}
+                <md-icon-button
+                    onClick={toggleRepeat}
+                    style={{ '--md-icon-button-icon-color': playerState.repeat !== 'OFF' ? colors.primary : colors.muted }}
                 >
-                  <Repeat size={20} />
-                  {playerState.repeat === 'ONE' && (
-                    <span className="absolute top-1.5 right-2 text-[7px] px-0.5 rounded-[2px] font-bold leading-none" style={{ backgroundColor: primaryColor, color: backgroundColor }}>1</span>
-                  )}
-                </button>
+                   <div className="relative">
+                       <md-icon><Repeat /></md-icon>
+                       {playerState.repeat === 'ONE' && (
+                        <span className="absolute top-0 right-0 text-[10px] font-bold">1</span>
+                      )}
+                   </div>
+                </md-icon-button>
               </div>
 
               {/* Bottom Row (Queue & Lyrics) */}
               <div className="flex items-center justify-between mt-4 px-1">
-                <button
-                  onClick={() => {
-                    setShowLyrics(!showLyrics);
-                    if (!showLyrics) setShowQueue(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showLyrics ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showLyrics ? backgroundColor : mutedColor
-                  }}
-                >
-                  <Mic2 size={20} />
-                </button>
+                 <md-filled-tonal-icon-button
+                    onClick={() => {
+                        setShowLyrics(!showLyrics);
+                        if (!showLyrics) setShowQueue(false);
+                    }}
+                    toggle
+                    selected={showLyrics}
+                    style={{
+                        '--md-sys-color-secondary-container': showLyrics ? colors.primary : 'rgba(255,255,255,0.1)',
+                        '--md-sys-color-on-secondary-container': showLyrics ? colors.background : colors.muted
+                    }}
+                 >
+                    <md-icon><Mic2 /></md-icon>
+                 </md-filled-tonal-icon-button>
 
-                <button 
-                  onClick={() => {
-                    setShowQueue(!showQueue);
-                    if (!showQueue) setShowLyrics(false);
-                  }}
-                  className={`p-3 rounded-full transition-all active:scale-90`}
-                  style={{
-                      backgroundColor: showQueue ? primaryColor : 'rgba(255,255,255,0.05)',
-                      color: showQueue ? backgroundColor : mutedColor
-                  }}
-                >
-                  {showQueue ? <ChevronDown size={20} /> : <ListMusic size={20} />}
-                </button>
+                 <md-filled-tonal-icon-button
+                    onClick={() => {
+                        setShowQueue(!showQueue);
+                        if (!showQueue) setShowLyrics(false);
+                    }}
+                    toggle
+                    selected={showQueue}
+                    style={{
+                        '--md-sys-color-secondary-container': showQueue ? colors.primary : 'rgba(255,255,255,0.1)',
+                        '--md-sys-color-on-secondary-container': showQueue ? colors.background : colors.muted
+                    }}
+                 >
+                    <md-icon>
+                        {showQueue ? <ChevronDown /> : <ListMusic />}
+                    </md-icon>
+                 </md-filled-tonal-icon-button>
               </div>
 
             </div>

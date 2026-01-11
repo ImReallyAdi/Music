@@ -3,7 +3,81 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: 250 80 80; /* Apple Music Red-ish default */
+  /* Dark Theme Color Palette - Expressive/Cinematic */
+  --md-sys-color-primary: #D0BCFF;
+  --md-sys-color-on-primary: #381E72;
+  --md-sys-color-primary-container: #4F378B;
+  --md-sys-color-on-primary-container: #EADDFF;
+
+  --md-sys-color-secondary: #CCC2DC;
+  --md-sys-color-on-secondary: #332D41;
+  --md-sys-color-secondary-container: #4A4458;
+  --md-sys-color-on-secondary-container: #E8DEF8;
+
+  --md-sys-color-tertiary: #EFB8C8;
+  --md-sys-color-on-tertiary: #492532;
+  --md-sys-color-tertiary-container: #633B48;
+  --md-sys-color-on-tertiary-container: #FFD8E4;
+
+  --md-sys-color-error: #F2B8B5;
+  --md-sys-color-on-error: #601410;
+  --md-sys-color-error-container: #8C1D18;
+  --md-sys-color-on-error-container: #F9DEDC;
+
+  --md-sys-color-background: #141218;
+  --md-sys-color-on-background: #E6E1E5;
+
+  --md-sys-color-surface: #141218;
+  --md-sys-color-on-surface: #E6E1E5;
+
+  --md-sys-color-surface-variant: #49454F;
+  --md-sys-color-on-surface-variant: #CAC4D0;
+
+  --md-sys-color-outline: #938F99;
+  --md-sys-color-outline-variant: #49454F;
+
+  --md-sys-color-surface-container: #1D1B20;
+  --md-sys-color-surface-container-high: #2B2930;
+  --md-sys-color-surface-container-highest: #36343B;
+
+  /* Typography */
+  --md-sys-typescale-body-large-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-body-medium-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-body-small-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-label-large-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-label-medium-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-label-small-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-title-large-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-title-medium-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-title-small-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-headline-large-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-headline-medium-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-headline-small-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-display-large-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-display-medium-font: 'Plus Jakarta Sans', sans-serif;
+  --md-sys-typescale-display-small-font: 'Plus Jakarta Sans', sans-serif;
+
+  /* Component Overrides */
+  --md-navigation-bar-container-color: var(--md-sys-color-surface-container);
+  --md-navigation-bar-label-text-color: var(--md-sys-color-on-surface-variant);
+  --md-navigation-bar-active-indicator-color: var(--md-sys-color-secondary-container);
+  --md-navigation-bar-active-hover-indicator-color: var(--md-sys-color-secondary-container);
+  --md-navigation-bar-active-label-text-color: var(--md-sys-color-on-surface);
+  --md-navigation-bar-active-icon-color: var(--md-sys-color-on-secondary-container);
+  --md-navigation-bar-inactive-icon-color: var(--md-sys-color-on-surface-variant);
+  --md-navigation-bar-inactive-label-text-color: var(--md-sys-color-on-surface-variant);
+
+  --md-slider-handle-color: var(--md-sys-color-primary);
+  --md-slider-active-track-color: var(--md-sys-color-primary);
+  --md-slider-inactive-track-color: var(--md-sys-color-surface-variant);
+
+  /* Shape */
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
 }
 
 @layer base {
@@ -11,8 +85,8 @@
     @apply bg-background text-on-background font-sans overflow-hidden select-none antialiased;
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: none; /* Prevents pull-to-refresh on mobile */
-    touch-action: pan-x pan-y;   /* Improves gesture handling */
+    overscroll-behavior-y: none;
+    touch-action: pan-x pan-y;
   }
 }
 
@@ -21,16 +95,19 @@
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background-color: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface-variant rounded-full hover:bg-outline/50 transition-colors;
+  background-color: var(--md-sys-color-surface-variant);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-sys-color-outline);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
-
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -38,7 +115,7 @@
 
 /* Premium Glassmorphism */
 .glass {
-  background: rgba(24, 24, 27, 0.65); /* Zinc 950 with opacity */
+  background: rgba(24, 24, 27, 0.65);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -46,52 +123,28 @@
 }
 
 .glass-card {
-  background: rgba(39, 39, 42, 0.4); /* Zinc 800 with opacity */
+  background: rgba(39, 39, 42, 0.4);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Material 3 / iOS Expressive Utils */
-.text-display-large {
-  @apply text-5xl md:text-6xl font-bold tracking-tight;
-}
-.text-headline-medium {
-  @apply text-3xl font-semibold tracking-tight;
-}
-.text-label-medium {
-  @apply text-xs font-semibold tracking-widest uppercase text-on-surface/60;
-}
+/* Utils */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pt-safe { padding-top: env(safe-area-inset-top); }
 
-/* Safe Area Utilities */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Range Input Reset & Styling */
+/* Range Input Reset */
 input[type=range] {
   -webkit-appearance: none;
   background: transparent;
 }
-
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
 }
-
 input[type=range]:focus {
   outline: none;
 }
 
-/* Utilities for Lyrics View */
 .mask-image-gradient {
   mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
@@ -100,7 +153,6 @@ input[type=range]:focus {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

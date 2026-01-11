@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Music, Play, Shuffle, ListFilter, Settings, Trash2, 
   PlusCircle, Loader2, X, Mic2, Users, ChevronLeft, 
-  Disc, Heart, Check, Sparkles, Key, FileText
+  Disc, Heart, Check, Sparkles, Key, FileText, Pause
 } from 'lucide-react';
 import { Track, PlayerState, Playlist } from '../types';
 import { dbService } from '../db';
@@ -12,6 +12,28 @@ import AddToPlaylistModal from './AddToPlaylistModal';
 import { getOrFetchArtistImage } from '../utils/artistImage';
 import { parseLrc } from '../utils/lyrics';
 import { useToast } from './Toast';
+import '@material/web/tabs/tabs.js';
+import '@material/web/tabs/primary-tab.js';
+import '@material/web/tabs/secondary-tab.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/switch/switch.js';
+import '@material/web/slider/slider.js';
+import '@material/web/list/list.js';
+import '@material/web/list/list-item.js';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-tabs': any;
+      'md-primary-tab': any;
+      'md-secondary-tab': any;
+      'md-switch': any;
+      'md-list': any;
+      'md-list-item': any;
+    }
+  }
+}
 
 // --- TYPES ---
 type LibraryTab = 'Songs' | 'Favorites' | 'Albums' | 'Artists' | 'Playlists' | 'Settings';
@@ -58,16 +80,12 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
 
     useEffect(() => {
         let active = true;
-        // If we don't have a coverArt (album art fallback), or we want to try to get a better artist image
-        // Actually, let's prioritize the Artist Image from Wikipedia if available, otherwise fallback to coverArt
-
         const load = async () => {
              const wikiImage = await getOrFetchArtistImage(displayArtist);
              if (active) {
                  if (wikiImage) {
                      setImage(wikiImage);
                  } else if (!image && coverArt) {
-                     // Fallback to what was passed (album art)
                      setImage(coverArt);
                  }
              }
@@ -77,35 +95,27 @@ const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }
     }, [displayArtist, coverArt]);
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileTap={{ scale: 0.98 }}
+        <md-list-item
+            type="button"
             onClick={onClick}
-            className="flex items-center gap-4 p-2 rounded-2xl cursor-pointer hover:bg-surface-variant/40 transition-colors group"
+            headline={displayArtist}
+            supportingText={`${trackCount} ${trackCount === 1 ? 'Song' : 'Songs'}`}
+            style={{ cursor: 'pointer', '--md-list-item-leading-image-height': '56px', '--md-list-item-leading-image-width': '56px', '--md-list-item-leading-image-shape': '9999px' }}
         >
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-variant flex-shrink-0 shadow-sm relative">
+             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center relative">
                 {image ? (
-                    <img src={image} alt={displayArtist} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                    <img src={image} alt={displayArtist} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-variant to-surface-variant-dim">
-                        <Users className="w-6 h-6 text-on-surface/40" />
-                    </div>
+                    <Users className="w-6 h-6 text-on-surface-variant/50" />
                 )}
             </div>
-            <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate text-on-surface">{displayArtist}</h3>
-                <p className="text-sm text-on-surface/60">{trackCount} {trackCount === 1 ? 'Song' : 'Songs'}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full border border-surface-variant/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Play className="w-5 h-5 fill-current text-primary ml-0.5" />
-            </div>
-        </motion.div>
+            <md-icon slot="end"><ChevronLeft className="rotate-180" /></md-icon>
+        </md-list-item>
     );
 });
 ArtistRow.displayName = 'ArtistRow';
 
-// Optimized Track Row
+// Optimized Track Row using Material Web List Item
 const TrackRow = memo(({ 
   track, index, onPlay, isPlaying, isCurrentTrack, onDelete, onAddToPlaylist, onUploadLyrics 
 }: { 
@@ -123,18 +133,23 @@ const TrackRow = memo(({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
-            className={`group relative flex items-center gap-4 p-2 rounded-2xl transition-all cursor-pointer border border-transparent ${
-                isCurrentTrack 
-                ? 'bg-primary/10 border-primary/5' 
-                : 'hover:bg-surface-variant/30'
-            }`}
-            onClick={() => onPlay(track.id)}
         >
-            {/* Thumbnail */}
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0">
-                <div className={`w-full h-full rounded-[12px] overflow-hidden shadow-sm transition-all ${
-                    isCurrentTrack ? 'ring-2 ring-primary/30' : 'bg-surface-variant'
-                }`}>
+            <md-list-item
+                type="button"
+                onClick={() => onPlay(track.id)}
+                headline={track.title}
+                supportingText={track.artist}
+                trailingSupportingText={formatDuration(track.duration)}
+                style={{
+                    cursor: 'pointer',
+                    '--md-list-item-leading-image-height': '56px',
+                    '--md-list-item-leading-image-width': '56px',
+                    '--md-list-item-leading-image-shape': '12px',
+                    backgroundColor: isCurrentTrack ? 'var(--md-sys-color-surface-container-high)' : 'transparent'
+                }}
+            >
+                {/* Thumbnail */}
+                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center">
                     {track.coverArt ? (
                         <img 
                             src={track.coverArt} 
@@ -143,63 +158,34 @@ const TrackRow = memo(({
                             loading="lazy" 
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-surface-variant">
-                            <Music className={`w-6 h-6 ${isCurrentTrack ? 'text-primary' : 'text-on-surface/40'}`} />
-                        </div>
+                        <Music className={`w-6 h-6 ${isCurrentTrack ? 'text-primary' : 'text-on-surface-variant/40'}`} />
                     )}
-                </div>
-                
-                {/* Overlay Icon */}
-                <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-                    isCurrentTrack && isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 bg-black/20 rounded-[12px]'
-                }`}>
-                    {isCurrentTrack && isPlaying ? (
-                        <Loader2 className="w-6 h-6 text-primary animate-spin drop-shadow-md" />
-                    ) : (
-                        <Play className="w-6 h-6 fill-white text-white drop-shadow-md ml-0.5" />
-                    )}
-                </div>
-            </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                <h3 className={`text-base font-semibold truncate ${isCurrentTrack ? 'text-primary' : 'text-on-surface'}`}>
-                    {track.title}
-                </h3>
-                <div className="flex items-center gap-2 text-sm text-on-surface/60 truncate">
-                    <span className="truncate hover:text-on-surface transition-colors">{track.artist}</span>
+                    {/* Overlay Icon */}
+                     {isCurrentTrack && (
+                         <div className="absolute inset-0 flex items-center justify-center">
+                              {isPlaying ? (
+                                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                              ) : (
+                                  <Pause className="w-6 h-6 text-primary" fill="currentColor" />
+                              )}
+                         </div>
+                     )}
                 </div>
-            </div>
 
-            {/* Duration (Hidden on small screens) */}
-            <span className="hidden sm:block text-xs text-on-surface/40 font-mono tracking-wider">
-                {formatDuration(track.duration)}
-            </span>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onUploadLyrics(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
-                    title="Upload Lyrics (.lrc)"
-                >
-                    <FileText className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onAddToPlaylist(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-surface-variant hover:text-primary transition-all"
-                    title="Add to Playlist"
-                >
-                    <PlusCircle className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(track.id); }}
-                    className="p-2 rounded-full text-on-surface/50 hover:bg-error/10 hover:text-error transition-all"
-                    title="Delete Track"
-                >
-                    <Trash2 className="w-5 h-5" />
-                </button>
-            </div>
+                {/* Actions */}
+                <div slot="end" className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <md-icon-button onClick={() => onUploadLyrics(track.id)}>
+                        <md-icon><FileText size={20} /></md-icon>
+                    </md-icon-button>
+                     <md-icon-button onClick={() => onAddToPlaylist(track.id)}>
+                        <md-icon><PlusCircle size={20} /></md-icon>
+                    </md-icon-button>
+                     <md-icon-button onClick={() => onDelete(track.id)}>
+                        <md-icon><Trash2 size={20} /></md-icon>
+                    </md-icon-button>
+                </div>
+            </md-list-item>
         </motion.div>
     );
 });
@@ -208,19 +194,21 @@ TrackRow.displayName = 'TrackRow';
 
 // --- SETTINGS COMPONENT ---
 const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
-    <div className="flex flex-col gap-3 py-2">
-        <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-                <span className="text-base font-medium text-on-surface">{label}</span>
-                {subLabel && <span className="text-xs text-on-surface/60">{subLabel}</span>}
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-                <div className="w-11 h-6 bg-surface-variant rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-        </div>
+    <div className="flex flex-col gap-2 py-2">
+        <md-list-item
+            type="button"
+            headline={label}
+            supportingText={subLabel}
+            // non-interactive because the switch handles it
+        >
+             <md-switch slot="end" selected={checked} onClick={(e: any) => {
+                 // Prevent bubbling if needed, though list item isn't handling click here
+                 onChange(!checked);
+             }}></md-switch>
+        </md-list-item>
+
         {checked && children && (
-            <div className="mt-2 pl-2 border-l-2 border-primary/20 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="pl-4 pr-4 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 {children}
             </div>
         )}
@@ -245,8 +233,8 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             className="flex flex-col gap-6 p-1 max-w-2xl mx-auto w-full"
         >
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">Playback</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2">Playback</h2>
+                <div className="bg-surface-container rounded-3xl overflow-hidden">
                     <ToggleRow 
                         label="Automix" 
                         subLabel="Smart transitions & AI blending" 
@@ -254,16 +242,16 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         onChange={(val: boolean) => setPlayerState(p => ({ ...p, automixEnabled: val }))}
                     >
                         <div className="flex flex-col gap-3 pt-2">
-                            <span className="text-xs font-medium text-on-surface/80">Transition Style</span>
-                            <div className="grid grid-cols-3 gap-2">
+                            <span className="text-body-small text-on-surface-variant">Transition Style</span>
+                            <div className="flex gap-2">
                                 {['classic', 'smart', 'shuffle'].map((mode) => (
                                     <button
                                         key={mode}
                                         onClick={() => setPlayerState(p => ({ ...p, automixMode: mode as any }))}
-                                        className={`px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all border ${
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
                                             playerState.automixMode === mode
-                                            ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-surface-variant/50 border-transparent text-on-surface/70 hover:bg-surface-variant'
+                                            ? 'bg-primary-container text-on-primary-container'
+                                            : 'bg-surface-container-high text-on-surface-variant'
                                         }`}
                                     >
                                         {mode}
@@ -273,7 +261,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-surface-variant/50" />
+                    <div className="h-px bg-outline-variant mx-4" />
 
                     <ToggleRow 
                         label="Crossfade" 
@@ -281,21 +269,21 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         checked={playerState.crossfadeEnabled} 
                         onChange={(val: boolean) => setPlayerState(p => ({ ...p, crossfadeEnabled: val }))}
                     >
-                        <div className="flex flex-col gap-2 pt-1">
-                            <div className="flex justify-between text-xs text-on-surface/70">
-                                <span>Overlap</span>
+                        <div className="flex flex-col gap-2 pt-1 px-2">
+                            <div className="flex justify-between text-xs text-on-surface-variant">
+                                <span>Overlap Duration</span>
                                 <span>{playerState.crossfadeDuration || 5}s</span>
                             </div>
-                            <input
-                                type="range" min="1" max="12" step="1"
+                            <md-slider
+                                min="1" max="12" step="1"
                                 value={playerState.crossfadeDuration || 5}
-                                onChange={(e) => setPlayerState(p => ({ ...p, crossfadeDuration: Number(e.target.value) }))}
-                                className="w-full h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary"
-                            />
+                                labeled
+                                onInput={(e: any) => setPlayerState(p => ({ ...p, crossfadeDuration: Number(e.target.value) }))}
+                            ></md-slider>
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-surface-variant/50" />
+                    <div className="h-px bg-outline-variant mx-4" />
                     
                     <ToggleRow 
                         label="Normalize Volume" 
@@ -307,8 +295,8 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">Experimental</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 flex flex-col gap-4">
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2">Experimental</h2>
+                <div className="bg-surface-container rounded-3xl overflow-hidden">
                      <ToggleRow
                         label="Word-by-word Lyrics"
                         subLabel="Automatically estimate word timings for Karaoke mode"
@@ -319,10 +307,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             </section>
 
             <section>
-                <h2 className="text-sm font-bold text-on-surface/50 uppercase tracking-wider mb-3">About</h2>
-                <div className="bg-surface-variant/20 border border-white/5 rounded-3xl p-5 text-center">
+                <h2 className="text-label-large font-bold text-primary px-4 mb-2">About</h2>
+                <div className="bg-surface-container rounded-3xl p-5 text-center">
                     <p className="font-bold text-on-surface">Adi Music</p>
-                    <p className="text-xs text-on-surface/50 mt-1">v1.2.0 • Build 2024</p>
+                    <p className="text-xs text-on-surface-variant mt-1">v1.2.0 • Material Design 3</p>
                 </div>
             </section>
         </motion.div>
@@ -341,7 +329,7 @@ const Library: React.FC<LibraryProps> = ({
   const [playlists, setPlaylists] = useState<Record<string, Playlist>>({});
   const [tracksMap, setTracksMap] = useState<Record<string, Track>>({});
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
-  const [selectedArtistKey, setSelectedArtistKey] = useState<string | null>(null); // New: Store normalized key
+  const [selectedArtistKey, setSelectedArtistKey] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('added');
   
   // Modal State
@@ -364,27 +352,22 @@ const Library: React.FC<LibraryProps> = ({
   }, [libraryTab, refreshLibrary]);
 
   // Derived: Artists
-  // Optimization: Merging logic
   const artistsList = useMemo(() => {
-    // Key: Normalized Name (lower cased)
-    // Value: { display: string, count: number, cover: string }
     const map = new Map<string, { display: string; count: number; cover?: string }>();
-
     filteredTracks.forEach(t => {
         const artist = t.artist || 'Unknown Artist';
         const normalized = artist.trim().toLowerCase();
-
         const current = map.get(normalized);
 
         if (current) {
              map.set(normalized, {
-                 display: current.display, // Keep the first display name encountered, or logic to find best?
+                 display: current.display,
                  count: current.count + 1,
                  cover: current.cover || t.coverArt
              });
         } else {
              map.set(normalized, {
-                 display: artist, // Use this casing as the display name
+                 display: artist,
                  count: 1,
                  cover: t.coverArt
              });
@@ -393,7 +376,7 @@ const Library: React.FC<LibraryProps> = ({
 
     return Array.from(map.entries())
         .map(([key, data]) => ({
-            key, // normalized key for filtering
+            key,
             name: data.display,
             count: data.count,
             cover: data.cover
@@ -415,12 +398,9 @@ const Library: React.FC<LibraryProps> = ({
       });
   }, [filteredTracks, sortOption, libraryTab]);
 
-  // Handlers (Memoized for performance)
+  // Handlers (Memoized)
   const handlePlayTrack = useCallback((id: string) => {
-      // Create the queue based on current view
       let queue = sortedTracks.map(t => t.id);
-
-      // If we are in artist view, filter by normalized key
       if (selectedArtistKey) {
           queue = sortedTracks
             .filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey)
@@ -466,7 +446,6 @@ const Library: React.FC<LibraryProps> = ({
           addToast("Failed to process lyrics file", "error");
       } finally {
           setLyricTrackId(null);
-          // Reset file input
           if (fileInputRef.current) {
               fileInputRef.current.value = '';
           }
@@ -511,9 +490,14 @@ const Library: React.FC<LibraryProps> = ({
     ? sortedTracks.filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey)
     : sortedTracks;
 
+  // Tabs handling
+  const tabIndexMap: Record<string, number> = {
+      'Songs': 0, 'Favorites': 1, 'Albums': 2, 'Artists': 3, 'Playlists': 4, 'Settings': 5
+  };
+  const tabKeys = Object.keys(tabIndexMap) as LibraryTab[];
+
   return (
     <>
-        {/* Hidden File Input for Lyrics */}
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -523,78 +507,31 @@ const Library: React.FC<LibraryProps> = ({
         />
 
         <div className="flex flex-col h-full px-4 md:px-8 max-w-5xl mx-auto w-full">
-            {/* Header & Tabs */}
+            {/* Header */}
             <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
-                <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-3xl font-bold text-on-surface tracking-tight">Library</h1>
-                    <button 
-                        onClick={() => setLibraryTab('Settings')}
-                        className={`p-2.5 rounded-full transition-all duration-300 ${libraryTab === 'Settings' ? 'bg-primary text-on-primary rotate-90' : 'hover:bg-surface-variant text-on-surface'}`}
-                    >
-                        <Settings className="w-6 h-6" />
-                    </button>
+                <div className="flex items-center justify-between mb-2">
+                    <h1 className="text-display-small font-bold text-on-surface tracking-tight">Library</h1>
+                    <md-icon-button onClick={() => setLibraryTab('Settings')}>
+                        <md-icon><Settings /></md-icon>
+                    </md-icon-button>
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-                    {(['Songs', 'Favorites', 'Albums', 'Artists', 'Playlists'] as LibraryTab[]).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
-                        className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
-                        libraryTab === tab
-                            ? 'bg-primary text-on-primary border-primary'
-                            : 'bg-surface-variant/30 text-on-surface/70 border-transparent hover:bg-surface-variant hover:text-on-surface'
-                        }`}
-                    >
-                        {tab === 'Favorites' ? <div className="flex items-center gap-1.5"><Heart size={14} fill={libraryTab === 'Favorites' ? 'currentColor' : 'none'} /> Favorites</div> : tab}
-                    </button>
+                <md-tabs activeTabIndex={tabIndexMap[libraryTab]}>
+                    {tabKeys.map((tab) => (
+                        <md-primary-tab
+                            key={tab}
+                            onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
+                            selected={libraryTab === tab}
+                        >
+                            {tab}
+                            {tab === 'Favorites' && <md-icon slot="icon"><Heart size={16}/></md-icon>}
+                        </md-primary-tab>
                     ))}
-                </div>
+                </md-tabs>
             </div>
 
-            {/* Controls Row (Songs & Favorites View) */}
-            {(libraryTab === 'Songs' || libraryTab === 'Favorites') && !selectedArtistKey && (
-                <div className="flex items-center gap-3 my-4 animate-in slide-in-from-top-2 fade-in duration-300">
-                    <button 
-                        onClick={handleShuffleAll}
-                        disabled={sortedTracks.length === 0}
-                        className="flex-1 h-12 rounded-2xl bg-primary text-on-primary hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Shuffle className="w-5 h-5" />
-                        <span>Shuffle Library</span>
-                    </button>
-
-                    <div className="relative group">
-                        <button className="h-12 w-12 rounded-2xl bg-surface-variant/50 text-on-surface flex items-center justify-center hover:bg-surface-variant transition-colors">
-                            <ListFilter className="w-5 h-5" />
-                        </button>
-                        {/* Hover Menu */}
-                        <div className="absolute right-0 top-12 pt-2 w-48 hidden group-hover:block z-30">
-                            <div className="bg-surface-container-high border border-white/10 rounded-xl shadow-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 backdrop-blur-xl">
-                                {[
-                                    { label: 'Recently Added', val: 'added' },
-                                    { label: 'Title (A-Z)', val: 'title' },
-                                    { label: 'Artist (A-Z)', val: 'artist' }
-                                ].map((opt) => (
-                                    <button
-                                        key={opt.val}
-                                        onClick={() => setSortOption(opt.val as SortOption)}
-                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between group/item ${
-                                            sortOption === opt.val ? 'bg-primary/10 text-primary' : 'text-on-surface hover:bg-white/5'
-                                        }`}
-                                    >
-                                        {opt.label}
-                                        {sortOption === opt.val && <Check className="w-4 h-4" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Content Area */}
-            <div className="flex flex-col flex-1 min-h-0 w-full pb-20">
+            <div className="flex flex-col flex-1 min-h-0 w-full pb-20 mt-4">
                 {isLoading ? (
                     Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
                 ) : (
@@ -606,6 +543,17 @@ const Library: React.FC<LibraryProps> = ({
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 className="flex flex-col gap-1 w-full"
                             >
+                                {/* Shuffle Button */}
+                                {!selectedArtistKey && (
+                                    <div className="mb-4">
+                                        <md-list-item type="button" onClick={handleShuffleAll} style={{ backgroundColor: 'var(--md-sys-color-primary-container)', borderRadius: '16px' }}>
+                                            <div slot="headline" className="font-bold text-on-primary-container">Shuffle All Tracks</div>
+                                            <md-icon slot="start" className="text-on-primary-container"><Shuffle /></md-icon>
+                                        </md-list-item>
+                                    </div>
+                                )}
+
+                                <md-list>
                                 {tracksToRender.length > 0 ? (
                                     tracksToRender.map((track, i) => (
                                         <TrackRow
@@ -621,11 +569,12 @@ const Library: React.FC<LibraryProps> = ({
                                         />
                                     ))
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-on-surface/40">
+                                    <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40">
                                         {libraryTab === 'Favorites' ? <Heart className="w-16 h-16 mb-4 opacity-50 stroke-1" /> : <Music className="w-16 h-16 mb-4 opacity-50 stroke-1" />}
                                         <p>{libraryTab === 'Favorites' ? "No favorite tracks yet" : "Your library is empty"}</p>
                                     </div>
                                 )}
+                                </md-list>
                             </motion.div>
                         )}
 
@@ -633,14 +582,13 @@ const Library: React.FC<LibraryProps> = ({
                         {libraryTab === 'Artists' && (
                             selectedArtistKey ? (
                                 <motion.div key="artist-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
-                                    <div className="flex items-center gap-4 mb-6 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2">
-                                        <button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }} className="p-2 -ml-2 rounded-full hover:bg-surface-variant/50">
-                                            <ChevronLeft className="w-6 h-6" />
-                                        </button>
-                                        {/* We can use the Artist Image here too, but for now just name */}
-                                        <h2 className="text-2xl font-bold">{selectedArtist}</h2>
+                                    <div className="flex items-center gap-4 mb-4 sticky top-0 bg-background/80 backdrop-blur-md z-10 py-2">
+                                        <md-icon-button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }}>
+                                            <md-icon><ChevronLeft /></md-icon>
+                                        </md-icon-button>
+                                        <h2 className="text-headline-small font-bold">{selectedArtist}</h2>
                                     </div>
-                                    <div className="flex flex-col gap-1">
+                                    <md-list>
                                         {tracksToRender.map((track, i) => (
                                             <TrackRow
                                                 key={track.id}
@@ -654,10 +602,11 @@ const Library: React.FC<LibraryProps> = ({
                                                 onUploadLyrics={handleUploadLyrics}
                                             />
                                         ))}
-                                    </div>
+                                    </md-list>
                                 </motion.div>
                             ) : (
-                                <motion.div key="artists-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-2">
+                                <motion.div key="artists-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-0">
+                                    <md-list>
                                     {artistsList.map((artist) => (
                                         <ArtistRow
                                             key={artist.key}
@@ -668,6 +617,7 @@ const Library: React.FC<LibraryProps> = ({
                                             onClick={() => { setSelectedArtist(artist.name); setSelectedArtistKey(artist.key); }}
                                         />
                                     ))}
+                                    </md-list>
                                 </motion.div>
                             )
                         )}

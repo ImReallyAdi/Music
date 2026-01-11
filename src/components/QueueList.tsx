@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { Reorder, useDragControls, motion, AnimatePresence } from 'framer-motion';
 import { Track } from '../types';
-import { Play, X, GripVertical, ArrowUpToLine, Trash2, ListMusic, Disc3 } from 'lucide-react';
+import { Play, X, GripVertical, ArrowUpToLine, Trash2, ListMusic, Disc3, Pause } from 'lucide-react';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/list/list.js';
+import '@material/web/list/list-item.js';
 
 // --- Types ---
 interface QueueListProps {
@@ -26,20 +30,6 @@ interface QueueItemProps {
   onPlayNext?: () => void;
 }
 
-// --- Animation Variants ---
-const listVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1 }
-};
-
 // --- Components ---
 
 const QueueItem = memo(({
@@ -53,94 +43,69 @@ const QueueItem = memo(({
 }: QueueItemProps) => {
   const controls = useDragControls();
 
-  // MD3 Dynamic Styling
-  const containerClass = `
-    group relative flex items-center p-3 rounded-2xl mb-2 transition-all duration-300
-    ${isCurrent 
-      ? 'bg-primary-container/20 border border-primary-500/30 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.3)]' 
-      : isHistory 
-        ? 'opacity-50 hover:opacity-100 hover:bg-white/5' 
-        : 'bg-zinc-800/40 hover:bg-zinc-800 hover:shadow-md border border-white/5'
-    }
-  `;
+  // Using Material Web List Item
+  // We wrap it in Reorder.Item if drag is enabled
 
-  const content = (
-    <>
-      {/* --- Drag Handle (MD3 Touch Target) --- */}
-      {canDrag ? (
-        <div
-          className="touch-none cursor-grab active:cursor-grabbing p-2 mr-1 text-zinc-500 hover:text-zinc-200 transition-colors rounded-full hover:bg-white/10"
-          onPointerDown={(e) => controls.start(e)}
-        >
-          <GripVertical size={18} />
-        </div>
-      ) : (
-        // Spacer for alignment if not draggable
-        !isCurrent && <div className="w-2" />
-      )}
-
-      {/* --- Artwork --- */}
-      <div 
-        className={`relative rounded-xl overflow-hidden flex-shrink-0 cursor-pointer shadow-sm group-hover:shadow-lg transition-all duration-300
-          ${isCurrent ? 'w-14 h-14 shadow-primary-500/20' : 'w-11 h-11'}
-        `}
+  const ListItemContent = (
+      <md-list-item
+        type="button"
+        headline={track.title}
+        supportingText={track.artist}
         onClick={onPlay}
+        style={{
+            cursor: 'pointer',
+            '--md-list-item-leading-image-height': '56px',
+            '--md-list-item-leading-image-width': '56px',
+            '--md-list-item-leading-image-shape': '12px',
+            backgroundColor: isCurrent ? 'var(--md-sys-color-primary-container)' : 'transparent',
+            color: isCurrent ? 'var(--md-sys-color-on-primary-container)' : 'inherit',
+            borderRadius: '16px',
+            marginBottom: '4px',
+            opacity: isHistory ? 0.5 : 1
+        }}
       >
-        <img 
-          src={track.coverArt} 
-          className={`w-full h-full object-cover transition-transform duration-500 ${isCurrent ? 'scale-100' : 'group-hover:scale-110'} ${isHistory ? 'grayscale' : ''}`} 
-          alt={track.title} 
-        />
-        
-        {/* Play Overlay */}
-        <div className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${isCurrent ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-          {isCurrent ? (
-             <div className="flex gap-1 items-end h-4 pb-1">
-               {[0.6, 0.8, 1.0, 0.7].map((d, i) => (
-                 <motion.span 
-                   key={i}
-                   animate={{ height: ["20%", "100%", "20%"] }}
-                   transition={{ duration: d, repeat: Infinity, ease: "easeInOut" }}
-                   className="w-1 bg-white rounded-full"
-                 />
-               ))}
-             </div>
-          ) : (
-            <Play size={18} className="fill-white text-white drop-shadow-md" />
-          )}
-        </div>
-      </div>
-
-      {/* --- Text Info --- */}
-      <div className="flex-1 min-w-0 px-4 flex flex-col justify-center cursor-pointer" onClick={onPlay}>
-        <h4 className={`font-semibold truncate leading-tight mb-0.5 ${isCurrent ? 'text-lg text-primary-200' : 'text-sm text-zinc-100'}`}>
-          {track.title}
-        </h4>
-        <p className={`text-xs truncate font-medium ${isCurrent ? 'text-primary-200/70' : 'text-zinc-400'}`}>
-          {track.artist}
-        </p>
-      </div>
-
-      {/* --- Actions (Visible on Hover / Always for Current) --- */}
-      <div className={`flex items-center gap-1 transition-all duration-200 ${isCurrent ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        {onPlayNext && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onPlayNext(); }}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-            title="Play Next"
-          >
-            <ArrowUpToLine size={18} />
-          </button>
+        {/* Drag Handle */}
+        {canDrag && (
+            <div slot="start" className="pr-2 cursor-grab active:cursor-grabbing text-on-surface-variant" onPointerDown={(e) => controls.start(e)}>
+                 <GripVertical size={20} />
+            </div>
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="p-2 text-zinc-400 hover:text-red-300 hover:bg-red-500/20 rounded-full transition-colors"
-          title="Remove"
-        >
-          <X size={18} />
-        </button>
-      </div>
-    </>
+
+        {/* Artwork */}
+        <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center">
+            <img
+                src={track.coverArt}
+                alt={track.title}
+                className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
+            />
+            {isCurrent && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                   <div className="flex gap-0.5 items-end h-3 pb-1">
+                        {[0.6, 0.8, 1.0].map((d, i) => (
+                            <motion.span
+                                key={i}
+                                animate={{ height: ["20%", "100%", "20%"] }}
+                                transition={{ duration: d, repeat: Infinity, ease: "easeInOut" }}
+                                className="w-1 bg-white rounded-full"
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {/* Actions */}
+        <div slot="end" className="flex items-center" onClick={(e) => e.stopPropagation()}>
+             {!isCurrent && onPlayNext && (
+                <md-icon-button onClick={onPlayNext} title="Play Next">
+                    <md-icon><ArrowUpToLine size={20} /></md-icon>
+                </md-icon-button>
+             )}
+             <md-icon-button onClick={onRemove} title="Remove">
+                 <md-icon><X size={20} /></md-icon>
+             </md-icon-button>
+        </div>
+      </md-list-item>
   );
 
   if (canDrag) {
@@ -148,28 +113,21 @@ const QueueItem = memo(({
       <Reorder.Item
         value={track.id}
         id={track.id}
-        className={containerClass}
         dragListener={false}
         dragControls={controls}
-        initial="hidden"
-        animate="visible"
-        exit={{ opacity: 0, scale: 0.95, height: 0 }}
-        variants={itemVariants}
-        whileDrag={{ scale: 1.02, zIndex: 50, boxShadow: "0px 10px 20px rgba(0,0,0,0.5)" }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, height: 0 }}
+        style={{ listStyle: 'none' }}
       >
-        {content}
+        {ListItemContent}
       </Reorder.Item>
     );
   }
 
   return (
-    <motion.div 
-      layout
-      className={containerClass}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      {content}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        {ListItemContent}
     </motion.div>
   );
 });
@@ -192,15 +150,13 @@ const QueueList: React.FC<QueueListProps> = ({
     const currentIndex = queue.indexOf(currentTrackId || '');
     const splitIndex = currentIndex === -1 ? 0 : currentIndex;
     const upcomingSlice = queue.slice(splitIndex + 1);
-    
-    // Check duplicates to safely enable reordering
     const upcomingSet = new Set(upcomingSlice);
     
     return {
       history: queue.slice(0, splitIndex),
       current: queue[splitIndex],
       upcoming: upcomingSlice,
-      canReorder: upcomingSet.size === upcomingSlice.length // Only reorder if unique
+      canReorder: upcomingSet.size === upcomingSlice.length
     };
   }, [queue, currentTrackId]);
 
@@ -217,30 +173,22 @@ const QueueList: React.FC<QueueListProps> = ({
   // --- Empty State ---
   if (!queue || queue.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-zinc-950 text-white">
-        {/* Header */}
-        <div className="flex w-full justify-between items-center px-6 pt-6">
-          <h3 className="text-2xl font-bold tracking-tight">Queue</h3>
+      <div className="flex flex-col h-full bg-surface text-on-surface">
+        <div className="flex w-full justify-between items-center px-4 pt-4">
+          <h3 className="text-headline-small font-bold">Queue</h3>
           {onClose && (
-            <button onClick={onClose} className="p-3 bg-zinc-900 hover:bg-zinc-800 rounded-full transition-colors">
-              <X size={20} />
-            </button>
+            <md-icon-button onClick={onClose}>
+              <md-icon><X /></md-icon>
+            </md-icon-button>
           )}
         </div>
-        
-        {/* Empty Content */}
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-32 h-32 rounded-full bg-zinc-900 flex items-center justify-center relative overflow-hidden"
-          >
-             <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 animate-pulse" />
-             <Disc3 size={64} className="text-zinc-700" />
-          </motion.div>
+          <div className="w-32 h-32 rounded-full bg-surface-variant flex items-center justify-center">
+             <Disc3 size={64} className="text-on-surface-variant/50" />
+          </div>
           <div>
-            <h4 className="text-xl font-medium text-zinc-200">Your queue is empty</h4>
-            <p className="text-zinc-500 mt-2 text-sm">Add some tracks to start the vibe.</p>
+            <h4 className="text-title-large font-medium">Your queue is empty</h4>
+            <p className="text-body-medium text-on-surface-variant mt-2">Add some tracks to start the vibe.</p>
           </div>
         </div>
       </div>
@@ -248,23 +196,23 @@ const QueueList: React.FC<QueueListProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-zinc-950 text-white font-sans selection:bg-indigo-500/30">
+    <div className="h-full flex flex-col relative bg-surface text-on-surface">
       
-      {/* --- Glass Header --- */}
-      <div className="flex items-center justify-between px-6 py-5 shrink-0 bg-zinc-950/80 backdrop-blur-xl z-30 border-b border-white/5">
+      {/* --- Header --- */}
+      <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-surface/90 backdrop-blur-xl z-30 border-b border-outline-variant/20">
         <div className="flex items-baseline gap-3">
-           <h3 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">Queue</h3>
-           <span className="text-sm font-medium text-zinc-500">{queue.length} tracks</span>
+           <h3 className="text-headline-small font-bold">Queue</h3>
+           <span className="text-body-small text-on-surface-variant">{queue.length} tracks</span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-2.5 bg-white/5 hover:bg-white/10 hover:rotate-90 rounded-full transition-all duration-300">
-            <X size={20} className="text-zinc-300" />
-          </button>
+          <md-icon-button onClick={onClose}>
+            <md-icon><X /></md-icon>
+          </md-icon-button>
         )}
       </div>
 
       {/* --- Main Scroll Area --- */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar px-4 pb-32">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-2 pb-32">
         
         {/* History Section */}
         <AnimatePresence>
@@ -272,14 +220,13 @@ const QueueList: React.FC<QueueListProps> = ({
             <motion.div 
               initial={{ opacity: 0, height: 0 }} 
               animate={{ opacity: 1, height: 'auto' }}
-              className="mt-6 mb-2"
+              className="mt-4 mb-2"
             >
-              <div className="flex items-center gap-3 px-2 mb-3 opacity-60">
-                 <div className="h-px bg-white/20 flex-1" />
-                 <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">History</span>
-                 <div className="h-px bg-white/20 flex-1" />
+              <div className="flex items-center gap-3 px-4 mb-2 opacity-60">
+                 <span className="text-label-small font-bold uppercase tracking-widest text-on-surface-variant">History</span>
+                 <div className="h-px bg-outline-variant flex-1" />
               </div>
-              <div className="space-y-1">
+              <md-list>
                 {history.map((trackId, i) => tracks[trackId] && (
                     <QueueItem
                       key={`${trackId}-hist-${i}`}
@@ -291,25 +238,19 @@ const QueueList: React.FC<QueueListProps> = ({
                       onPlayNext={() => onPlayNext(trackId)}
                     />
                 ))}
-              </div>
+              </md-list>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Current Track (Hero Section) */}
         {current && tracks[current] && (
-          <div ref={activeTrackRef} className="my-8 sticky top-0 z-20 pt-2 -mx-2 px-2 pb-4 bg-gradient-to-b from-zinc-950 via-zinc-950/95 to-transparent backdrop-blur-sm">
-             <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
-               <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                </span>
+          <div ref={activeTrackRef} className="my-6 sticky top-0 z-20 pt-2 -mx-2 px-2 pb-4 bg-surface/95 backdrop-blur-sm shadow-sm rounded-b-3xl">
+             <div className="text-label-small font-bold text-primary uppercase tracking-widest mb-3 px-4 flex items-center gap-2">
                Now Playing
              </div>
              
-             {/* Background Glow Effect */}
-             <div className="relative">
-               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-500/30 rounded-3xl blur-xl opacity-40 animate-pulse" />
+             <div className="relative px-2">
                <QueueItem
                  track={tracks[current]}
                  isCurrent={true}
@@ -321,32 +262,28 @@ const QueueList: React.FC<QueueListProps> = ({
         )}
 
         {/* Upcoming Section */}
-        <div className="relative">
-          <div className="flex justify-between items-end mb-4 px-2">
-             <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Next Up</span>
+        <div className="relative mt-4">
+          <div className="flex justify-between items-end mb-2 px-4">
+             <span className="text-label-small font-bold text-on-surface-variant uppercase tracking-widest">Next Up</span>
              {upcoming.length > 0 && (
                <button 
                  onClick={() => onReorder([...history, (current || '')])}
-                 className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-red-500/50 hover:bg-red-500/10 transition-colors"
+                 className="flex items-center gap-1 text-xs font-medium text-error hover:text-error-container transition-colors"
                >
-                 <Trash2 size={12} className="text-zinc-500 group-hover:text-red-400 transition-colors" />
-                 <span className="text-[10px] font-bold text-zinc-500 group-hover:text-red-400 uppercase tracking-wider">Clear Queue</span>
+                 Clear
                </button>
              )}
           </div>
 
-          {/* Duplicate Warning */}
           {!canReorder && upcoming.length > 0 && (
-             <motion.div 
-               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-               className="mx-1 mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center gap-2 text-amber-200/80 text-xs"
-             >
+             <div className="mx-2 mb-4 p-3 bg-error-container text-on-error-container rounded-xl flex items-center gap-2 text-xs">
                <span>⚠️ Shuffle active or duplicates present. Reordering disabled.</span>
-             </motion.div>
+             </div>
           )}
 
+          <md-list>
           {canReorder ? (
-            <Reorder.Group axis="y" values={upcoming} onReorder={handleReorderUpcoming} className="space-y-1">
+            <Reorder.Group axis="y" values={upcoming} onReorder={handleReorderUpcoming} style={{ listStyle: 'none', padding: 0 }}>
               {upcoming.map((trackId) => tracks[trackId] && (
                 <QueueItem
                   key={trackId}
@@ -360,7 +297,7 @@ const QueueList: React.FC<QueueListProps> = ({
               ))}
             </Reorder.Group>
           ) : (
-            <div className="space-y-1">
+            <div>
               {upcoming.map((trackId, i) => tracks[trackId] && (
                 <QueueItem
                   key={`${trackId}-${i}`}
@@ -373,11 +310,12 @@ const QueueList: React.FC<QueueListProps> = ({
               ))}
             </div>
           )}
+          </md-list>
 
           {upcoming.length === 0 && (
-             <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4">
+             <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4 text-on-surface-variant">
                  <ListMusic size={32} />
-                 <p className="text-sm font-medium">End of queue</p>
+                 <p className="text-body-medium font-medium">End of queue</p>
              </div>
           )}
         </div>
