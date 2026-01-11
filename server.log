@@ -7,3 +7,36 @@
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
+[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3  |  @tailwind utilities;
+4  |
+5  |  @import './src/material-theme.css';
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6  |
+7  |  :root {
+6:53:59 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+6:53:59 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3  |  @tailwind utilities;
+4  |
+5  |  @import './src/material-theme.css';
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6  |
+7  |  :root {
+6:54:04 AM [vite] (client) ✨ new dependencies optimized: @material/web/labs/navigationbar/navigation-bar.js, @material/web/labs/navigationtab/navigation-tab.js
+6:54:04 AM [vite] (client) ✨ optimized dependencies changed. reloading
+[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3  |  @tailwind utilities;
+4  |
+5  |  @import './src/material-theme.css';
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6  |
+7  |  :root {
+6:56:27 AM [vite] (client) hmr update /index.css?direct
+6:56:47 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+7:01:46 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+7:07:39 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+7:08:52 AM [vite] (client) hmr update /src/components/BottomNav.tsx, /index.css?direct
+7:14:46 AM [vite] (client) hmr update /src/components/Playlists.tsx, /index.css?direct
+7:14:57 AM [vite] (client) hmr update /src/components/AddToPlaylistModal.tsx, /index.css?direct
+7:17:09 AM [vite] (client) hmr update /src/components/AddToPlaylistModal.tsx, /index.css?direct
