@@ -454,18 +454,20 @@ function MusicApp() {
         currentTrack={currentTrack}
         isVisible={!isPlayerOpen}
       >
-        <header className="pt-4 pb-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md px-4">
-          <motion.h1 className="text-display-small text-on-background">
-            {activeTab === 'home' ? 'Home' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-          </motion.h1>
+        {activeTab !== 'library' && (
+          <header className="pt-4 pb-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md px-4">
+            <motion.h1 className="text-display-small text-on-background">
+              {activeTab === 'home' ? 'Home' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            </motion.h1>
 
-          <label className="h-12 w-12 rounded-xl bg-primary-container text-primary flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all">
-            <Plus className="w-6 h-6" strokeWidth={2.5} />
-            <input type="file" multiple accept="audio/*,.zip" onChange={handleFileUpload} className="hidden" />
-          </label>
-        </header>
+            <label className="h-12 w-12 rounded-xl bg-primary-container text-primary flex items-center justify-center cursor-pointer hover:bg-primary/20 transition-all">
+              <Plus className="w-6 h-6" strokeWidth={2.5} />
+              <input type="file" multiple accept="audio/*,.zip" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </header>
+        )}
 
-        <main className="w-full pb-32">
+        <main className={`w-full pb-32 ${activeTab === 'library' ? 'pt-0' : ''}`}>
           <AnimatePresence mode="wait">
             {activeTab === 'home' && <Home key="home" filteredTracks={filteredTracks} playTrack={playTrack} activeTab={activeTab} />}
             {activeTab === 'library' && (

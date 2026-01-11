@@ -1,0 +1,14 @@
+
+> music@0.0.0 dev
+> vite
+
+Port 3000 is in use, trying another one...
+Port 3001 is in use, trying another one...
+
+  VITE v6.4.1  ready in 398 ms
+
+  ➜  Local:   http://localhost:3002/
+  ➜  Network: http://192.168.0.2:3002/
+10:36:58 AM [vite] (client) hmr update /src/App.tsx, /index.css?direct
+10:44:37 AM [vite] (client) hmr update /src/components/Library.tsx, /index.css?direct
+10:44:46 AM [vite] (client) hmr update /src/components/library/LibraryCard.tsx, /index.css?direct

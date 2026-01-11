@@ -7,6 +7,9 @@ import AddToPlaylistModal from './AddToPlaylistModal';
 import { getOrFetchArtistImage } from '../utils/artistImage';
 import { parseLrc } from '../utils/lyrics';
 import { useToast } from './Toast';
+import { LibraryCard } from './library/LibraryCard';
+import { ArtistCard } from './library/ArtistCard';
+
 import '@material/web/tabs/tabs.js';
 import '@material/web/tabs/primary-tab.js';
 import '@material/web/tabs/secondary-tab.js';
@@ -16,6 +19,9 @@ import '@material/web/switch/switch.js';
 import '@material/web/slider/slider.js';
 import '@material/web/list/list.js';
 import '@material/web/list/list-item.js';
+import '@material/web/chips/chip-set.js';
+import '@material/web/chips/filter-chip.js';
+import '@material/web/textfield/outlined-text-field.js';
 
 declare global {
   namespace JSX {
@@ -29,6 +35,9 @@ declare global {
       'md-list-item': any;
       'md-icon': any;
       'md-icon-button': any;
+      'md-chip-set': any;
+      'md-filter-chip': any;
+      'md-outlined-text-field': any;
     }
   }
 }
@@ -59,174 +68,20 @@ const formatDuration = (seconds?: number) => {
 
 // --- COMPONENTS ---
 
-const SkeletonRow = () => (
-  <div className="flex items-center gap-4 py-3 px-4 opacity-60">
-    <div className="w-14 h-14 rounded-[12px] bg-surface-container-highest animate-pulse" />
-    <div className="flex-1 space-y-2.5">
-      <div className="h-4 w-1/3 bg-surface-container-highest rounded-full animate-pulse" />
-      <div className="h-3 w-1/4 bg-surface-container-highest/60 rounded-full animate-pulse" />
-    </div>
-    <div className="h-3 w-8 bg-surface-container-highest/60 rounded-full animate-pulse" />
+// Loading Skeleton
+const LibrarySkeleton = () => (
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    {Array.from({ length: 10 }).map((_, i) => (
+      <div key={i} className="flex flex-col gap-3">
+         <div className="aspect-square bg-surface-container-highest rounded-[20px] animate-pulse" />
+         <div className="h-4 w-3/4 bg-surface-container-highest rounded animate-pulse" />
+         <div className="h-3 w-1/2 bg-surface-container-highest/60 rounded animate-pulse" />
+      </div>
+    ))}
   </div>
 );
 
-// Optimized Artist Row
-// Handles lazy loading of artist images
-const ArtistRow = memo(({ artist, displayArtist, trackCount, coverArt, onClick }: {
-    artist: string; displayArtist: string; trackCount: number; coverArt?: string; onClick: () => void;
-}) => {
-    const [image, setImage] = useState<string | undefined>(coverArt);
-
-    useEffect(() => {
-        let active = true;
-        const load = async () => {
-             const wikiImage = await getOrFetchArtistImage(displayArtist);
-             if (active) {
-                 if (wikiImage) {
-                     setImage(wikiImage);
-                 } else if (!image && coverArt) {
-                     setImage(coverArt);
-                 }
-             }
-        };
-        load();
-        return () => { active = false; };
-    }, [displayArtist, coverArt]);
-
-    return (
-        <md-list-item
-            type="button"
-            onClick={onClick}
-            headline={displayArtist}
-            supporting-text={`${trackCount} ${trackCount === 1 ? 'Song' : 'Songs'}`}
-            style={{
-                cursor: 'pointer',
-                '--md-list-item-leading-image-height': '56px',
-                '--md-list-item-leading-image-width': '56px',
-                '--md-list-item-leading-image-shape': '9999px',
-                '--md-list-item-headline-type': '500 16px/24px var(--md-sys-typescale-body-large-font)',
-                '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
-            }}
-        >
-             <div slot="start" className="w-14 h-14 rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center relative border border-outline-variant/10 shadow-sm">
-                {image ? (
-                    <img src={image} alt={displayArtist} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                    <md-icon class="material-symbols-rounded text-on-surface-variant/50">group</md-icon>
-                )}
-            </div>
-            <md-icon slot="end" class="material-symbols-rounded">chevron_right</md-icon>
-        </md-list-item>
-    );
-});
-ArtistRow.displayName = 'ArtistRow';
-
-// Optimized Track Row using Material Web List Item
-const TrackRow = memo(({ 
-  track, index, onPlay, isPlaying, isCurrentTrack, onDelete, onAddToPlaylist, onUploadLyrics 
-}: { 
-  track: Track; 
-  index: number; 
-  onPlay: (id: string) => void;
-  isPlaying: boolean;
-  isCurrentTrack: boolean;
-  onDelete: (id: string) => void;
-  onAddToPlaylist: (id: string) => void;
-  onUploadLyrics: (id: string) => void;
-}) => {
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.2 }}
-            className="group"
-        >
-            <md-list-item
-                type="button"
-                onClick={() => onPlay(track.id)}
-                headline={track.title}
-                supporting-text={track.artist}
-                trailing-supporting-text={formatDuration(track.duration)}
-                style={{
-                    cursor: 'pointer',
-                    '--md-list-item-leading-image-height': '56px',
-                    '--md-list-item-leading-image-width': '56px',
-                    '--md-list-item-leading-image-shape': '12px',
-                    '--md-list-item-headline-type': '500 16px/24px var(--md-sys-typescale-body-large-font)',
-                    '--md-list-item-supporting-text-type': '400 14px/20px var(--md-sys-typescale-body-medium-font)',
-                    '--md-list-item-trailing-supporting-text-type': '400 12px/16px var(--md-sys-typescale-label-medium-font)',
-                    backgroundColor: isCurrentTrack ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
-                    '--md-list-item-headline-color': isCurrentTrack ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-on-surface)',
-                    marginBottom: '4px',
-                    borderRadius: '16px'
-                }}
-            >
-                {/* Thumbnail */}
-                <div slot="start" className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-container-highest flex items-center justify-center border border-outline-variant/10 shadow-sm">
-                    {track.coverArt ? (
-                        <img 
-                            src={track.coverArt} 
-                            alt={track.title}
-                            className={`w-full h-full object-cover transition-opacity duration-300 ${isCurrentTrack && isPlaying ? 'opacity-40' : 'opacity-100 group-hover:scale-110'}`}
-                            loading="lazy" 
-                        />
-                    ) : (
-                        <md-icon class={`material-symbols-rounded ${isCurrentTrack ? 'text-primary' : 'text-on-surface-variant/40'}`}>music_note</md-icon>
-                    )}
-
-                    {/* Overlay Icon */}
-                     {isCurrentTrack && (
-                         <div className="absolute inset-0 flex items-center justify-center">
-                              {isPlaying ? (
-                                  <md-icon class="material-symbols-rounded text-primary animate-spin">progress_activity</md-icon>
-                              ) : (
-                                  <md-icon class="material-symbols-rounded text-primary">pause</md-icon>
-                              )}
-                         </div>
-                     )}
-                </div>
-
-                {/* Actions */}
-                <div slot="end" className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                    <md-icon-button onClick={() => onUploadLyrics(track.id)}>
-                        <md-icon class="material-symbols-rounded">lyrics</md-icon>
-                    </md-icon-button>
-                     <md-icon-button onClick={() => onAddToPlaylist(track.id)}>
-                        <md-icon class="material-symbols-rounded">playlist_add</md-icon>
-                    </md-icon-button>
-                     <md-icon-button onClick={() => onDelete(track.id)}>
-                        <md-icon class="material-symbols-rounded">delete</md-icon>
-                    </md-icon-button>
-                </div>
-            </md-list-item>
-        </motion.div>
-    );
-});
-TrackRow.displayName = 'TrackRow';
-
-
-// --- SETTINGS COMPONENT ---
-const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
-    <div className="flex flex-col gap-2 py-2">
-        <md-list-item
-            type="button"
-            headline={label}
-            supporting-text={subLabel}
-            style={{ borderRadius: '16px' }}
-        >
-             <md-switch slot="end" selected={checked} onClick={(e: any) => {
-                 onChange(!checked);
-             }}></md-switch>
-        </md-list-item>
-
-        {checked && children && (
-            <div className="pl-4 pr-4 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                {children}
-            </div>
-        )}
-    </div>
-);
-
+// Settings Tab (Kept as List)
 const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState, setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>> }) => {
     const [wordSyncEnabled, setWordSyncEnabled] = useState(false);
 
@@ -239,6 +94,27 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
         dbService.setSetting('wordSyncEnabled', enabled);
     };
 
+    const ToggleRow = ({ label, subLabel, checked, onChange, children }: any) => (
+        <div className="flex flex-col gap-2 py-2">
+            <md-list-item
+                type="button"
+                headline={label}
+                supporting-text={subLabel}
+                style={{ borderRadius: '16px', '--md-list-item-leading-space': '0' }}
+            >
+                 <md-switch slot="end" selected={checked} onClick={(e: any) => {
+                     onChange(!checked);
+                 }}></md-switch>
+            </md-list-item>
+
+            {checked && children && (
+                <div className="pl-4 pr-4 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
@@ -246,7 +122,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
         >
             <section>
                 <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">Playback</h2>
-                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
+                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10 p-2">
                     <ToggleRow 
                         label="Automix" 
                         subLabel="Smart transitions & AI blending" 
@@ -273,7 +149,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-outline-variant mx-4 opacity-50" />
+                    <div className="h-px bg-outline-variant/50 mx-4" />
 
                     <ToggleRow 
                         label="Crossfade" 
@@ -295,7 +171,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                         </div>
                     </ToggleRow>
 
-                    <div className="h-px bg-outline-variant mx-4 opacity-50" />
+                    <div className="h-px bg-outline-variant/50 mx-4" />
                     
                     <ToggleRow 
                         label="Normalize Volume" 
@@ -308,7 +184,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
 
             <section>
                 <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">Experimental</h2>
-                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10">
+                <div className="bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10 p-2">
                      <ToggleRow
                         label="Word-by-word Lyrics"
                         subLabel="Automatically estimate word timings for Karaoke mode"
@@ -322,7 +198,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
                 <h2 className="text-label-large font-bold text-primary px-4 mb-2 uppercase tracking-wider">About</h2>
                 <div className="bg-surface-container rounded-3xl p-6 text-center shadow-sm border border-outline-variant/10">
                     <p className="font-bold text-headline-small text-on-surface">Adi Music</p>
-                    <p className="text-body-small text-on-surface-variant mt-1">v1.2.0 • Material Design 3 Expressive</p>
+                    <p className="text-body-small text-on-surface-variant mt-1">v1.3.0 • Material Design 3 Expressive</p>
                 </div>
             </section>
         </motion.div>
@@ -342,15 +218,13 @@ const Library: React.FC<LibraryProps> = ({
   const [tracksMap, setTracksMap] = useState<Record<string, Track>>({});
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [selectedArtistKey, setSelectedArtistKey] = useState<string | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<{name: string, artist: string} | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('added');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Modal State
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [trackToAddId, setTrackToAddId] = useState<string | null>(null);
-
-  // Lyrics Upload State
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [lyricTrackId, setLyricTrackId] = useState<string | null>(null);
 
   // Load Data
   useEffect(() => {
@@ -363,7 +237,7 @@ const Library: React.FC<LibraryProps> = ({
     load();
   }, [libraryTab, refreshLibrary]);
 
-  // Derived: Artists
+  // Derived Data
   const artistsList = useMemo(() => {
     const map = new Map<string, { display: string; count: number; cover?: string }>();
     filteredTracks.forEach(t => {
@@ -393,14 +267,39 @@ const Library: React.FC<LibraryProps> = ({
             count: data.count,
             cover: data.cover
         }))
+        .filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .sort((a, b) => a.name.localeCompare(b.name));
-  }, [filteredTracks]);
+  }, [filteredTracks, searchQuery]);
 
-  // Derived: Sorted Tracks
+  // Derived: Albums
+  const albumsList = useMemo(() => {
+    const map = new Map<string, { title: string; artist: string; count: number; cover?: string }>();
+    filteredTracks.forEach(t => {
+        const album = t.album || 'Unknown Album';
+        const artist = t.artist || 'Unknown Artist';
+        const key = `${album.toLowerCase()}::${artist.toLowerCase()}`;
+
+        if (map.has(key)) {
+            const current = map.get(key)!;
+            map.set(key, { ...current, count: current.count + 1 });
+        } else {
+            map.set(key, { title: album, artist: artist, count: 1, cover: t.coverArt });
+        }
+    });
+
+    return Array.from(map.values())
+        .filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => a.title.localeCompare(b.title));
+  }, [filteredTracks, searchQuery]);
+
   const sortedTracks = useMemo(() => {
       let base = [...filteredTracks];
       if (libraryTab === 'Favorites') {
           base = base.filter(t => t.isFavorite);
+      }
+      if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          base = base.filter(t => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q));
       }
 
       return base.sort((a, b) => {
@@ -408,18 +307,22 @@ const Library: React.FC<LibraryProps> = ({
           if (sortOption === 'artist') return a.artist.localeCompare(b.artist);
           return b.addedAt - a.addedAt; // Default 'added'
       });
-  }, [filteredTracks, sortOption, libraryTab]);
+  }, [filteredTracks, sortOption, libraryTab, searchQuery]);
 
-  // Handlers (Memoized)
+  // Handlers
   const handlePlayTrack = useCallback((id: string) => {
       let queue = sortedTracks.map(t => t.id);
       if (selectedArtistKey) {
           queue = sortedTracks
             .filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey)
             .map(t => t.id);
+      } else if (selectedAlbum) {
+          queue = sortedTracks
+             .filter(t => t.album === selectedAlbum.name && t.artist === selectedAlbum.artist)
+             .map(t => t.id);
       }
       playTrack(id, { customQueue: queue });
-  }, [playTrack, sortedTracks, selectedArtistKey]);
+  }, [playTrack, sortedTracks, selectedArtistKey, selectedAlbum]);
 
   const handleDelete = useCallback((id: string) => {
     if(confirm('Delete track permanently?')) {
@@ -432,44 +335,6 @@ const Library: React.FC<LibraryProps> = ({
       setTrackToAddId(id);
       setIsPlaylistModalOpen(true);
   }, []);
-
-  const handleUploadLyrics = useCallback((id: string) => {
-      setLyricTrackId(id);
-      fileInputRef.current?.click();
-  }, []);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !lyricTrackId) return;
-
-      try {
-          const text = await file.text();
-          const parsed = parseLrc(text);
-          const track = tracksMap[lyricTrackId];
-          
-          if (track) {
-              const updatedTrack = { ...track, lyrics: parsed };
-              await dbService.saveTrack(updatedTrack);
-              refreshLibrary();
-              addToast("Lyrics updated successfully", "success");
-          }
-      } catch (err) {
-          console.error("Failed to parse/save lyrics:", err);
-          addToast("Failed to process lyrics file", "error");
-      } finally {
-          setLyricTrackId(null);
-          if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-          }
-      }
-  };
-
-  const handleShuffleAll = () => {
-     if (sortedTracks.length > 0) {
-        const randomId = sortedTracks[Math.floor(Math.random() * sortedTracks.length)].id;
-        playTrack(randomId, { customQueue: sortedTracks.map(t => t.id) });
-     }
-  };
 
   const handlePlaylistSelect = async (playlistId: string) => {
       if (!trackToAddId) return;
@@ -497,12 +362,17 @@ const Library: React.FC<LibraryProps> = ({
       setTrackToAddId(null);
   };
 
-  // View Helpers
-  const tracksToRender = selectedArtistKey
-    ? sortedTracks.filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey)
-    : sortedTracks;
+  const tracksToRender = useMemo(() => {
+      if (selectedArtistKey) {
+          return sortedTracks.filter(t => (t.artist || 'Unknown Artist').trim().toLowerCase() === selectedArtistKey);
+      }
+      if (selectedAlbum) {
+          return sortedTracks.filter(t => t.album === selectedAlbum.name && t.artist === selectedAlbum.artist);
+      }
+      return sortedTracks;
+  }, [sortedTracks, selectedArtistKey, selectedAlbum]);
 
-  // Tabs handling
+  // Tabs
   const tabIndexMap: Record<string, number> = {
       'Songs': 0, 'Favorites': 1, 'Albums': 2, 'Artists': 3, 'Playlists': 4, 'Settings': 5
   };
@@ -510,29 +380,40 @@ const Library: React.FC<LibraryProps> = ({
 
   return (
     <>
-        <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".lrc,.txt" 
-            onChange={handleFileSelect} 
-        />
+        <div className="flex flex-col h-full px-4 md:px-8 max-w-7xl mx-auto w-full">
+            {/* Header Area */}
+            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl pt-6 pb-4 -mx-4 px-4 md:-mx-8 md:px-8 transition-all border-b border-surface-variant/20">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                    <h1 className="text-display-small font-black text-on-surface tracking-tight">Library</h1>
 
-        <div className="flex flex-col h-full px-4 md:px-8 max-w-5xl mx-auto w-full">
-            {/* Header */}
-            <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md pt-6 pb-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-all">
-                <div className="flex items-center justify-between mb-2">
-                    <h1 className="text-display-small font-bold text-on-surface tracking-tight">Library</h1>
-                    <md-icon-button onClick={() => setLibraryTab('Settings')}>
-                        <md-icon class="material-symbols-rounded">settings</md-icon>
-                    </md-icon-button>
+                    {/* Search & Actions */}
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                         <md-outlined-text-field
+                            placeholder={`Search ${libraryTab}...`}
+                            value={searchQuery}
+                            onInput={(e: any) => setSearchQuery(e.target.value)}
+                            style={{ flex: 1, minWidth: '200px' }}
+                         >
+                            <md-icon slot="leading-icon" class="material-symbols-rounded">search</md-icon>
+                         </md-outlined-text-field>
+
+                         <md-icon-button onClick={() => setLibraryTab('Settings')}>
+                             <md-icon class="material-symbols-rounded">settings</md-icon>
+                         </md-icon-button>
+                    </div>
                 </div>
 
+                {/* Tabs */}
                 <md-tabs active-tab-index={tabIndexMap[libraryTab]}>
                     {tabKeys.map((tab) => (
                         <md-primary-tab
                             key={tab}
-                            onClick={() => { setLibraryTab(tab); setSelectedArtist(null); setSelectedArtistKey(null); }}
+                            onClick={() => {
+                                setLibraryTab(tab);
+                                setSelectedArtist(null);
+                                setSelectedArtistKey(null);
+                                setSelectedAlbum(null);
+                            }}
                             selected={libraryTab === tab}
                         >
                             {tab}
@@ -540,53 +421,74 @@ const Library: React.FC<LibraryProps> = ({
                         </md-primary-tab>
                     ))}
                 </md-tabs>
+
+                {/* Filters / Chips (only for Songs/Favorites/Artists) */}
+                {['Songs', 'Favorites'].includes(libraryTab) && !selectedArtistKey && (
+                     <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar">
+                         <md-chip-set>
+                            <md-filter-chip
+                                label="Recently Added"
+                                selected={sortOption === 'added'}
+                                onClick={() => setSortOption('added')}
+                            ></md-filter-chip>
+                            <md-filter-chip
+                                label="A-Z"
+                                selected={sortOption === 'title'}
+                                onClick={() => setSortOption('title')}
+                            ></md-filter-chip>
+                            <md-filter-chip
+                                label="Artist"
+                                selected={sortOption === 'artist'}
+                                onClick={() => setSortOption('artist')}
+                            ></md-filter-chip>
+                         </md-chip-set>
+                     </div>
+                )}
             </div>
 
             {/* Content Area */}
-            <div className="flex flex-col flex-1 min-h-0 w-full pb-32 mt-4">
+            <div className="flex flex-col flex-1 min-h-0 w-full pb-32 mt-6">
                 {isLoading ? (
-                    Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
+                    <LibrarySkeleton />
                 ) : (
                     <AnimatePresence mode="wait">
-                        {/* VIEW: SONGS OR FAVORITES */}
+
+                        {/* VIEW: SONGS / FAVORITES (Grid of Cards) */}
                         {(libraryTab === 'Songs' || libraryTab === 'Favorites') && (
                             <motion.div 
-                                key="songs-list"
+                                key="songs-grid"
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="flex flex-col gap-1 w-full"
+                                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
                             >
-                                {/* Shuffle Button */}
-                                {(!selectedArtistKey && tracksToRender.length > 0) && (
-                                    <div className="mb-4">
-                                        <md-list-item type="button" onClick={handleShuffleAll} style={{ backgroundColor: 'var(--md-sys-color-primary-container)', borderRadius: '16px' }}>
-                                            <div slot="headline" className="font-bold text-on-primary-container">Shuffle All Tracks</div>
-                                            <md-icon slot="start" class="material-symbols-rounded text-on-primary-container">shuffle</md-icon>
-                                        </md-list-item>
-                                    </div>
-                                )}
-
-                                <md-list>
                                 {tracksToRender.length > 0 ? (
-                                    tracksToRender.map((track, i) => (
-                                        <TrackRow
+                                    tracksToRender.map((track) => (
+                                        <LibraryCard
                                             key={track.id}
-                                            track={track}
-                                            index={i}
-                                            onPlay={handlePlayTrack}
-                                            isPlaying={playerState.isPlaying}
-                                            isCurrentTrack={playerState.currentTrackId === track.id}
-                                            onDelete={handleDelete}
-                                            onAddToPlaylist={openAddToPlaylist}
-                                            onUploadLyrics={handleUploadLyrics}
+                                            title={track.title}
+                                            subtitle={track.artist}
+                                            image={track.coverArt}
+                                            active={playerState.currentTrackId === track.id}
+                                            playing={playerState.isPlaying}
+                                            onPlay={(e) => handlePlayTrack(track.id)}
+                                            onClick={() => handlePlayTrack(track.id)} // Click plays for now
+                                            actions={
+                                                <>
+                                                    <md-icon-button onClick={(e: any) => { e.stopPropagation(); openAddToPlaylist(track.id); }}>
+                                                        <md-icon class="material-symbols-rounded">playlist_add</md-icon>
+                                                    </md-icon-button>
+                                                    <md-icon-button onClick={(e: any) => { e.stopPropagation(); handleDelete(track.id); }}>
+                                                        <md-icon class="material-symbols-rounded">delete</md-icon>
+                                                    </md-icon-button>
+                                                </>
+                                            }
                                         />
                                     ))
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40">
+                                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-on-surface-variant/40">
                                         <md-icon class="material-symbols-rounded" style={{ fontSize: '64px', opacity: 0.5 }}>{libraryTab === 'Favorites' ? 'favorite' : 'music_off'}</md-icon>
-                                        <p>{libraryTab === 'Favorites' ? "No favorite tracks yet" : "Your library is empty"}</p>
+                                        <p className="mt-4">{libraryTab === 'Favorites' ? "No favorite tracks yet" : "Your library is empty"}</p>
                                     </div>
                                 )}
-                                </md-list>
                             </motion.div>
                         )}
 
@@ -594,42 +496,40 @@ const Library: React.FC<LibraryProps> = ({
                         {libraryTab === 'Artists' && (
                             selectedArtistKey ? (
                                 <motion.div key="artist-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
-                                    <div className="flex items-center gap-4 mb-4 sticky top-14 bg-surface/95 backdrop-blur-md z-10 py-2">
+                                    <div className="flex items-center gap-4 mb-6">
                                         <md-icon-button onClick={() => { setSelectedArtist(null); setSelectedArtistKey(null); }}>
                                             <md-icon class="material-symbols-rounded">arrow_back</md-icon>
                                         </md-icon-button>
-                                        <h2 className="text-headline-small font-bold">{selectedArtist}</h2>
+                                        <h2 className="text-headline-medium font-bold">{selectedArtist}</h2>
                                     </div>
-                                    <md-list>
-                                        {tracksToRender.map((track, i) => (
-                                            <TrackRow
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                        {tracksToRender.map((track) => (
+                                            <LibraryCard
                                                 key={track.id}
-                                                track={track}
-                                                index={i}
-                                                onPlay={handlePlayTrack}
-                                                isPlaying={playerState.isPlaying}
-                                                isCurrentTrack={playerState.currentTrackId === track.id}
-                                                onDelete={handleDelete}
-                                                onAddToPlaylist={openAddToPlaylist}
-                                                onUploadLyrics={handleUploadLyrics}
+                                                title={track.title}
+                                                subtitle={track.artist}
+                                                image={track.coverArt}
+                                                active={playerState.currentTrackId === track.id}
+                                                playing={playerState.isPlaying}
+                                                onPlay={() => handlePlayTrack(track.id)}
+                                                onClick={() => handlePlayTrack(track.id)}
                                             />
                                         ))}
-                                    </md-list>
+                                    </div>
                                 </motion.div>
                             ) : (
-                                <motion.div key="artists-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-0">
-                                    <md-list>
+                                <motion.div key="artists-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                                >
                                     {artistsList.map((artist) => (
-                                        <ArtistRow
+                                        <ArtistCard
                                             key={artist.key}
-                                            artist={artist.key}
-                                            displayArtist={artist.name}
-                                            trackCount={artist.count}
-                                            coverArt={artist.cover}
+                                            name={artist.name}
+                                            subtitle={`${artist.count} ${artist.count === 1 ? 'song' : 'songs'}`}
+                                            fallbackCover={artist.cover}
                                             onClick={() => { setSelectedArtist(artist.name); setSelectedArtistKey(artist.key); }}
                                         />
                                     ))}
-                                    </md-list>
                                 </motion.div>
                             )
                         )}
@@ -642,6 +542,52 @@ const Library: React.FC<LibraryProps> = ({
                                 playTrack={playTrack}
                                 refreshLibrary={refreshLibrary}
                             />
+                        )}
+
+                        {/* VIEW: ALBUMS */}
+                        {libraryTab === 'Albums' && (
+                            selectedAlbum ? (
+                                <motion.div key="album-detail" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }}>
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <md-icon-button onClick={() => setSelectedAlbum(null)}>
+                                            <md-icon class="material-symbols-rounded">arrow_back</md-icon>
+                                        </md-icon-button>
+                                        <div>
+                                             <h2 className="text-headline-medium font-bold">{selectedAlbum.name}</h2>
+                                             <p className="text-title-medium text-on-surface-variant">{selectedAlbum.artist}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                        {tracksToRender.map((track) => (
+                                            <LibraryCard
+                                                key={track.id}
+                                                title={track.title}
+                                                subtitle={formatDuration(track.duration)}
+                                                image={track.coverArt}
+                                                active={playerState.currentTrackId === track.id}
+                                                playing={playerState.isPlaying}
+                                                onPlay={() => handlePlayTrack(track.id)}
+                                                onClick={() => handlePlayTrack(track.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div key="albums-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                                >
+                                    {albumsList.map((album) => (
+                                        <LibraryCard
+                                            key={`${album.title}-${album.artist}`}
+                                            title={album.title}
+                                            subtitle={album.artist}
+                                            image={album.cover}
+                                            fallbackIcon="album"
+                                            onClick={() => setSelectedAlbum({ name: album.title, artist: album.artist })}
+                                        />
+                                    ))}
+                                </motion.div>
+                            )
                         )}
 
                         {/* VIEW: SETTINGS */}
