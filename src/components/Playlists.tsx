@@ -95,12 +95,13 @@ const PlaylistTrackItem = ({
     >
       <md-list-item
           type="button"
-          headline={track.title}
-          supportingText={track.artist}
-          trailingSupportingText={formatTime(track.duration)}
           style={{ cursor: 'pointer', '--md-list-item-leading-image-shape': '8px' }}
           onClick={() => onPlay()}
       >
+          <div slot="headline" className="text-on-surface font-medium">{track.title}</div>
+          <div slot="supporting-text" className="text-on-surface-variant">{track.artist}</div>
+          <div slot="trailing-supporting-text" className="text-on-surface-variant/80 text-xs">{formatTime(track.duration)}</div>
+
           {/* Drag Handle */}
           <div slot="start" onPointerDown={(e) => controls.start(e)} className="pr-3 cursor-grab active:cursor-grabbing text-on-surface-variant">
              <GripVertical size={20} />

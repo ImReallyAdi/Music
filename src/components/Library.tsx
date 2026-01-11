@@ -98,10 +98,13 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
         <div className="flex flex-col gap-2 py-2">
             <md-list-item
                 type="button"
-                headline={label}
-                supporting-text={subLabel}
-                style={{ borderRadius: '16px', '--md-list-item-leading-space': '0' }}
+                style={{
+                    borderRadius: '16px',
+                    '--md-list-item-leading-space': '0'
+                }}
             >
+                 <div slot="headline" className="text-on-surface">{label}</div>
+                 <div slot="supporting-text" className="text-on-surface-variant">{subLabel}</div>
                  <md-switch slot="end" selected={checked} onClick={(e: any) => {
                      onChange(!checked);
                  }}></md-switch>
