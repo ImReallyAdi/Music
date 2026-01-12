@@ -6,6 +6,7 @@ import '@material/web/button/filled-tonal-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/elevation/elevation.js';
 import '@material/web/chips/assist-chip.js';
+import '@material/web/ripple/ripple.js';
 
 // Material Web Types
 declare global {
@@ -16,6 +17,7 @@ declare global {
         'md-elevation': any;
         'md-icon': any;
         'md-assist-chip': any;
+        'md-ripple': any;
     }
   }
 }
@@ -47,14 +49,14 @@ const cardVariants: any = {
     scale: 1,
     transition: { type: "spring", stiffness: 350, damping: 30, mass: 1 }
   },
-  hover: { y: -8, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 20 } },
+  hover: { y: -12, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 20 } },
   tap: { scale: 0.96 }
 };
 
 // --- SKELETON LOADER ---
 const SkeletonCard = () => (
   <div className="flex flex-col gap-4">
-    <div className="aspect-square rounded-[24px] bg-surface-container-high relative overflow-hidden isolate">
+    <div className="aspect-square rounded-[32px] bg-surface-container-high relative overflow-hidden isolate">
       <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_1.5s_infinite] z-10" />
     </div>
     <div className="space-y-2 px-1">
@@ -74,16 +76,19 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
     onClick={() => onPlay(track.id)}
   >
     {/* Image Container */}
-    <div className="aspect-square rounded-[24px] bg-surface-container-highest overflow-hidden relative isolate shadow-elevation-1 group-hover:shadow-elevation-3 transition-shadow duration-300">
+    <div className="aspect-square rounded-[32px] bg-surface-container-highest overflow-hidden relative isolate shadow-elevation-1 group-hover:shadow-elevation-3 transition-shadow duration-300">
       <div className="absolute inset-0 bg-surface-container-highest z-0" />
+
+      {/* Artwork */}
       {track.coverArt ? (
         <motion.img 
           src={track.coverArt} 
           alt={track.title}
-          className="w-full h-full object-cover transition-transform duration-500 will-change-transform z-10 relative"
+          className="w-full h-full object-cover z-10 relative"
           variants={{
-             hover: { scale: 1.08 }
+             hover: { scale: 1.1 }
           }}
+          transition={{ duration: 0.5 }}
           loading="lazy"
         />
       ) : (
@@ -113,6 +118,9 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
             </div>
          </div>
       )}
+
+      {/* Ripple */}
+      <md-ripple></md-ripple>
     </div>
 
     {/* Text Content */}
@@ -165,55 +173,60 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       <div className="max-w-[1400px] mx-auto space-y-16 py-8">
 
         {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[32px] bg-surface-container-low p-8 md:p-12 border border-white/5">
+        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[56px] bg-surface-container-low p-8 md:p-16 shadow-elevation-1">
           {/* Decorative Background */}
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/10 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/20 via-tertiary/20 to-transparent blur-[80px] rounded-full pointer-events-none -translate-y-1/3 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/4" />
 
-          <div className="space-y-6 relative z-10">
+          <div className="space-y-8 relative z-10 max-w-2xl">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-                <md-assist-chip label="Discovery Mix" style={{ '--md-sys-color-primary': 'var(--md-sys-color-tertiary)' }}>
-                    <md-icon slot="icon" class="material-symbols-rounded filled">auto_awesome</md-icon>
-                </md-assist-chip>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm">
+                    <md-icon class="material-symbols-rounded filled">auto_awesome</md-icon>
+                    <span>Discovery Mix</span>
+                </div>
             </motion.div>
 
             <div>
-                <h2 className="text-display-medium md:text-display-large font-bold text-on-surface tracking-tight leading-tight">
-                Fresh Picks
+                <h2 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
+                  Fresh picks<br/>
+                  <span className="text-primary-container bg-primary/90 bg-clip-text text-transparent bg-gradient-to-r from-primary to-tertiary">Just for you</span>
                 </h2>
-                <p className="text-body-large text-on-surface-variant max-w-lg leading-relaxed pt-2 opacity-90">
-                A curated selection from your library, served fresh every time you visit.
+                <p className="text-headline-small text-on-surface-variant max-w-lg leading-relaxed pt-4 opacity-90 font-medium">
+                  A curated selection from your library, served fresh every time you visit.
                 </p>
             </div>
           </div>
           
           <div className="flex gap-4 flex-wrap relative z-10">
-            <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '56px' }}>
+            <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '64px', borderRadius: '32px' }}>
                 <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
-                Shuffle
+                <span className="text-title-medium">Shuffle</span>
             </md-filled-tonal-button>
 
             <md-filled-button
                 onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-                style={{ height: '56px', '--md-filled-button-container-color': 'var(--md-sys-color-primary)', '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' }}
+                style={{ height: '64px', borderRadius: '32px', '--md-filled-button-container-color': 'var(--md-sys-color-primary)', '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' }}
             >
                 <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
-                Play All
+                <span className="text-title-medium font-bold">Play All</span>
             </md-filled-button>
           </div>
         </header>
 
         {/* Recently Played Section */}
         {recentlyPlayed.length > 0 && (
-            <section className="space-y-6">
+            <section className="space-y-8">
                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-on-surface px-2"
+                  className="flex items-center gap-4 text-on-surface px-2"
                 >
-                    <md-icon class="material-symbols-rounded text-primary">schedule</md-icon>
+                    <div className="p-3 rounded-full bg-surface-container-high text-primary">
+                        <md-icon class="material-symbols-rounded">schedule</md-icon>
+                    </div>
                     <h3 className="text-headline-medium font-bold">Recently Played</h3>
                 </motion.div>
 
@@ -237,14 +250,16 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
         )}
 
         {/* Discovery Grid */}
-        <section className="space-y-6">
+        <section className="space-y-8">
             <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 text-on-surface px-2"
+                  className="flex items-center gap-4 text-on-surface px-2"
                 >
-                    <md-icon class="material-symbols-rounded text-tertiary">auto_awesome</md-icon>
-                    <h3 className="text-headline-medium font-bold">Just For You</h3>
+                    <div className="p-3 rounded-full bg-surface-container-high text-tertiary">
+                         <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
+                    </div>
+                    <h3 className="text-headline-medium font-bold">Jump Back In</h3>
             </motion.div>
              <motion.div
               variants={containerVariants}

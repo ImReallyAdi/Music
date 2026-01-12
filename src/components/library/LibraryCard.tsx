@@ -33,34 +33,37 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({
     <motion.div
       className="group relative flex flex-col gap-3 w-full cursor-pointer"
       onClick={onClick}
-      whileHover={{ y: -4 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+      whileHover={{ y: -8 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
     >
       {/* Image Container */}
-      <div className="relative aspect-square w-full rounded-[20px] overflow-hidden bg-surface-container-highest elevation-1 group-hover:elevation-3 transition-all duration-300">
+      <div className="relative aspect-square w-full rounded-[24px] overflow-hidden bg-surface-container-highest elevation-1 group-hover:elevation-3 transition-all duration-300">
+        <div className="absolute inset-0 bg-surface-container-highest z-0" />
+
         {customImage ? (
            customImage
         ) : image ? (
           <img
             src={image}
             alt={title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-10 relative"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-on-surface-variant/40">
+          <div className="w-full h-full flex items-center justify-center text-on-surface-variant/40 z-10 relative">
             <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>{fallbackIcon}</md-icon>
           </div>
         )}
 
         {/* Overlay / Play Button */}
-        <div className={`absolute inset-0 bg-black/30 transition-opacity duration-200 flex items-center justify-center gap-2 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        <div className={`absolute inset-0 bg-black/20 transition-opacity duration-200 flex items-center justify-center gap-2 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           {onPlay && (
             <button
               onClick={(e) => { e.stopPropagation(); onPlay(e); }}
-              className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95 cursor-pointer border-none outline-none z-10"
+              className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95 cursor-pointer border-none outline-none z-10"
             >
-              <md-icon class="material-symbols-rounded" style={{ fontSize: '28px' }}>
+              <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>
                 {active && playing ? 'pause' : 'play_arrow'}
               </md-icon>
             </button>
