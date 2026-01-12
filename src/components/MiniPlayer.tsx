@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Track, PlayerState } from '../types';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
@@ -57,12 +57,13 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       animate={{ y: 0, opacity: 1, scale: 1 }}
       exit={{ y: 150, opacity: 0, scale: 0.9 }}
       whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.8 }}
       onClick={onOpen}
       className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 md:left-auto md:right-6 md:w-[420px]
-                 h-[72px] bg-surface-container-high/95 backdrop-blur-2xl saturate-150 rounded-[20px]
-                 flex items-center pl-3 pr-3 shadow-elevation-3 z-[500] cursor-pointer
-                 border border-white/10 overflow-hidden group hover:shadow-elevation-4 transition-all"
+                 h-[76px] bg-surface-container-high/60 backdrop-blur-3xl saturate-200 rounded-[24px]
+                 flex items-center pl-3 pr-3 shadow-elevation-4 z-[500] cursor-pointer
+                 border border-white/10 overflow-hidden group hover:shadow-elevation-5 transition-all"
       layoutId="mini-player"
     >
       {/* Progress Bar at Bottom - Material Web */}
@@ -70,9 +71,10 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
          <md-linear-progress
             value={progress}
             style={{
-                '--md-linear-progress-track-height': '3px',
-                '--md-linear-progress-active-indicator-height': '3px',
-                '--md-linear-progress-track-color': 'rgba(255,255,255,0.1)',
+                '--md-linear-progress-track-height': '2px',
+                '--md-linear-progress-active-indicator-height': '2px',
+                '--md-linear-progress-track-color': 'transparent',
+                '--md-sys-color-primary': 'var(--md-sys-color-primary)',
                 width: '100%'
             }}
          ></md-linear-progress>
@@ -81,7 +83,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       {/* Album Art */}
       <motion.div
         layoutId={`artwork-${currentTrack.id}`}
-        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0 shadow-sm bg-surface-container-highest flex items-center justify-center border border-white/5"
+        className="relative w-[52px] h-[52px] rounded-[16px] overflow-hidden flex-shrink-0 shadow-md bg-surface-container-highest flex items-center justify-center border border-white/5"
       >
         {!imgError && currentTrack.coverArt ? (
           <img
@@ -112,15 +114,15 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-1">
-         <md-icon-button onClick={handleTogglePlay} style={{ '--md-icon-button-icon-color': 'var(--md-sys-color-primary)', '--md-icon-button-icon-size': '28px' }}>
-            <md-icon class="material-symbols-rounded">
+      <div className="flex items-center gap-2">
+         <md-icon-button onClick={handleTogglePlay} style={{ '--md-icon-button-icon-color': 'var(--md-sys-color-primary)', '--md-icon-button-icon-size': '32px' }}>
+            <md-icon class="material-symbols-rounded filled">
                 {playerState.isPlaying ? 'pause' : 'play_arrow'}
             </md-icon>
          </md-icon-button>
 
          {onNext && (
-           <md-icon-button onClick={handleNext} style={{ '--md-icon-button-icon-size': '28px' }}>
+           <md-icon-button onClick={handleNext} style={{ '--md-icon-button-icon-size': '32px' }}>
              <md-icon class="material-symbols-rounded">skip_next</md-icon>
            </md-icon-button>
          )}
