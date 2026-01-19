@@ -173,7 +173,7 @@ function MusicApp() {
 
   // --- FILE UPLOAD LOGIC ---
 
-  const processFiles = async (files: FileList | null) => {
+  const processFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setLoading({ active: true, progress: 0, message: 'Warming up the deck...' });
 
@@ -235,7 +235,7 @@ function MusicApp() {
     } finally {
       setLoading({ active: false, progress: 0, message: '' });
     }
-  };
+  }, [library.tracks, addToast, refreshLibrary]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     processFiles(e.target.files);
@@ -275,7 +275,7 @@ function MusicApp() {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }); 
+  }, [processFiles]);
 
   // --- KEYBOARD SHORTCUTS ---
   useEffect(() => {
