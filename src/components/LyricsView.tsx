@@ -24,6 +24,8 @@ interface LyricsViewProps {
   onTrackUpdate?: (track: Track) => void;
   lyricOffset?: number;
   setLyricOffset?: (offset: number) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const LyricsView: React.FC<LyricsViewProps> = ({
@@ -33,7 +35,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
   onClose,
   onTrackUpdate,
   lyricOffset = 0,
-  setLyricOffset
+  setLyricOffset,
+  isFullscreen = false,
+  onToggleFullscreen
 }) => {
   const [lyrics, setLyrics] = useState<Lyrics | null>(track.lyrics || null);
   const [loading, setLoading] = useState(false);
@@ -196,17 +200,27 @@ const LyricsView: React.FC<LyricsViewProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className="absolute inset-0 z-20 flex flex-col bg-black/80 backdrop-blur-3xl rounded-3xl overflow-hidden shadow-2xl border border-white/5"
+      className={`absolute inset-0 z-20 flex flex-col overflow-hidden rounded-3xl ${
+          isFullscreen ? 'bg-black/30 backdrop-blur-xl' : 'bg-black/40 backdrop-blur-md border border-white/5'
+      }`}
     >
       {/* --- Controls Header --- */}
       <div className="absolute top-0 left-0 right-0 z-50 p-4 md:p-6 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
-        {/* Placeholder for left side (if needed) */}
-        <div />
+        {/* Left: Fullscreen Toggle */}
+        <div className="pointer-events-auto">
+            {onToggleFullscreen && (
+                <md-icon-button onClick={onToggleFullscreen} style={{ '--md-icon-button-icon-size': '24px' }}>
+                    <md-icon class="material-symbols-rounded">
+                        {isFullscreen ? 'close_fullscreen' : 'open_in_full'}
+                    </md-icon>
+                </md-icon-button>
+            )}
+        </div>
 
         {/* Right Side Controls */}
         <div className="flex flex-col items-end gap-3 pointer-events-auto">
-          {/* Close Button */}
-          {onClose && (
+          {/* Close Button (only if not fullscreen or handled externally) */}
+          {!isFullscreen && onClose && (
              <md-icon-button onClick={onClose} style={{ '--md-icon-button-icon-size': '24px' }}>
                 <md-icon class="material-symbols-rounded">close</md-icon>
              </md-icon-button>

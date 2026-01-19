@@ -1,16 +1,18 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Track, Playlist } from '../types';
-import { getYouTubeVideo, getYouTubePlaylist, extractVideoId, extractPlaylistId, YouTubeTrack } from '../utils/youtube';
+import { dbService } from '../db';
+import { parseTrackMetadata } from '../utils/metadata';
 import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/text-button.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
-import '@material/web/chips/filter-chip.js';
 import '@material/web/progress/circular-progress.js';
 import '@material/web/list/list.js';
 import '@material/web/list/list-item.js';
+import '@material/web/labs/card/elevated-card.js';
+import '@material/web/ripple/ripple.js';
 
 // Declare Material Web Components
 declare global {
@@ -21,10 +23,11 @@ declare global {
       'md-text-button': any;
       'md-icon-button': any;
       'md-icon': any;
-      'md-filter-chip': any;
       'md-circular-progress': any;
       'md-list': any;
       'md-list-item': any;
+      'md-elevated-card': any;
+      'md-ripple': any;
     }
   }
 }
@@ -35,14 +38,19 @@ interface SearchProps {
   setSearchQuery: (query: string) => void;
   filteredTracks: Track[];
   playTrack: (id: string, options?: { customQueue: string[] }) => void;
-  onAddWebTrack?: (url: string, metadata?: YouTubeTrack) => void;
-
   libraryTracks: Record<string, Track>;
   playlists: Playlist[];
-  onAddYouTubeTrack: (track: YouTubeTrack) => void;
-  onAddYouTubeToPlaylist: (playlistId: string, track: YouTubeTrack) => void;
-  onCreatePlaylist: (name: string) => void;
+  refreshLibrary: () => void;
 }
+
+const isValidUrl = (string: string) => {
+  try {
+    new URL(string);
+    return true;
+  } catch (_) {
+    return false;
+  }
+};
 
 const Search: React.FC<SearchProps> = ({ 
   activeTab, 
@@ -50,17 +58,12 @@ const Search: React.FC<SearchProps> = ({
   setSearchQuery, 
   filteredTracks, 
   playTrack,
-  libraryTracks,
-  onAddYouTubeTrack
+  playlists,
+  refreshLibrary
 }) => {
-  const inputRef = useRef<any>(null); // Use any for web component ref
-  const [isWebMode, setIsWebMode] = useState(false);
-
-  // Import State
+  const inputRef = useRef<any>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
-  const [importedCount, setImportedCount] = useState(0);
-  const [totalToImport, setTotalToImport] = useState(0);
 
   // Auto-focus input when tab becomes active
   useEffect(() => {
@@ -69,13 +72,12 @@ const Search: React.FC<SearchProps> = ({
     }
   }, [activeTab]);
 
-  // Handle Search Input Change
   const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
     // @ts-ignore
     setSearchQuery(e.target.value);
+    setImportStatus('idle');
   };
 
-  // Handle Clear
   const handleClearSearch = () => {
     setSearchQuery('');
     setImportStatus('idle');
@@ -83,81 +85,71 @@ const Search: React.FC<SearchProps> = ({
     inputRef.current?.focus();
   };
 
-  // Optimize click handler to prevent array recreation in the loop
+  const isUrl = useMemo(() => isValidUrl(searchQuery), [searchQuery]);
+
+  // Derived Results
+  const matchedPlaylists = useMemo(() => {
+      if (!searchQuery || isUrl) return [];
+      const lower = searchQuery.toLowerCase();
+      return playlists.filter(p => p.name.toLowerCase().includes(lower));
+  }, [searchQuery, playlists, isUrl]);
+
   const handleTrackClick = useCallback((trackId: string) => {
     const queue = filteredTracks.map(t => t.id);
     playTrack(trackId, { customQueue: queue });
   }, [filteredTracks, playTrack]);
 
   const handleImport = async () => {
-    if (!searchQuery) return;
+    if (!isUrl) return;
 
     setImportStatus('loading');
-    setImportMessage('Analyzing link...');
-    setImportedCount(0);
-    setTotalToImport(0);
+    setImportMessage('Fetching audio...');
 
     try {
-        const playlistId = extractPlaylistId(searchQuery);
-        const videoId = extractVideoId(searchQuery);
-        const isExplicitPlaylist = searchQuery.includes('/playlist');
-
-        if (playlistId && (isExplicitPlaylist || !videoId)) {
-            setImportMessage('Fetching playlist info...');
-            const tracks = await getYouTubePlaylist(searchQuery);
-
-            if (tracks.length === 0) {
-                setImportStatus('error');
-                setImportMessage('No tracks found or playlist is private.');
-                return;
-            }
-
-            setTotalToImport(tracks.length);
-            setImportMessage(`Importing 0/${tracks.length} tracks...`);
-
-            for (let i = 0; i < tracks.length; i++) {
-                const track = tracks[i];
-                const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
-                if (!exists) {
-                    onAddYouTubeTrack(track);
-                }
-                setImportedCount(i + 1);
-                setImportMessage(`Importing ${i + 1}/${tracks.length} tracks...`);
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-
-            setImportStatus('success');
-            setImportMessage(`Successfully imported ${tracks.length} tracks!`);
-
-        } else if (videoId) {
-            setImportMessage('Fetching video info...');
-            const track = await getYouTubeVideo(searchQuery);
-
-            if (!track) {
-                setImportStatus('error');
-                setImportMessage('Video not found or is private.');
-                return;
-            }
-
-            const exists = Object.values(libraryTracks).some(t => t.source === 'youtube' && t.externalUrl === track.url);
-            if (exists) {
-                setImportStatus('error');
-                setImportMessage('Track already in library.');
-                return;
-            }
-
-            onAddYouTubeTrack(track);
-            setImportStatus('success');
-            setImportMessage(`Added "${track.title}" to library!`);
-
-        } else {
-            setImportStatus('error');
-            setImportMessage('Invalid YouTube URL.');
+        const existing = await dbService.findTrackByUrl(searchQuery);
+        if (existing) {
+             setImportStatus('error');
+             setImportMessage('Track already in library.');
+             return;
         }
+
+        const response = await fetch(searchQuery);
+        if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
+
+        const blob = await response.blob();
+        if (!blob.type.startsWith('audio/')) {
+             console.warn("Imported file might not be audio:", blob.type);
+             // Proceed anyway but warn? Or maybe it's octet-stream.
+        }
+
+        setImportMessage('Parsing metadata...');
+
+        const filename = searchQuery.split('/').pop()?.split('?')[0] || 'Unknown Track';
+        const metadata = await parseTrackMetadata(blob, decodeURIComponent(filename));
+
+        const newTrack: Track = {
+            id: crypto.randomUUID(),
+            title: metadata.title,
+            artist: metadata.artist,
+            album: metadata.album,
+            duration: metadata.duration,
+            coverArt: metadata.coverArt,
+            addedAt: Date.now(),
+            source: 'url',
+            externalUrl: searchQuery,
+            playCount: 0
+        };
+
+        await dbService.saveTrack(newTrack, blob);
+        refreshLibrary();
+
+        setImportStatus('success');
+        setImportMessage(`Added "${newTrack.title}" to library!`);
+
     } catch (error) {
         console.error("Import failed:", error);
         setImportStatus('error');
-        setImportMessage('Failed to import. Please check your internet connection.');
+        setImportMessage('Failed to import. Ensure the URL is a direct audio link and supports CORS.');
     }
   };
 
@@ -170,22 +162,21 @@ const Search: React.FC<SearchProps> = ({
       className="space-y-6 h-full flex flex-col px-4 md:px-8 max-w-5xl mx-auto w-full pt-4"
     >
       {/* Search Bar - Sticky Header */}
-      <div className="sticky top-0 z-20 pt-2 pb-4 bg-background/95 backdrop-blur-md -mx-4 px-4 md:-mx-8 md:px-8">
+      <div className="sticky top-0 z-20 pt-2 pb-4 bg-background/95 backdrop-blur-md -mx-4 px-4 md:-mx-8 md:px-8 transition-colors">
         <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
             <h1 className="text-display-small font-black text-on-surface tracking-tight">Search</h1>
 
-            {/* Material Text Field - Chunky */}
             <div className="relative">
                 <md-outlined-text-field
-                    label={isWebMode ? "Paste YouTube Link" : "Search Library"}
-                    placeholder={isWebMode ? "Video or Playlist URL..." : "Songs, Artists, Albums"}
+                    label={isUrl ? "Import URL" : "Search Library"}
+                    placeholder="Songs, Artists, Albums or Audio URL"
                     value={searchQuery}
                     onInput={handleInput}
                     ref={inputRef}
                     style={{ width: '100%', '--md-outlined-text-field-container-shape': '28px' }}
                 >
                     <md-icon slot="leading-icon" class="material-symbols-rounded">
-                        {isWebMode ? 'youtube_activity' : 'search'}
+                        {isUrl ? 'link' : 'search'}
                     </md-icon>
 
                     {searchQuery && (
@@ -195,172 +186,152 @@ const Search: React.FC<SearchProps> = ({
                     )}
                 </md-outlined-text-field>
             </div>
-
-            {/* Mode Toggle Chips */}
-             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar justify-start">
-                <md-filter-chip
-                    label="Library"
-                    selected={!isWebMode}
-                    onClick={() => setIsWebMode(false)}
-                />
-                <md-filter-chip
-                    label="YouTube Import"
-                    selected={isWebMode}
-                    onClick={() => setIsWebMode(true)}
-                >
-                     <md-icon slot="icon" class="material-symbols-rounded">cloud_download</md-icon>
-                </md-filter-chip>
-            </div>
         </div>
       </div>
 
-      {/* Results List */}
-      <div className="flex-1 flex flex-col gap-2 pb-32 overflow-y-auto w-full max-w-3xl mx-auto">
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto pb-32 w-full max-w-3xl mx-auto">
 
-        {/* Web Mode UI */}
-        {isWebMode && (
+        {/* IMPORT UI */}
+        {isUrl && (
             <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                 {!searchQuery && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-on-surface-variant space-y-4 max-w-sm"
-                    >
-                        <div className="w-24 h-24 rounded-full bg-surface-container-high flex items-center justify-center mx-auto mb-6 text-primary shadow-sm">
-                            <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>youtube_activity</md-icon>
-                        </div>
-                        <h3 className="text-headline-small font-bold text-on-surface">Import from YouTube</h3>
-                        <p className="text-body-large opacity-80">
-                            Paste a link to a video or playlist to add it directly to your library.
-                        </p>
-                    </motion.div>
-                 )}
-
-                 {searchQuery && importStatus === 'idle' && (
-                     <md-filled-button onClick={handleImport} style={{ '--md-filled-button-container-height': '56px' }}>
-                         <md-icon slot="icon" class="material-symbols-rounded">download</md-icon>
-                         Import Link
-                     </md-filled-button>
-                 )}
-
-                {importStatus === 'loading' && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center gap-6 w-full max-w-md"
-                    >
-                        <md-circular-progress indeterminate style={{ '--md-circular-progress-size': '64px' }}></md-circular-progress>
-                        <div className="text-body-large font-medium text-on-surface">{importMessage}</div>
-                        {totalToImport > 0 && (
-                            <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-primary"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(importedCount / totalToImport) * 100}%` }}
-                                    transition={{ type: "spring", stiffness: 50 }}
-                                />
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-
-                {importStatus === 'success' && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-4"
-                    >
-                        <div className="w-20 h-20 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-2">
-                            <md-icon class="material-symbols-rounded" style={{ fontSize: '40px' }}>check</md-icon>
-                        </div>
-                        <h3 className="text-headline-small font-bold text-on-surface">Success!</h3>
-                        <p className="text-body-large text-on-surface-variant">{importMessage}</p>
-                        <div className="mt-4">
-                            <md-text-button onClick={() => {
-                                    setSearchQuery('');
-                                    setImportStatus('idle');
-                                }}>
-                                Import another link
-                            </md-text-button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {importStatus === 'error' && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center gap-4"
-                    >
-                        <div className="w-20 h-20 rounded-full bg-error-container text-on-error-container flex items-center justify-center mb-2">
-                            <md-icon class="material-symbols-rounded" style={{ fontSize: '40px' }}>error</md-icon>
-                        </div>
-                        <h3 className="text-headline-small font-bold text-on-surface">Oops!</h3>
-                        <p className="text-body-large text-on-surface-variant">{importMessage}</p>
-                         <div className="mt-4">
-                            <md-text-button onClick={() => setImportStatus('idle')}>
-                                Try again
-                            </md-text-button>
-                         </div>
-                    </motion.div>
-                )}
-            </div>
-        )}
-
-        {/* Local Results */}
-        {!isWebMode && (
-            <AnimatePresence mode='popLayout'>
-            <md-list class="bg-transparent">
-            {filteredTracks.map(t => (
-                <motion.div
-                    layout
+                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    key={t.id}
-                >
-                    <md-list-item
-                        type="button"
-                        onClick={() => handleTrackClick(t.id)}
-                        style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
-                    >
-                        {/* Cover Art */}
-                        <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
-                            {t.coverArt ? (
-                            <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover"/>
-                            ) : (
-                            <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
-                            )}
-                        </div>
+                    className="flex flex-col items-center gap-6 w-full max-w-md bg-surface-container-low p-8 rounded-[32px] border border-outline-variant/10 shadow-sm"
+                 >
+                    <div className="w-20 h-20 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+                        <md-icon class="material-symbols-rounded" style={{ fontSize: '40px' }}>cloud_download</md-icon>
+                    </div>
 
-                        {/* Text Info */}
-                        <div slot="headline" className="text-on-surface font-bold truncate flex items-center gap-2">
-                             {t.title}
-                             {t.source === 'youtube' && (
-                                <span className="text-[10px] bg-error-container text-on-error-container px-1.5 py-0.5 rounded-md font-bold tracking-wide">WEB</span>
-                             )}
+                    <div>
+                        <h3 className="text-headline-small font-bold text-on-surface">Import Audio</h3>
+                        <p className="text-body-medium text-on-surface-variant mt-2 break-all line-clamp-2">
+                            {searchQuery}
+                        </p>
+                    </div>
+
+                    {importStatus === 'idle' && (
+                        <md-filled-button onClick={handleImport} style={{ width: '100%', height: '56px' }}>
+                             <md-icon slot="icon" class="material-symbols-rounded">download</md-icon>
+                             Import to Library
+                        </md-filled-button>
+                    )}
+
+                    {importStatus === 'loading' && (
+                        <div className="flex flex-col items-center gap-4 w-full">
+                            <md-circular-progress indeterminate></md-circular-progress>
+                            <span className="text-label-large text-primary animate-pulse">{importMessage}</span>
                         </div>
-                        <div slot="supporting-text" className="text-on-surface-variant truncate opacity-80">{t.artist}</div>
-                    </md-list-item>
-                </motion.div>
-            ))}
-            </md-list>
-            </AnimatePresence>
+                    )}
+
+                    {importStatus === 'success' && (
+                        <div className="flex flex-col items-center gap-4 w-full">
+                            <div className="text-primary font-bold flex items-center gap-2 bg-primary-container px-4 py-2 rounded-full">
+                                <md-icon class="material-symbols-rounded">check</md-icon>
+                                <span>Success</span>
+                            </div>
+                            <p className="text-body-medium">{importMessage}</p>
+                            <md-text-button onClick={handleClearSearch}>
+                                Search Library
+                            </md-text-button>
+                        </div>
+                    )}
+
+                    {importStatus === 'error' && (
+                        <div className="flex flex-col items-center gap-4 w-full">
+                             <div className="text-error font-bold flex items-center gap-2 bg-error-container px-4 py-2 rounded-full">
+                                <md-icon class="material-symbols-rounded">error</md-icon>
+                                <span>Error</span>
+                            </div>
+                            <p className="text-body-medium text-error">{importMessage}</p>
+                            <md-text-button onClick={() => setImportStatus('idle')}>Try Again</md-text-button>
+                        </div>
+                    )}
+                 </motion.div>
+            </div>
         )}
 
-        {/* Empty State */}
-        {searchQuery && ((!isWebMode && filteredTracks.length === 0)) && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-on-surface-variant/60"
-          >
-            <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
-              <md-icon class="material-symbols-rounded" style={{ fontSize: '40px', opacity: 0.5 }}>album</md-icon>
-            </div>
-            <p className="text-title-large font-bold">No tracks found</p>
-            <p className="text-body-medium">Try searching for a different artist or song</p>
-          </motion.div>
+        {/* LOCAL RESULTS */}
+        {!isUrl && searchQuery && (
+            <AnimatePresence mode="popLayout">
+                {/* Playlists */}
+                {matchedPlaylists.length > 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8">
+                        <h3 className="text-title-medium font-bold text-on-surface px-4 mb-4">Playlists</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 px-2">
+                            {matchedPlaylists.map(p => (
+                                <div key={p.id} className="relative group cursor-pointer">
+                                     <md-elevated-card
+                                        clickable
+                                        class="aspect-square relative overflow-hidden"
+                                        style={{ '--md-elevated-card-container-shape': '24px' }}
+                                     >
+                                         <div className="absolute inset-0 bg-surface-container-high flex items-center justify-center text-on-surface-variant/50">
+                                            <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>queue_music</md-icon>
+                                         </div>
+                                         <md-ripple></md-ripple>
+                                     </md-elevated-card>
+                                     <div className="mt-2 px-1">
+                                        <p className="font-bold text-on-surface truncate">{p.name}</p>
+                                        <p className="text-xs text-on-surface-variant">{p.trackIds.length} tracks</p>
+                                     </div>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Songs */}
+                {filteredTracks.length > 0 ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                         <h3 className="text-title-medium font-bold text-on-surface px-4 mb-2">Songs</h3>
+                         <md-list class="bg-transparent">
+                            {filteredTracks.map(t => (
+                                <motion.div
+                                    layout
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    key={t.id}
+                                >
+                                    <md-list-item
+                                        type="button"
+                                        onClick={() => handleTrackClick(t.id)}
+                                        style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
+                                    >
+                                        <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
+                                            {t.coverArt ? (
+                                            <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover"/>
+                                            ) : (
+                                            <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
+                                            )}
+                                        </div>
+
+                                        <div slot="headline" className="text-on-surface font-bold truncate">
+                                            {t.title}
+                                        </div>
+                                        <div slot="supporting-text" className="text-on-surface-variant truncate opacity-80">{t.artist}</div>
+
+                                        {t.source === 'url' && (
+                                            <div slot="end">
+                                                <md-icon class="material-symbols-rounded text-on-surface-variant opacity-50" style={{ fontSize: '18px' }}>link</md-icon>
+                                            </div>
+                                        )}
+                                    </md-list-item>
+                                </motion.div>
+                            ))}
+                        </md-list>
+                    </motion.div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/60">
+                        <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center mb-4">
+                        <md-icon class="material-symbols-rounded" style={{ fontSize: '40px', opacity: 0.5 }}>search_off</md-icon>
+                        </div>
+                        <p className="text-title-large font-bold">No tracks found</p>
+                        <p className="text-body-medium">Try searching for a different artist or song</p>
+                    </div>
+                )}
+            </AnimatePresence>
         )}
       </div>
     </motion.div>
