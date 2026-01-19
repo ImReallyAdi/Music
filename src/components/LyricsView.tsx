@@ -1,25 +1,9 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { fetchLyrics } from '../utils/lyrics';
 import { Track, Lyrics } from '../types';
+import { Loader2, Music2, Sparkles } from 'lucide-react';
 import { useToast } from './Toast';
-
-// Material Web Components
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/iconbutton/filled-icon-button.js'; // Added for emphasis
-import '@material/web/icon/icon.js';
-import '@material/web/progress/circular-progress.js'; // Standard MD3 loader
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-icon-button': any;
-      'md-filled-icon-button': any;
-      'md-icon': any;
-      'md-circular-progress': any;
-    }
-  }
-}
 
 interface LyricsViewProps {
   track: Track;
@@ -27,89 +11,59 @@ interface LyricsViewProps {
   onSeek: (time: number) => void;
   onClose?: () => void;
   onTrackUpdate?: (track: Track) => void;
-  lyricOffset?: number;
-  isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
 }
 
-const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v));
-
-const LyricsView: React.FC<LyricsViewProps> = ({
-  track,
-  currentTime: rawCurrentTime,
-  onSeek,
-  onTrackUpdate,
-  onClose,
-  lyricOffset = 0,
-  isFullscreen = false,
-  onToggleFullscreen
-}) => {
-  // Apply offset to current time
-  const currentTime = rawCurrentTime + (lyricOffset / 1000);
-  
-  const { addToast } = useToast();
-  
-  // State
+const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onTrackUpdate }) => {
   const [lyrics, setLyrics] = useState<Lyrics | null>(track.lyrics || null);
-  const [isFetching, setIsFetching] = useState(false); // Initial load
-  const [isEnhancing, setIsEnhancing] = useState(false); // AI Sync active
+  const [loading, setLoading] = useState(false);
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  // Refs
+  const { addToast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Smart Fetch Logic (Fixes "Loading" flash)
+  // Fetch Lyrics
   useEffect(() => {
     let mounted = true;
-
     const load = async () => {
-      const hasExistingLyrics = track.lyrics && !track.lyrics.error;
-      
-      // Only show skeleton if we have absolutely nothing
-      if (!hasExistingLyrics) {
-        setIsFetching(true);
-        setLyrics(null);
-      } else {
+      // Optimistic render
+      if (track.lyrics && !track.lyrics.error) {
         setLyrics(track.lyrics);
+        setLoading(false);
+      } else {
+        setLoading(true);
+        setLyrics(null);
+        setActiveLineIndex(-1);
       }
 
       try {
-        // Fetch in background if we have lyrics, or foreground if we don't
         const data = await fetchLyrics(track);
-
+        
         if (mounted) {
-          if (data && (!hasExistingLyrics || JSON.stringify(data) !== JSON.stringify(track.lyrics))) {
-            setLyrics(data);
-            if (onTrackUpdate && !data.error) {
-              onTrackUpdate({ ...track, lyrics: data });
-            }
+          if (data !== track.lyrics) {
+              setLyrics(data);
+              if (onTrackUpdate && !data.error) {
+                 onTrackUpdate({ ...track, lyrics: data });
+              }
           }
         }
       } catch (error) {
-        console.error("Lyrics load failed:", error);
+        console.error("Failed to load lyrics:", error);
       } finally {
-        if (mounted) setIsFetching(false);
+        if (mounted) setLoading(false);
       }
     };
-
     load();
     return () => { mounted = false; };
-  }, [track.id, track.title, track.artist]); // Removed onTrackUpdate from deps to prevent loops
+  }, [track.id, track.title, track.artist]); // Re-run if track changes
 
-  // 2. Non-blocking AI Enhancement
   const handleGenerateWordSync = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isEnhancing) return;
-
-    setIsEnhancing(true);
-    addToast("Enhancing sync with AI...", "info");
-
+    setLoading(true);
     try {
-      const data = await fetchLyrics(track, true, true); // force=true, sync=true
-      
+      const data = await fetchLyrics(track, true, true);
       setLyrics(data);
       if (onTrackUpdate && !data.error) {
         onTrackUpdate({ ...track, lyrics: data });
@@ -118,38 +72,49 @@ const LyricsView: React.FC<LyricsViewProps> = ({
       if (data.isWordSynced) {
         addToast("Lyrics enhanced!", "success");
       } else {
-        addToast("Could not enhance precision.", "error");
+        addToast("Enhancement failed. Try again.", "error");
       }
     } catch (error) {
-      console.error("Enhance failed:", error);
-      addToast("Enhancement failed", "error");
+      console.error("Failed to enhance lyrics:", error);
+      addToast("Failed to enhance lyrics", "error");
     } finally {
-      setIsEnhancing(false);
+      setLoading(false);
     }
   };
 
-  // 3. Optimized Line Detection
+  // Sync Active Line
   useEffect(() => {
     if (!lyrics || !lyrics.synced) return;
 
-    // Binary search could be faster, but findIndex is fine for <100 lines
+    // Find the current line (last line where time <= currentTime)
     const index = lyrics.lines.findIndex((line, i) => {
       const nextLine = lyrics.lines[i + 1];
       return line.time <= currentTime && (!nextLine || nextLine.time > currentTime);
     });
 
-    if (index !== activeLineIndex) {
+    if (index !== -1 && index !== activeLineIndex) {
       setActiveLineIndex(index);
     }
-  }, [currentTime, lyrics]); 
+  }, [currentTime, lyrics, activeLineIndex]);
 
-  // 4. Scroll Handling
+  // Handle User Interaction (Scroll)
   const handleUserScroll = useCallback(() => {
     setIsUserScrolling(true);
     if (userScrollTimeout.current) clearTimeout(userScrollTimeout.current);
-    userScrollTimeout.current = setTimeout(() => setIsUserScrolling(false), 2000);
+
+    userScrollTimeout.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 3000);
   }, []);
 
+  // Cleanup timeout
+  useEffect(() => {
+    return () => {
+      if (userScrollTimeout.current) clearTimeout(userScrollTimeout.current);
+    };
+  }, []);
+
+  // Auto Scroll logic
   useEffect(() => {
     if (activeLineIndex !== -1 && scrollRef.current && !isUserScrolling) {
       const activeEl = scrollRef.current.children[activeLineIndex] as HTMLElement;
@@ -159,239 +124,186 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     }
   }, [activeLineIndex, isUserScrolling]);
 
-  // 5. Active Word Calculation
-  const activeWordInfo = useMemo(() => {
-    if (!lyrics?.isWordSynced || activeLineIndex === -1) return null;
-    
-    const line = lyrics.lines[activeLineIndex];
-    if (!line.words?.length) return null;
-
-    const wIndex = line.words.findIndex((w, i) => {
-      const nextW = line.words![i + 1];
-      const nextTime = nextW?.time ?? w.endTime ?? Infinity;
-      return w.time <= currentTime && currentTime < nextTime;
-    });
-
-    const idx = wIndex === -1 ? (currentTime < line.words[0].time ? -1 : line.words.length - 1) : wIndex;
-    if (idx === -1) return null;
-
-    const word = line.words[idx];
-    const nextTime = word.endTime ?? line.words[idx + 1]?.time ?? (word.time + 0.5);
-    const progress = clamp((currentTime - word.time) / (nextTime - word.time), 0, 1);
-
-    return { index: idx, progress, word };
-  }, [lyrics, activeLineIndex, currentTime]);
-
-  // -- RENDERERS --
-
-  const renderSkeleton = () => (
-    <div className="w-full h-full px-8 py-20 flex flex-col items-center gap-8 opacity-50">
-      <div className="w-16 h-16 rounded-full bg-surface-variant animate-pulse mb-4" />
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="w-full max-w-lg h-8 rounded-full bg-surface-variant/30 animate-pulse" 
-             style={{ width: `${80 - (i * 10) + (Math.random() * 20)}%` }} />
-      ))}
-    </div>
-  );
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      transition={{ duration: 0.4, type: "spring", bounce: 0.2 }}
-      className={`absolute inset-0 z-20 flex flex-col overflow-hidden shadow-2xl bg-black ${
-        isFullscreen ? 'rounded-none' : 'rounded-[32px]'
-      }`}
-    >
-      {/* 1. Dynamic Background from Cover Art */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-         <motion.img
-           key={track.coverArt}
-           src={track.coverArt}
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           transition={{ duration: 1 }}
-           className="w-full h-full object-cover blur-[80px] scale-150 brightness-[0.4]"
-           alt=""
-         />
-         {/* Tonal Scrim for Readability */}
-         <div className="absolute inset-0 bg-surface/40 mix-blend-multiply" />
-         {/* Gradient Vignette */}
-         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
-      </div>
-
-      {/* Header - Glassmorphism */}
-      <div className="relative z-50 px-4 py-3 flex items-center justify-between backdrop-blur-md bg-white/5 border-b border-white/5">
-        {/* Track Info */}
-        <div className="flex flex-col ml-2">
-          <span className="text-title-medium font-bold text-on-surface tracking-wide truncate max-w-[200px]">
-            {track.title}
-          </span>
-          <span className="text-label-medium font-medium text-on-surface-variant truncate max-w-[200px]">
-            {track.artist}
-          </span>
+  // Render Content
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center text-white/50">
+          <Loader2 className="animate-spin mb-4" size={32} />
+          <p className="font-medium tracking-wide">Syncing with Maths ❤️‍🔥...</p>
         </div>
+      );
+    }
 
-        {/* Actions Toolbar */}
-        <div className="flex items-center gap-1 bg-black/20 p-1 rounded-full border border-white/5">
-          {onToggleFullscreen && (
-            <md-icon-button onClick={onToggleFullscreen} title="Toggle Fullscreen">
-              <md-icon class="material-symbols-rounded text-on-surface">
-                {isFullscreen ? 'close_fullscreen' : 'open_in_full'}
-              </md-icon>
-            </md-icon-button>
-          )}
-
-          {/* Primary Action: Enhanced Button */}
-          <div className="relative group">
-            <md-filled-icon-button 
-              onClick={handleGenerateWordSync} 
-              disabled={isEnhancing}
-              title="AI Magic Sync"
-              style={{
-                '--md-sys-color-primary': isEnhancing ? 'var(--md-sys-color-surface-variant)' : 'var(--md-sys-color-primary-container)',
-                '--md-sys-color-on-primary': isEnhancing ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-primary-container)',
-              }}
-            >
-              {isEnhancing ? (
-                <md-circular-progress indeterminate style={{'--md-circular-progress-size': '20px', '--md-circular-progress-active-indicator-width': '12'}} />
-              ) : (
-                <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
-              )}
-            </md-filled-icon-button>
-          </div>
-
-          {onClose && (
-            <md-icon-button onClick={onClose} title="Close">
-              <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
-            </md-icon-button>
-          )}
+    if (!lyrics || (lyrics.lines.length === 0 && !lyrics.plain)) {
+       return (
+        <div className="w-full h-full flex flex-col items-center justify-center text-white/50 px-8 text-center">
+          <Music2 className="mb-6 opacity-40" size={56} />
+          <p className="text-xl font-bold mb-2">No Lyrics Found 😖</p>
+          <p className="text-sm opacity-60 max-w-[200px]">
+            We couldn't find lyrics for this song 🥺
+          </p>
         </div>
-      </div>
+      );
+    }
 
-      {/* Main Content Area */}
-      <div 
+    if (!lyrics.synced && lyrics.plain) {
+        return (
+            <div className="w-full h-full overflow-y-auto px-8 py-12 text-center no-scrollbar mask-image-gradient">
+                <p className="text-white/90 whitespace-pre-wrap text-xl leading-relaxed font-medium">
+                    {lyrics.plain}
+                </p>
+            </div>
+        );
+    }
+
+    return (
+      <div
         ref={containerRef}
-        className="relative z-10 flex-1 overflow-y-auto no-scrollbar scroll-smooth outline-none"
         onWheel={handleUserScroll}
         onTouchMove={handleUserScroll}
-        tabIndex={0}
+        className="w-full h-full overflow-y-auto px-4 py-[50vh] no-scrollbar mask-image-gradient"
+        style={{ scrollBehavior: 'smooth' }}
       >
-        {isFetching ? (
-          renderSkeleton()
-        ) : !lyrics || (lyrics.lines.length === 0 && !lyrics.plain) ? (
-          <div className="flex flex-col items-center justify-center h-full text-on-surface-variant gap-4">
-            <md-icon class="material-symbols-rounded text-[48px] opacity-40">music_off</md-icon>
-            <p className="text-body-large">Lyrics not available</p>
-          </div>
-        ) : lyrics.synced ? (
-          <div className="py-[45vh] px-6 max-w-4xl mx-auto flex flex-col gap-6">
-            <div ref={scrollRef} className="contents">
-              {lyrics.lines.map((line, i) => {
+        <div ref={scrollRef} className="flex flex-col gap-8 text-left pl-4 pr-2 max-w-3xl mx-auto">
+            {lyrics.lines.map((line, i) => {
                 const isActive = i === activeLineIndex;
                 const isPast = i < activeLineIndex;
                 
-                // --- Word Sync Rendering ---
-                if (lyrics.isWordSynced && line.words?.length) {
-                  return (
-                    <motion.div
-                      key={i}
-                      layout
-                      onClick={() => onSeek(line.time - (lyricOffset/1000))}
-                      className={`cursor-pointer origin-left transition-all duration-500`}
-                    >
-                      <p className={`font-bold leading-tight flex flex-wrap gap-x-[0.3em] gap-y-2 ${
-                        line.words.length > 8 ? 'text-4xl md:text-5xl' : 'text-5xl md:text-6xl'
-                      } tracking-tight`}>
-                        {line.words.map((word, wIdx) => {
-                          const isWordActive = isActive && activeWordInfo?.index === wIdx;
-                          const isWordPast = isActive && activeWordInfo?.index! > wIdx;
-                          
-                          return (
-                            <span 
-                              key={wIdx} 
-                              className="relative inline-block transition-all duration-200"
-                              style={{
-                                // Word-level activation: Primary for active word, Muted for others
-                                color: isWordActive
-                                    ? 'var(--md-sys-color-primary)'
-                                    : (isWordPast || isPast
-                                        ? 'var(--md-sys-color-on-surface)'
-                                        : 'var(--md-sys-color-on-surface-variant)'),
-                                opacity: isWordActive ? 1 : (isWordPast || isPast ? 0.8 : 0.4),
-                                transform: isWordActive ? 'scale(1.1) translateY(-2px)' : 'scale(1)',
-                                textShadow: isWordActive ? '0 0 30px var(--md-sys-color-primary)' : 'none',
-                                filter: isWordActive ? 'brightness(1.2)' : 'none'
-                              }}
-                            >
-                              {word.text}
-                            </span>
-                          );
-                        })}
-                      </p>
-                    </motion.div>
-                  );
+                // ----------------------------------------------------
+                // FIX: Detect if line is long (> 10 words)
+                // This prevents vertical filling by reducing font size for dense lines
+                // ----------------------------------------------------
+                const wordCount = line.words ? line.words.length : line.text.split(' ').length;
+                const isLongLine = wordCount > 10;
+                
+                // Word-level Sync Rendering
+                if (lyrics.isWordSynced && line.words && line.words.length > 0) {
+                      return (
+                        <motion.div
+                            key={i}
+                            layout
+                            onClick={() => onSeek(line.time)}
+                            initial={{ opacity: 0.5, scale: 0.95 }}
+                            animate={{
+                                scale: isActive ? 1 : 0.95,
+                                opacity: isActive ? 1 : isPast ? 0.3 : 0.5,
+                                filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                                y: 0
+                            }}
+                            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                            className="cursor-pointer origin-left will-change-transform"
+                        >
+                             {/* Applied Logic: 
+                                 If isLongLine is true, we use text-2xl/3xl instead of text-3xl/4xl 
+                             */}
+                             <p className={`font-bold leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 ${
+                                isLongLine 
+                                  ? 'text-2xl md:text-3xl' // Smaller text for long lines
+                                  : 'text-3xl md:text-4xl' // Standard large text for short lines
+                             }`}>
+                               {line.words.map((word, wIdx) => {
+                                   const nextWordTime = word.endTime ?? line.words![wIdx + 1]?.time ?? Infinity;
+                                   const isWordActive = isActive && currentTime >= word.time && currentTime < nextWordTime;
+                                   const isWordPast = isActive && currentTime >= nextWordTime;
+
+                                   return (
+                                       <span 
+                                         key={wIdx}
+                                         className="relative inline-block transition-transform duration-200"
+                                         style={{
+                                            transform: isWordActive ? 'scale(1.1)' : 'scale(1)',
+                                         }}
+                                       >
+                                            <span
+                                             className="relative z-10 transition-colors duration-200"
+                                             style={{
+                                                 color: isActive
+                                                   ? (isWordActive || isWordPast ? '#ffffff' : 'rgba(255,255,255,0.3)')
+                                                   : 'inherit',
+                                             }}
+                                            >
+                                               {word.text}
+                                            </span>
+
+                                            {isWordActive && (
+                                              <motion.span
+                                                layoutId="activeWordGlow"
+                                                className="absolute inset-0 bg-white/20 blur-lg rounded-full -z-10 scale-150"
+                                                transition={{ duration: 0.2 }}
+                                              />
+                                            )}
+                                       </span>
+                                   );
+                               })}
+                             </p>
+                             {line.translation && (
+                               <motion.p
+                                 initial={{ opacity: 0 }}
+                                 animate={{ opacity: isActive ? 0.7 : 0.4 }}
+                                 className="text-xl font-medium text-white mt-3 block"
+                               >
+                                 {line.translation}
+                               </motion.p>
+                             )}
+                        </motion.div>
+                    );
                 }
 
-                // --- Line Sync Rendering ---
+                // Standard Line Sync
                 return (
-                  <motion.div
-                    key={i}
-                    layout
-                    onClick={() => onSeek(line.time - (lyricOffset/1000))}
-                    animate={{
-                      scale: isActive ? 1 : 0.95,
-                      opacity: isActive ? 1 : isPast ? 0.4 : 0.3,
-                      x: isActive ? 0 : 0,
-                      filter: isActive ? 'blur(0px)' : 'blur(1.5px)'
-                    }}
-                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                    className="cursor-pointer origin-left group py-4"
-                  >
-                    <p className={`font-bold transition-colors duration-300 tracking-tight ${
-                       isActive
-                        ? 'text-4xl md:text-5xl text-primary'
-                        : 'text-2xl md:text-3xl text-on-surface-variant group-hover:text-on-surface'
-                    }`}>
-                      {line.text}
-                    </p>
-                    {line.translation && (
-                      <p className={`text-title-medium text-secondary mt-2 font-medium transition-all ${isActive ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
-                        {line.translation}
-                      </p>
-                    )}
-                  </motion.div>
+                    <motion.div
+                        key={i}
+                        layout
+                        onClick={() => onSeek(line.time)}
+                        initial={{ opacity: 0.5, scale: 0.95 }}
+                        animate={{
+                            scale: isActive ? 1 : 0.95,
+                            opacity: isActive ? 1 : isPast ? 0.3 : 0.5,
+                            filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                            color: isActive ? '#ffffff' : 'rgba(255,255,255,0.5)'
+                        }}
+                        transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                        className="cursor-pointer origin-left will-change-transform"
+                    >
+                         {/* Applied Logic here as well for consistency */}
+                         <p className={`font-bold leading-tight ${isActive ? 'drop-shadow-lg' : ''} ${
+                            isLongLine 
+                                ? 'text-2xl md:text-3xl' 
+                                : 'text-3xl md:text-4xl'
+                         }`}>
+                           {line.text}
+                         </p>
+                         {line.translation && (
+                           <p className="text-xl font-medium text-white/60 mt-3">
+                             {line.translation}
+                           </p>
+                         )}
+                    </motion.div>
                 );
-              })}
-            </div>
-          </div>
-        ) : (
-          /* Plain Lyrics */
-          <div className="py-20 px-8 text-center whitespace-pre-wrap text-body-large text-on-surface leading-relaxed font-medium">
-            {lyrics.plain}
-          </div>
-        )}
+            })}
+        </div>
       </div>
+    );
+  };
 
-      {/* Footer Gradient Mask */}
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-10" />
-      
-      {/* Scroll Hint */}
-      <AnimatePresence>
-        {isUserScrolling && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
-          >
-            <div className="bg-surface-container-high/50 backdrop-blur-md px-4 py-2 rounded-full text-label-medium font-medium text-on-surface shadow-lg border border-outline-variant">
-              Auto-scroll paused
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+  return (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-20 flex flex-col bg-black/60 backdrop-blur-2xl rounded-t-3xl md:rounded-2xl overflow-hidden"
+    >
+      <div className="absolute top-6 right-6 z-50">
+        <button
+           onClick={handleGenerateWordSync}
+           className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all hover:scale-105 active:scale-95"
+           title="Estimate Word Timing"
+         >
+           <Sparkles size={18} className={loading ? 'animate-pulse text-primary' : ''} />
+         </button>
+      </div>
+      {renderContent()}
     </motion.div>
   );
 };
