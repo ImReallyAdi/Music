@@ -1,8 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import '@material/web/labs/card/elevated-card.js';
 import '@material/web/ripple/ripple.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-elevated-card': any;
+    }
+  }
+}
 
 interface LibraryCardProps {
   title: string;
@@ -31,68 +40,72 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({
 }) => {
   return (
     <motion.div
-      className="group relative flex flex-col gap-3 w-full cursor-pointer"
+      className="group relative h-full"
       onClick={onClick}
-      whileHover={{ y: -8 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ y: -4 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
     >
-      {/* Image Container */}
-      <div className="relative aspect-square w-full rounded-[24px] overflow-hidden bg-surface-container-highest elevation-1 group-hover:elevation-3 transition-all duration-300">
-        <div className="absolute inset-0 bg-surface-container-highest z-0" />
+      <md-elevated-card
+        clickable
+        class="w-full h-full flex flex-col p-0 overflow-hidden"
+        style={{ '--md-elevated-card-container-shape': '24px' }}
+      >
+          {/* Image Container */}
+          <div className="relative aspect-square w-full bg-surface-container-highest overflow-hidden">
+            <div className="absolute inset-0 bg-surface-container-highest z-0" />
 
-        {customImage ? (
-           customImage
-        ) : image ? (
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-10 relative"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-on-surface-variant/40 z-10 relative">
-            <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>{fallbackIcon}</md-icon>
+            {customImage ? (
+               customImage
+            ) : image ? (
+              <img
+                src={image}
+                alt={title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-10 relative"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-on-surface-variant/40 z-10 relative">
+                <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>{fallbackIcon}</md-icon>
+              </div>
+            )}
+
+            {/* Overlay / Play Button */}
+            <div className={`absolute inset-0 bg-black/20 transition-opacity duration-200 flex items-center justify-center gap-2 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              {onPlay && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPlay(e); }}
+                  className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95 cursor-pointer border-none outline-none z-10"
+                >
+                  <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>
+                    {active && playing ? 'pause' : 'play_arrow'}
+                  </md-icon>
+                </button>
+              )}
+            </div>
+
+            {/* Actions Overlay (Top Right) */}
+            {actions && (
+               <div
+                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-2"
+                 onClick={(e) => e.stopPropagation()}
+               >
+                  {actions}
+               </div>
+            )}
+
+            <md-ripple></md-ripple>
           </div>
-        )}
 
-        {/* Overlay / Play Button */}
-        <div className={`absolute inset-0 bg-black/20 transition-opacity duration-200 flex items-center justify-center gap-2 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-          {onPlay && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPlay(e); }}
-              className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95 cursor-pointer border-none outline-none z-10"
-            >
-              <md-icon class="material-symbols-rounded" style={{ fontSize: '32px' }}>
-                {active && playing ? 'pause' : 'play_arrow'}
-              </md-icon>
-            </button>
-          )}
-        </div>
-
-        {/* Actions Overlay (Top Right) */}
-        {actions && (
-           <div
-             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-2"
-             onClick={(e) => e.stopPropagation()}
-           >
-              {actions}
-           </div>
-        )}
-
-        {/* Interactive Ripple */}
-        <md-ripple></md-ripple>
-      </div>
-
-      {/* Metadata */}
-      <div className="flex flex-col gap-0.5 px-1">
-        <h3 className={`text-title-medium font-bold truncate w-full ${active ? 'text-primary' : 'text-on-surface'}`}>
-           {title}
-        </h3>
-        <p className="text-body-medium text-on-surface-variant truncate opacity-80">
-          {subtitle}
-        </p>
-      </div>
+          {/* Metadata */}
+          <div className="flex flex-col gap-0.5 p-4">
+            <h3 className={`text-title-medium font-bold truncate w-full ${active ? 'text-primary' : 'text-on-surface'}`}>
+               {title}
+            </h3>
+            <p className="text-body-medium text-on-surface-variant truncate opacity-80">
+              {subtitle}
+            </p>
+          </div>
+      </md-elevated-card>
     </motion.div>
   );
 };

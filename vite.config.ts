@@ -14,24 +14,69 @@ export default defineConfig(({ mode }) => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['adi.png', 'adi.ico'], // Add your static assets here
+          includeAssets: ['adi.png', 'adi.ico'],
           manifest: {
             name: 'Adi Music',
             short_name: 'Music',
-            theme_color: '#000000',
-            background_color: '#000000',
-            display: 'standalone',
+            description: 'Stream and organize your personal music library.',
+            categories: ["music", "entertainment", "multimedia"],
+            id: "/",
+            start_url: "/?source=pwa",
+            scope: "/",
+            display: "standalone",
+            display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
+            orientation: "portrait-primary",
+            background_color: '#121016', // Using --md-sys-color-surface value
+            theme_color: '#121016',
             icons: [
               {
-                src: 'IMG_0296.png', // Ensure this matches your file in /public
-                sizes: '192x192',
-                type: 'image/png'
+                src: 'adi.png',
+                sizes: '192x192', // Assuming adi.png can be used here, ideally we'd have specific sizes
+                type: 'image/png',
+                purpose: 'any'
               },
               {
-                src: 'IMG_0296.png',
+                src: 'adi.png',
                 sizes: '512x512',
-                type: 'image/png'
+                type: 'image/png',
+                purpose: 'any'
+              },
+              {
+                src: 'adi.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'maskable'
               }
+            ],
+            shortcuts: [
+                {
+                  name: "Search",
+                  short_name: "Search",
+                  url: "/",
+                  icons: [{ src: "adi.png", sizes: "192x192", type: "image/png" }]
+                },
+                {
+                  name: "My Library",
+                  short_name: "Library",
+                  url: "/",
+                  icons: [{ src: "adi.png", sizes: "192x192", type: "image/png" }]
+                }
+            ],
+            screenshots: [
+                {
+                  src: "adi.png", // Using adi.png as placeholder for screenshot if no actual screenshot exists
+                  sizes: "1170x2532",
+                  type: "image/png",
+                  form_factor: "narrow",
+                  label: "Now Playing Screen"
+                },
+                {
+                  src: "adi.png",
+                  sizes: "1920x1080",
+                  type: "image/png",
+                  form_factor: "wide",
+                  label: "Desktop Library View"
+                }
             ]
           }
         })
