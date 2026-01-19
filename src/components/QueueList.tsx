@@ -38,13 +38,23 @@ const QueueItem = memo(function QueueItem({
 }: QueueItemProps) {
   const controls = useDragControls();
 
+  // FIX: Explicitly set MD3 color tokens to ensure text is visible inside Shadow DOM
   const listItemStyle: React.CSSProperties = {
     cursor: 'pointer',
     '--md-list-item-leading-image-height': '56px',
     '--md-list-item-leading-image-width': '56px',
     '--md-list-item-leading-image-shape': '16px',
-    '--md-list-item-headline-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
-    '--md-list-item-supporting-text-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
+    
+    // Headline (Title) Color
+    '--md-list-item-headline-color': isCurrent 
+      ? 'var(--md-sys-color-primary)' 
+      : 'var(--md-sys-color-on-surface)',
+      
+    // Supporting Text (Artist) Color
+    '--md-list-item-supporting-text-color': isCurrent 
+      ? 'var(--md-sys-color-primary)' 
+      : 'var(--md-sys-color-on-surface-variant)',
+      
     backgroundColor: isCurrent ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
     borderRadius: 24,
     marginBottom: 8,
@@ -52,9 +62,7 @@ const QueueItem = memo(function QueueItem({
     width: '100%',
   } as React.CSSProperties;
 
-  // Build the md-list-item content once
-  // ts-ignore because md-list-item is a custom element; React will forward attributes to DOM.
-  // @ts-ignore
+  // @ts-ignore - Custom Element
   const listItem = (
     // @ts-ignore
     <md-list-item
@@ -85,6 +93,7 @@ const QueueItem = memo(function QueueItem({
           <img
             src={track.coverArt}
             alt={track.title}
+            loading="lazy"
             className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
           />
           {isCurrent && (
@@ -104,9 +113,15 @@ const QueueItem = memo(function QueueItem({
         </div>
       </div>
 
-      <div slot="end" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div slot="end" className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
         {/* @ts-ignore */}
-        <md-icon-button onClick={onRemove} title="Remove">
+        <md-icon-button 
+            onClick={(e: any) => { 
+                e.stopPropagation(); 
+                onRemove(); 
+            }} 
+            title="Remove"
+        >
           <md-icon className="material-symbols-rounded">close</md-icon>
         </md-icon-button>
       </div>
@@ -154,7 +169,7 @@ const QueueList: React.FC<QueueListProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const activeTrackRef = useRef<HTMLDivElement | null>(null);
 
-  // Split into history / current / upcoming and determine if reordering is allowed
+  // Split into history / current / upcoming
   const { history, current, upcoming, canReorder } = useMemo(() => {
     if (!queue || queue.length === 0) {
       return { history: [] as string[], current: null as string | null, upcoming: [] as string[], canReorder: false };
@@ -177,7 +192,7 @@ const QueueList: React.FC<QueueListProps> = ({
     };
   }, [queue, currentTrackId]);
 
-  // Scroll to the active/current track when it changes (give the layout a moment)
+  // Scroll to current track on change
   useEffect(() => {
     const t = setTimeout(() => {
       activeTrackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -187,7 +202,6 @@ const QueueList: React.FC<QueueListProps> = ({
 
   const handleReorderUpcoming = useCallback(
     (newUpcoming: string[]) => {
-      // Reconstruct the full queue preserving history and current
       const base = [...history];
       if (current) base.push(current);
       const merged = [...base, ...newUpcoming].filter(Boolean);
@@ -196,7 +210,7 @@ const QueueList: React.FC<QueueListProps> = ({
     [history, current, onReorder]
   );
 
-  // Render helpers
+  // Renderers
   const renderHistory = useMemo(() => {
     if (!history || history.length === 0) return null;
     return (
@@ -226,7 +240,6 @@ const QueueList: React.FC<QueueListProps> = ({
         </motion.div>
       </AnimatePresence>
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [history, tracks, onPlay, onRemove]);
 
   const upcomingList = useMemo(() => {
@@ -267,7 +280,7 @@ const QueueList: React.FC<QueueListProps> = ({
       );
     }
 
-    // Static fallback if reorder disabled
+    // Static fallback
     return (
       <div className="flex flex-col gap-1">
         {upcoming.map((trackId, idx) => {
@@ -284,7 +297,6 @@ const QueueList: React.FC<QueueListProps> = ({
         })}
       </div>
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upcoming, tracks, canReorder, onPlay, onRemove, handleReorderUpcoming]);
 
   // --- Empty State ---
@@ -293,6 +305,12 @@ const QueueList: React.FC<QueueListProps> = ({
       <div className="flex flex-col h-full bg-surface text-on-surface">
         <div className="flex w-full justify-between items-center px-6 pt-6">
           <h3 className="text-headline-medium font-bold">Queue</h3>
+          {onClose && (
+            // @ts-ignore
+            <md-icon-button onClick={onClose}>
+                <md-icon class="material-symbols-rounded">close</md-icon>
+            </md-icon-button>
+          )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
           <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center">
@@ -317,11 +335,16 @@ const QueueList: React.FC<QueueListProps> = ({
           <h3 className="text-headline-medium font-bold">Queue</h3>
           <span className="text-title-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
         </div>
+        {onClose && (
+            // @ts-ignore
+            <md-icon-button onClick={onClose}>
+                <md-icon class="material-symbols-rounded">close</md-icon>
+            </md-icon-button>
+        )}
       </div>
 
       {/* Main Scroll Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 pb-32">
-        {/* History */}
         {renderHistory}
 
         {/* Current (Hero) */}
