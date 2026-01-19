@@ -43,6 +43,7 @@ const formatTime = (seconds: number) => {
 interface FullPlayerProps {
   currentTrack: Track | null;
   playerState: PlayerState;
+  allTracks: Record<string, Track>;
   isPlayerOpen: boolean;
   onClose: () => void;
   togglePlay: () => void;
@@ -68,6 +69,7 @@ interface FullPlayerProps {
 const FullPlayer: React.FC<FullPlayerProps> = ({
   currentTrack,
   playerState,
+  allTracks,
   isPlayerOpen,
   onClose,
   togglePlay,
@@ -89,7 +91,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const [showQueue, setShowQueue] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [isLyricsFullscreen, setIsLyricsFullscreen] = useState(false);
-  const [tracks, setTracks] = useState<Record<string, Track>>({});
 
   // Local state for the slider to ensure immediate feedback
   const [localScrubValue, setLocalScrubValue] = useState<number | null>(null);
@@ -146,24 +147,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       setLocalScrubValue(null);
       if (endScrub) endScrub();
   };
-
-  useEffect(() => {
-    if (!isPlayerOpen) return;
-    let isMounted = true;
-    (async () => {
-      try {
-        const all = await dbService.getAllTracks();
-        if (isMounted) {
-          const map: Record<string, Track> = {};
-          all.forEach(t => (map[t.id] = t));
-          setTracks(map);
-        }
-      } catch (error) {
-        console.error("Failed to load tracks:", error);
-      }
-    })();
-    return () => { isMounted = false; };
-  }, [isPlayerOpen]);
 
   const toggleRepeat = useCallback(() => {
     const modes: RepeatMode[] = ['OFF', 'ALL', 'ONE'];
@@ -306,7 +289,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     <QueueList
                       queue={playerState.queue}
                       currentTrackId={playerState.currentTrackId}
-                      tracks={tracks}
+                      tracks={allTracks}
                       onReorder={handleReorder}
                       onPlay={(id) => playTrack(id, { fromQueue: true })}
                       onRemove={onRemoveTrack || (() => {})}
