@@ -93,6 +93,21 @@ export default {
         'xs': '2px',
         '3xl': '64px',
       },
+      animation: {
+        'shimmer': 'shimmer 1.5s infinite linear',
+        'gradient': 'gradient 4s ease infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        gradient: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+      },
     },
   },
   plugins: [],
