@@ -1,6 +1,9 @@
 import React, { memo, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Track } from '../types';
+// Ensure you have a types file or define Track locally if needed
+import { Track } from '../types'; 
+
+// Import Material Web Components
 import '@material/web/button/filled-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/icon/icon.js';
@@ -9,17 +12,18 @@ import '@material/web/chips/assist-chip.js';
 import '@material/web/ripple/ripple.js';
 import '@material/web/labs/card/elevated-card.js';
 
-// Material Web Types
+// --- TYPE DEFINITIONS ---
+// Extending global JSX for custom elements (Material Web)
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-        'md-filled-button': any;
-        'md-filled-tonal-button': any;
-        'md-elevation': any;
-        'md-icon': any;
-        'md-assist-chip': any;
-        'md-ripple': any;
-        'md-elevated-card': any;
+      'md-filled-button': any;
+      'md-filled-tonal-button': any;
+      'md-elevation': any;
+      'md-icon': any;
+      'md-assist-chip': any;
+      'md-ripple': any;
+      'md-elevated-card': any;
     }
   }
 }
@@ -33,7 +37,7 @@ interface HomeProps {
 }
 
 // --- ANIMATION VARIANTS ---
-const containerVariants: any = {
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -44,7 +48,7 @@ const containerVariants: any = {
   }
 };
 
-const cardVariants: any = {
+const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: { 
     opacity: 1, 
@@ -78,11 +82,14 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
     className="group cursor-pointer flex flex-col gap-3 relative"
     onClick={() => onPlay(track.id)}
   >
-    {/* Image Container using md-elevated-card */}
+    {/* Image Container */}
     <md-elevated-card
         clickable
         class="aspect-square w-full relative overflow-hidden p-0"
-        style={{ '--md-elevated-card-container-shape': '32px', '--md-elevated-card-container-color': 'var(--md-sys-color-surface-container-highest)' }}
+        style={{ 
+          '--md-elevated-card-container-shape': '32px', 
+          '--md-elevated-card-container-color': 'var(--md-sys-color-surface-container-highest)' 
+        }}
     >
       <div className="absolute inset-0 bg-surface-container-highest z-0" />
 
@@ -104,7 +111,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
         </div>
       )}
       
-      {/* Play Overlay - Material State Layer */}
+      {/* Play Overlay */}
       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center backdrop-blur-[2px]">
         <motion.div
           variants={{
@@ -126,7 +133,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
          </div>
       )}
 
-      {/* Ripple */}
+      {/* Ripple Effect */}
       <md-ripple></md-ripple>
     </md-elevated-card>
 
@@ -146,6 +153,7 @@ TrackCard.displayName = 'TrackCard';
 
 // --- MAIN COMPONENT ---
 const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoading = false, onFileUpload }) => {
+  // Use a single ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const randomMix = useMemo(() => {
@@ -170,6 +178,10 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <motion.div 
       key="home-screen"
@@ -192,10 +204,10 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm">
-                    <md-icon class="material-symbols-rounded filled">auto_awesome</md-icon>
-                    <span>Discovery Mix</span>
-                </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm">
+                  <md-icon class="material-symbols-rounded filled">auto_awesome</md-icon>
+                  <span>Discovery Mix</span>
+              </div>
             </motion.div>
 
             <div>
@@ -211,16 +223,14 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
           
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap relative z-10">
             {onFileUpload && (
-              <label className="cursor-pointer">
-                <md-filled-tonal-button
-                    style={{ height: '64px', borderRadius: '32px' }}
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                  <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
-                  <span className="text-title-medium">Add Music</span>
-                </md-filled-tonal-button>
-                <input ref={fileInputRef} type="file" multiple accept="audio/*,.zip" onChange={onFileUpload} className="hidden" />
-              </label>
+              /* Removed wrapping <label> to prevent double event triggering */
+              <md-filled-tonal-button
+                  style={{ height: '64px', borderRadius: '32px' }}
+                  onClick={handleImportClick}
+              >
+                <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
+                <span className="text-title-medium">Add Music</span>
+              </md-filled-tonal-button>
             )}
 
             <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '64px', borderRadius: '32px' }}>
@@ -230,7 +240,12 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
             <md-filled-button
                 onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-                style={{ height: '64px', borderRadius: '32px', '--md-filled-button-container-color': 'var(--md-sys-color-primary)', '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' }}
+                style={{ 
+                  height: '64px', 
+                  borderRadius: '32px', 
+                  '--md-filled-button-container-color': 'var(--md-sys-color-primary)', 
+                  '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' 
+                }}
             >
                 <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
                 <span className="text-title-medium font-bold">Play All</span>
@@ -246,10 +261,10 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-4 text-on-surface px-2"
                 >
-                    <div className="p-3 rounded-full bg-surface-container-high text-primary">
-                        <md-icon class="material-symbols-rounded">schedule</md-icon>
-                    </div>
-                    <h3 className="text-headline-medium font-bold">Recently Played</h3>
+                  <div className="p-3 rounded-full bg-surface-container-high text-primary">
+                      <md-icon class="material-symbols-rounded">schedule</md-icon>
+                  </div>
+                  <h3 className="text-headline-medium font-bold">Recently Played</h3>
                 </motion.div>
 
                 <motion.div
@@ -258,7 +273,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   animate="visible"
                   className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12"
                 >
-                     <AnimatePresence mode="popLayout">
+                      <AnimatePresence mode="popLayout">
                       {recentlyPlayed.map((track) => (
                         <TrackCard
                           key={`recent-${track.id}`}
@@ -278,10 +293,10 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-4 text-on-surface px-2"
                 >
-                    <div className="p-3 rounded-full bg-surface-container-high text-tertiary">
-                         <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
-                    </div>
-                    <h3 className="text-headline-medium font-bold">Jump Back In</h3>
+                  <div className="p-3 rounded-full bg-surface-container-high text-tertiary">
+                       <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
+                  </div>
+                  <h3 className="text-headline-medium font-bold">Jump Back In</h3>
             </motion.div>
              <motion.div
               variants={containerVariants}
@@ -307,6 +322,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             </motion.div>
         </section>
 
+        {/* Empty State */}
         {!isLoading && filteredTracks.length === 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -319,17 +335,29 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             <p className="text-headline-small font-bold text-on-surface">No tracks found</p>
             <p className="text-body-large mt-2">Import music to get started.</p>
             {onFileUpload && (
-              <label className="cursor-pointer mt-6">
-                 <md-filled-button onClick={() => fileInputRef.current?.click()}>
+              /* Removed wrapping <label> and duplicate input */
+              <div className="mt-6">
+                 <md-filled-button onClick={handleImportClick}>
                     <md-icon slot="icon" class="material-symbols-rounded">upload_file</md-icon>
                     Import Tracks
                  </md-filled-button>
-                 <input ref={fileInputRef} type="file" multiple accept="audio/*,.zip" onChange={onFileUpload} className="hidden" />
-              </label>
+              </div>
             )}
           </motion.div>
         )}
       </div>
+
+      {/* Singleton Hidden File Input */}
+      {onFileUpload && (
+        <input 
+          ref={fileInputRef} 
+          type="file" 
+          multiple 
+          accept="audio/*,.zip" 
+          onChange={onFileUpload} 
+          className="hidden" 
+        />
+      )}
     </motion.div>
   );
 };
