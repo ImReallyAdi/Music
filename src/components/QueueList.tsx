@@ -67,13 +67,17 @@ const QueueItem = memo(function QueueItem({
     // @ts-ignore
     <md-list-item
       type="button"
-      headline={track.title}
-      supporting-text={track.artist}
       onClick={onPlay}
       className="w-full"
       style={listItemStyle}
       aria-current={isCurrent ? 'true' : undefined}
     >
+      <div slot="headline" className={`truncate text-body-large font-medium ${isCurrent ? 'text-primary' : 'text-on-surface'}`}>
+        {track.title}
+      </div>
+      <div slot="supporting-text" className={`truncate text-body-medium ${isCurrent ? 'text-primary' : 'text-on-surface-variant'}`}>
+        {track.artist}
+      </div>
       <div slot="start" className="flex items-center gap-3">
         {canDrag && (
           <div
