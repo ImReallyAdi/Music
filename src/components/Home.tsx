@@ -184,29 +184,29 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       <div className="max-w-[1400px] mx-auto space-y-16 py-8">
 
         {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[56px] bg-surface-container-low p-8 md:p-16 shadow-elevation-1">
+        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[56px] bg-surface-container-high p-8 md:p-16 shadow-elevation-1 ring-1 ring-white/5">
           {/* Decorative Background */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/20 via-tertiary/20 to-transparent blur-[80px] rounded-full pointer-events-none -translate-y-1/3 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/4" />
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-primary/30 via-tertiary/20 to-transparent blur-[100px] rounded-full pointer-events-none -translate-y-1/4 translate-x-1/4 mix-blend-screen" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/20 blur-[120px] rounded-full pointer-events-none translate-y-1/3 -translate-x-1/3 mix-blend-screen" />
 
-          <div className="space-y-8 relative z-10 max-w-2xl">
+          <div className="space-y-8 relative z-10 max-w-3xl">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm">
-                  <md-icon class="material-symbols-rounded filled">auto_awesome</md-icon>
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm ring-1 ring-white/10">
+                  <md-icon class="material-symbols-rounded filled" style={{ fontSize: '20px' }}>auto_awesome</md-icon>
                   <span>Discovery Mix</span>
               </div>
             </motion.div>
 
             <div>
-                <h2 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
+                <h2 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.05]">
                   Fresh picks<br/>
-                  <span className="text-primary-container bg-primary/90 bg-clip-text text-transparent bg-gradient-to-r from-primary to-tertiary">Just for you</span>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-tertiary to-primary bg-[length:200%_auto] animate-gradient">Just for you</span>
                 </h2>
-                <p className="text-headline-small text-on-surface-variant max-w-lg leading-relaxed pt-4 opacity-90 font-medium">
+                <p className="text-headline-small text-on-surface-variant max-w-xl leading-relaxed pt-6 opacity-90 font-medium">
                   A curated selection from your library, served fresh every time you visit.
                 </p>
             </div>
