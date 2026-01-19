@@ -3,6 +3,7 @@ import { dbService } from '../db';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { resumeAudioContext, getAudioContext } from './useAudioAnalyzer';
 import { getSmartNextTrack } from '../utils/automix';
+import { isIOS } from '../utils/platform';
 
 export const useAudioPlayer = (
   libraryTracks: Record<string, Track>,
@@ -291,7 +292,7 @@ export const useAudioPlayer = (
     }
     
     let currentBlob: Blob | null = null;
-    if ((player.crossfadeEnabled || player.automixEnabled) && player.currentTrackId && immediate) {
+    if ((player.crossfadeEnabled || player.automixEnabled) && !isIOS && player.currentTrackId && immediate) {
         try {
             const currTrack = libraryTracks[player.currentTrackId];
             if (currTrack) {
@@ -384,7 +385,7 @@ export const useAudioPlayer = (
              safeResumeContext().catch(console.error);
 
              const isHidden = document.visibilityState === 'hidden';
-             const shouldCrossfade = (player.crossfadeEnabled || player.automixEnabled) && !isHidden && currentBlob && crossfadeAudioElement;
+             const shouldCrossfade = (player.crossfadeEnabled || player.automixEnabled) && !isIOS && !isHidden && currentBlob && crossfadeAudioElement;
 
              if (shouldCrossfade) {
                  await performTransition(currentBlob, nextBlob, player.crossfadeDuration);
@@ -613,7 +614,7 @@ export const useAudioPlayer = (
                   lastTimeUpdateRef = now;
               }
               const timeLeft = audioElement.duration - audioElement.currentTime;
-              if ((player.crossfadeEnabled || player.automixEnabled) && !isTransitioningRef.current && !isAutoTriggeredRef.current && timeLeft <= player.crossfadeDuration && timeLeft > 0.1) {
+              if ((player.crossfadeEnabled || player.automixEnabled) && !isIOS && !isTransitioningRef.current && !isAutoTriggeredRef.current && timeLeft <= player.crossfadeDuration && timeLeft > 0.1) {
                    isAutoTriggeredRef.current = true;
                    nextTrack(true);
               }
@@ -679,6 +680,9 @@ export const useAudioPlayer = (
 
   // Preload
   useEffect(() => {
+    // Disable preloading on iOS to save memory
+    if (isIOS) return;
+
     const nextId = calculateNextTrackId(player.currentTrackId, player.queue, player.repeat, player.automixEnabled, player.automixMode);
     upcomingTrackIdRef.current = nextId;
     if (nextTrackUrlRef.current && nextTrackUrlRef.current.id !== nextId) {
