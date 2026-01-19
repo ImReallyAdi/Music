@@ -24,26 +24,6 @@ import '@material/web/chips/filter-chip.js';
 import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/button/filled-tonal-button.js';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-tabs': any;
-      'md-primary-tab': any;
-      'md-secondary-tab': any;
-      'md-switch': any;
-      'md-slider': any;
-      'md-list': any;
-      'md-list-item': any;
-      'md-icon': any;
-      'md-icon-button': any;
-      'md-chip-set': any;
-      'md-filter-chip': any;
-      'md-outlined-text-field': any;
-      'md-filled-tonal-button': any;
-    }
-  }
-}
-
 // --- TYPES ---
 type LibraryTab = 'Songs' | 'Favorites' | 'Albums' | 'Artists' | 'Playlists' | 'Settings';
 type SortOption = 'added' | 'title' | 'artist';

@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { fetchLyrics } from '../utils/lyrics';
 import { Track, Lyrics } from '../types';
-import { Loader2, Music2, Sparkles } from 'lucide-react';
 import { useToast } from './Toast';
+import '@material/web/icon/icon.js';
 
 interface LyricsViewProps {
   track: Track;
@@ -129,7 +129,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
     if (loading) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center text-white/50">
-          <Loader2 className="animate-spin mb-4" size={32} />
+          <md-icon class="material-symbols-rounded animate-spin mb-4" style={{ fontSize: '32px' }}>progress_activity</md-icon>
           <p className="font-medium tracking-wide">Syncing with Maths ❤️‍🔥...</p>
         </div>
       );
@@ -138,7 +138,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
     if (!lyrics || (lyrics.lines.length === 0 && !lyrics.plain)) {
        return (
         <div className="w-full h-full flex flex-col items-center justify-center text-white/50 px-8 text-center">
-          <Music2 className="mb-6 opacity-40" size={56} />
+          <md-icon class="material-symbols-rounded mb-6 opacity-40" style={{ fontSize: '56px' }}>music_note</md-icon>
           <p className="text-xl font-bold mb-2">No Lyrics Found 😖</p>
           <p className="text-sm opacity-60 max-w-[200px]">
             We couldn't find lyrics for this song 🥺
@@ -297,10 +297,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ track, currentTime, onSeek, onT
       <div className="absolute top-6 right-6 z-50">
         <button
            onClick={handleGenerateWordSync}
-           className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all hover:scale-105 active:scale-95"
+           className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
            title="Estimate Word Timing"
          >
-           <Sparkles size={18} className={loading ? 'animate-pulse text-primary' : ''} />
+           <md-icon class={`material-symbols-rounded ${loading ? 'animate-pulse text-primary' : ''}`} style={{ fontSize: '18px' }}>auto_awesome</md-icon>
          </button>
       </div>
       {renderContent()}

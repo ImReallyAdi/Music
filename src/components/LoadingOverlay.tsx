@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Sparkles } from 'lucide-react';
+import '@material/web/icon/icon.js';
 
 interface LoadingOverlayProps {
   progress: number;
@@ -67,15 +67,15 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ progress, message }) =>
             ))}
             
             <div className="relative w-24 h-24 bg-gradient-to-br from-surface-container to-surface-container-high rounded-[32px] border border-white/10 shadow-elevation-3 flex items-center justify-center z-10">
-              <Music className="w-10 h-10 text-primary drop-shadow-md" strokeWidth={2} />
+              <md-icon class="material-symbols-rounded text-primary drop-shadow-md" style={{ fontSize: '40px' }}>music_note</md-icon>
               
               {/* Corner Decoration */}
               <motion.div 
-                className="absolute -top-2 -right-2 bg-on-surface text-surface p-1.5 rounded-full shadow-lg"
+                className="absolute -top-2 -right-2 bg-on-surface text-surface p-1.5 rounded-full shadow-lg flex items-center justify-center"
                 animate={{ rotate: [0, 15, -15, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Sparkles size={14} fill="currentColor" />
+                <md-icon class="material-symbols-rounded filled" style={{ fontSize: '14px' }}>auto_awesome</md-icon>
               </motion.div>
             </div>
           </motion.div>

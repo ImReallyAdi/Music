@@ -4,16 +4,6 @@ import '@material/web/labs/navigationbar/navigation-bar.js';
 import '@material/web/labs/navigationtab/navigation-tab.js';
 import '@material/web/icon/icon.js';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-navigation-bar': any;
-      'md-navigation-tab': any;
-      'md-icon': any;
-    }
-  }
-}
-
 interface BottomNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;

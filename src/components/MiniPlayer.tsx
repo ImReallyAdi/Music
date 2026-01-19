@@ -5,16 +5,6 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/progress/linear-progress.js';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-icon-button': any;
-      'md-icon': any;
-      'md-linear-progress': any;
-    }
-  }
-}
-
 interface MiniPlayerProps {
   currentTrack: Track | null;
   playerState: PlayerState;

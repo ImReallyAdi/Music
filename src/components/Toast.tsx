@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import '@material/web/icon/icon.js';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -56,12 +56,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 'bg-surface-container-highest text-surface-on'
               }`}
             >
-              {toast.type === 'success' && <CheckCircle className="w-5 h-5 shrink-0" />}
-              {toast.type === 'error' && <AlertCircle className="w-5 h-5 shrink-0" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 shrink-0" />}
+              {toast.type === 'success' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>check_circle</md-icon>}
+              {toast.type === 'error' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>error</md-icon>}
+              {toast.type === 'info' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>info</md-icon>}
               <span className="text-body-medium font-medium flex-1">{toast.message}</span>
-              <button onClick={() => removeToast(toast.id)} className="p-1 hover:bg-black/10 rounded-full">
-                <X className="w-4 h-4" />
+              <button onClick={() => removeToast(toast.id)} className="p-1 hover:bg-black/10 rounded-full flex items-center justify-center">
+                <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>close</md-icon>
               </button>
             </motion.div>
           ))}

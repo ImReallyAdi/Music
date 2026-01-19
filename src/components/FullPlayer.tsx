@@ -19,18 +19,6 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/iconbutton/filled-tonal-icon-button.js';
 import '@material/web/icon/icon.js';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-slider': any;
-      'md-filled-icon-button': any;
-      'md-filled-tonal-icon-button': any;
-      'md-icon-button': any;
-      'md-icon': any;
-    }
-  }
-}
-
 // Helper to format time (mm:ss)
 const formatTime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return '0:00';

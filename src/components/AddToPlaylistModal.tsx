@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Playlist } from '../types';
-import { Plus, X } from 'lucide-react';
 import '@material/web/dialog/dialog.js';
 import '@material/web/button/text-button.js';
 import '@material/web/button/filled-button.js';
@@ -9,20 +8,6 @@ import '@material/web/list/list.js';
 import '@material/web/list/list-item.js';
 import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/icon/icon.js';
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-dialog': any;
-      'md-text-button': any;
-      'md-filled-button': any;
-      'md-list': any;
-      'md-list-item': any;
-      'md-outlined-text-field': any;
-      'md-icon': any;
-    }
-  }
-}
 
 interface AddToPlaylistModalProps {
   isOpen: boolean;
@@ -86,7 +71,7 @@ const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
                         onClick={() => setIsCreating(!isCreating)}
                     >
                          <div slot="headline" className="text-primary font-bold">New Playlist</div>
-                         <md-icon slot="start" className="text-primary"><Plus /></md-icon>
+                         <md-icon slot="start" class="material-symbols-rounded text-primary">add</md-icon>
                     </md-list-item>
 
                     {isCreating && (

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
 import JSZip from 'jszip';
 import { dbService } from './db';
 import { Track, LibraryState, Playlist } from './types';
@@ -408,7 +407,7 @@ function MusicApp() {
           >
              <div className="bg-surface p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
                  <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center">
-                    <Plus className="w-8 h-8 text-primary" />
+                    <md-icon class="material-symbols-rounded text-primary" style={{ fontSize: '32px' }}>add</md-icon>
                  </div>
                  <h2 className="text-xl font-bold text-on-surface">Drop files to add</h2>
              </div>
