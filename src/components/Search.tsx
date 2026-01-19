@@ -166,31 +166,34 @@ const Search: React.FC<SearchProps> = ({
       className="space-y-6 h-full flex flex-col px-4 md:px-8 max-w-5xl mx-auto w-full pt-4"
     >
       {/* Search Bar - Sticky Header */}
-      <div className="sticky top-0 z-20 pt-2 pb-4 bg-surface/95 backdrop-blur-md -mx-4 px-4 md:-mx-8 md:px-8">
+      <div className="sticky top-0 z-20 pt-2 pb-4 bg-background/95 backdrop-blur-md -mx-4 px-4 md:-mx-8 md:px-8">
         <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
+            <h1 className="text-display-small font-black text-on-surface tracking-tight">Search</h1>
 
-            {/* Material Text Field */}
-            <md-outlined-text-field
-                label={isWebMode ? "Paste YouTube Link" : "Search Library"}
-                placeholder={isWebMode ? "Video or Playlist URL..." : "Songs, Artists, Albums"}
-                value={searchQuery}
-                onInput={handleInput}
-                ref={inputRef}
-                style={{ width: '100%', '--md-outlined-text-field-container-shape': '28px' }}
-            >
-                 <md-icon slot="leading-icon" class="material-symbols-rounded">
-                    {isWebMode ? 'youtube_activity' : 'search'}
-                 </md-icon>
+            {/* Material Text Field - Chunky */}
+            <div className="relative">
+                <md-outlined-text-field
+                    label={isWebMode ? "Paste YouTube Link" : "Search Library"}
+                    placeholder={isWebMode ? "Video or Playlist URL..." : "Songs, Artists, Albums"}
+                    value={searchQuery}
+                    onInput={handleInput}
+                    ref={inputRef}
+                    style={{ width: '100%', '--md-outlined-text-field-container-shape': '28px' }}
+                >
+                    <md-icon slot="leading-icon" class="material-symbols-rounded">
+                        {isWebMode ? 'youtube_activity' : 'search'}
+                    </md-icon>
 
-                 {searchQuery && (
-                    <md-icon-button slot="trailing-icon" onClick={handleClearSearch}>
-                        <md-icon class="material-symbols-rounded">close</md-icon>
-                    </md-icon-button>
-                 )}
-            </md-outlined-text-field>
+                    {searchQuery && (
+                        <md-icon-button slot="trailing-icon" onClick={handleClearSearch}>
+                            <md-icon class="material-symbols-rounded">close</md-icon>
+                        </md-icon-button>
+                    )}
+                </md-outlined-text-field>
+            </div>
 
             {/* Mode Toggle Chips */}
-             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar justify-center">
+             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar justify-start">
                 <md-filter-chip
                     label="Library"
                     selected={!isWebMode}

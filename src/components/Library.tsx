@@ -22,6 +22,7 @@ import '@material/web/list/list-item.js';
 import '@material/web/chips/chip-set.js';
 import '@material/web/chips/filter-chip.js';
 import '@material/web/textfield/outlined-text-field.js';
+import '@material/web/button/filled-tonal-button.js';
 
 declare global {
   namespace JSX {
@@ -38,6 +39,7 @@ declare global {
       'md-chip-set': any;
       'md-filter-chip': any;
       'md-outlined-text-field': any;
+      'md-filled-tonal-button': any;
     }
   }
 }
@@ -56,6 +58,7 @@ interface LibraryProps {
   playTrack: (id: string, options?: any) => void;
   refreshLibrary: () => void;
   isLoading?: boolean;
+  onFileUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 // --- UTILS ---
@@ -212,9 +215,10 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
 // --- MAIN LIBRARY COMPONENT ---
 const Library: React.FC<LibraryProps> = ({ 
   activeTab, libraryTab, setLibraryTab, filteredTracks, 
-  playerState, setPlayerState, playTrack, refreshLibrary, isLoading = false 
+  playerState, setPlayerState, playTrack, refreshLibrary, isLoading = false, onFileUpload
 }) => {
   const { addToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State
   const [playlists, setPlaylists] = useState<Record<string, Playlist>>({});
@@ -386,7 +390,7 @@ const Library: React.FC<LibraryProps> = ({
         <div className="flex flex-col h-full px-4 md:px-8 max-w-7xl mx-auto w-full">
             {/* Header Area */}
             <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl pt-6 pb-4 -mx-4 px-4 md:-mx-8 md:px-8 transition-all border-b border-surface-variant/20">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                     <h1 className="text-display-small font-black text-on-surface tracking-tight">Library</h1>
 
                     {/* Search & Actions */}
@@ -395,10 +399,20 @@ const Library: React.FC<LibraryProps> = ({
                             placeholder={`Search ${libraryTab}...`}
                             value={searchQuery}
                             onInput={(e: any) => setSearchQuery(e.target.value)}
-                            style={{ flex: 1, minWidth: '200px' }}
+                            style={{ flex: 1, minWidth: '200px', '--md-outlined-text-field-container-shape': '28px' }}
                          >
                             <md-icon slot="leading-icon" class="material-symbols-rounded">search</md-icon>
                          </md-outlined-text-field>
+
+                         {onFileUpload && (
+                            <label className="cursor-pointer">
+                                <md-filled-tonal-button onClick={() => fileInputRef.current?.click()}>
+                                    <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
+                                    Add
+                                </md-filled-tonal-button>
+                                <input ref={fileInputRef} type="file" multiple accept="audio/*,.zip" onChange={onFileUpload} className="hidden" />
+                            </label>
+                         )}
 
                          <md-icon-button onClick={() => setLibraryTab('Settings')}>
                              <md-icon class="material-symbols-rounded">settings</md-icon>
