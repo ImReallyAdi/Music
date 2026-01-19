@@ -433,6 +433,7 @@ function MusicApp() {
       <FullPlayer
         currentTrack={currentTrack}
         playerState={player}
+        allTracks={library.tracks}
         isPlayerOpen={isPlayerOpen}
         onClose={() => setIsPlayerOpen(false)}
         togglePlay={togglePlay}
