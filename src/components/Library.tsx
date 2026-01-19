@@ -33,6 +33,8 @@ interface LibraryProps {
   libraryTab: LibraryTab;
   setLibraryTab: (tab: LibraryTab) => void;
   filteredTracks: Track[];
+  playlists: Record<string, Playlist>;
+  tracksMap: Record<string, Track>;
   playerState: PlayerState;
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState>>;
   playTrack: (id: string, options?: any) => void;
@@ -194,15 +196,13 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
 
 // --- MAIN LIBRARY COMPONENT ---
 const Library: React.FC<LibraryProps> = ({ 
-  activeTab, libraryTab, setLibraryTab, filteredTracks, 
+  activeTab, libraryTab, setLibraryTab, filteredTracks, playlists, tracksMap,
   playerState, setPlayerState, playTrack, refreshLibrary, isLoading = false, onFileUpload
 }) => {
   const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State
-  const [playlists, setPlaylists] = useState<Record<string, Playlist>>({});
-  const [tracksMap, setTracksMap] = useState<Record<string, Track>>({});
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [selectedArtistKey, setSelectedArtistKey] = useState<string | null>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<{name: string, artist: string} | null>(null);
@@ -212,17 +212,6 @@ const Library: React.FC<LibraryProps> = ({
   // Modal State
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [trackToAddId, setTrackToAddId] = useState<string | null>(null);
-
-  // Load Data
-  useEffect(() => {
-    const load = async () => {
-        const pl = await dbService.getAllPlaylists();
-        const t = await dbService.getAllTracks();
-        setPlaylists(pl.reduce((acc, p) => ({ ...acc, [p.id]: p }), {}));
-        setTracksMap(t.reduce((acc, tr) => ({ ...acc, [tr.id]: tr }), {}));
-    };
-    load();
-  }, [libraryTab, refreshLibrary]);
 
   // Derived Data
   const artistsList = useMemo(() => {
@@ -332,7 +321,7 @@ const Library: React.FC<LibraryProps> = ({
       }
       const updatedPlaylist = { ...playlist, trackIds: [...playlist.trackIds, trackToAddId], updatedAt: Date.now() };
       await dbService.savePlaylist(updatedPlaylist);
-      setPlaylists(prev => ({ ...prev, [playlistId]: updatedPlaylist }));
+      refreshLibrary();
       setIsPlaylistModalOpen(false);
       setTrackToAddId(null);
   };
@@ -344,7 +333,7 @@ const Library: React.FC<LibraryProps> = ({
           id, name, trackIds: [trackToAddId], createdAt: Date.now(), updatedAt: Date.now()
       };
       await dbService.savePlaylist(newPlaylist);
-      setPlaylists(prev => ({ ...prev, [id]: newPlaylist }));
+      refreshLibrary();
       setIsPlaylistModalOpen(false);
       setTrackToAddId(null);
   };

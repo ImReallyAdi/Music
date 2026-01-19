@@ -367,6 +367,8 @@ function MusicApp() {
                 libraryTab={libraryTab} 
                 setLibraryTab={setLibraryTab as any}
                 filteredTracks={filteredTracks}
+                playlists={library.playlists}
+                tracksMap={library.tracks}
                 playerState={player}
                 setPlayerState={setPlayer}
                 playTrack={playTrack}
