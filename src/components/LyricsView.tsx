@@ -301,9 +301,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                       onClick={() => onSeek(line.time - (lyricOffset/1000))}
                       className={`cursor-pointer origin-left transition-all duration-500`}
                     >
-                      <p className={`font-bold leading-tight flex flex-wrap gap-x-[0.3em] gap-y-1 ${
-                        line.words.length > 8 ? 'text-headline-medium' : 'text-display-small'
-                      }`}>
+                      <p className={`font-bold leading-tight flex flex-wrap gap-x-[0.3em] gap-y-2 ${
+                        line.words.length > 8 ? 'text-4xl md:text-5xl' : 'text-5xl md:text-6xl'
+                      } tracking-tight`}>
                         {line.words.map((word, wIdx) => {
                           const isWordActive = isActive && activeWordInfo?.index === wIdx;
                           const isWordPast = isActive && activeWordInfo?.index! > wIdx;
@@ -317,11 +317,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                                 color: isWordActive
                                     ? 'var(--md-sys-color-primary)'
                                     : (isWordPast || isPast
-                                        ? 'var(--md-sys-color-on-surface-variant)'
+                                        ? 'var(--md-sys-color-on-surface)'
                                         : 'var(--md-sys-color-on-surface-variant)'),
-                                opacity: isWordActive ? 1 : (isWordPast || isPast ? 0.6 : 0.4),
-                                transform: isWordActive ? 'scale(1.05)' : 'scale(1)',
-                                textShadow: isWordActive ? '0 0 20px rgba(0,0,0,0.5)' : 'none'
+                                opacity: isWordActive ? 1 : (isWordPast || isPast ? 0.8 : 0.4),
+                                transform: isWordActive ? 'scale(1.1) translateY(-2px)' : 'scale(1)',
+                                textShadow: isWordActive ? '0 0 30px var(--md-sys-color-primary)' : 'none',
+                                filter: isWordActive ? 'brightness(1.2)' : 'none'
                               }}
                             >
                               {word.text}
@@ -340,23 +341,23 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                     layout
                     onClick={() => onSeek(line.time - (lyricOffset/1000))}
                     animate={{
-                      scale: isActive ? 1 : 0.98,
-                      opacity: isActive ? 1 : isPast ? 0.5 : 0.4,
+                      scale: isActive ? 1 : 0.95,
+                      opacity: isActive ? 1 : isPast ? 0.4 : 0.3,
                       x: isActive ? 0 : 0,
-                      filter: isActive ? 'blur(0px)' : 'blur(0.5px)'
+                      filter: isActive ? 'blur(0px)' : 'blur(1.5px)'
                     }}
                     transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                    className="cursor-pointer origin-left group py-2"
+                    className="cursor-pointer origin-left group py-4"
                   >
-                    <p className={`font-bold transition-colors duration-300 ${
+                    <p className={`font-bold transition-colors duration-300 tracking-tight ${
                        isActive
-                        ? 'text-headline-medium text-primary'
-                        : 'text-title-large text-on-surface-variant group-hover:text-on-surface'
+                        ? 'text-4xl md:text-5xl text-primary'
+                        : 'text-2xl md:text-3xl text-on-surface-variant group-hover:text-on-surface'
                     }`}>
                       {line.text}
                     </p>
                     {line.translation && (
-                      <p className={`text-body-large text-secondary mt-1 transition-all ${isActive ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
+                      <p className={`text-title-medium text-secondary mt-2 font-medium transition-all ${isActive ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
                         {line.translation}
                       </p>
                     )}
