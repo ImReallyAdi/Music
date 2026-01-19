@@ -302,24 +302,24 @@ const QueueList: React.FC<QueueListProps> = ({
   // --- Empty State ---
   if (!queue || queue.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-surface text-on-surface">
+      <div className="flex flex-col h-full bg-transparent text-on-surface">
         <div className="flex w-full justify-between items-center px-6 pt-6">
-          <h3 className="text-headline-medium font-bold">Queue</h3>
+          <h3 className="text-headline-medium font-bold text-on-surface">Queue</h3>
           {onClose && (
             // @ts-ignore
             <md-icon-button onClick={onClose}>
-                <md-icon class="material-symbols-rounded">close</md-icon>
+                <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
             </md-icon-button>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center">
+          <div className="w-32 h-32 rounded-[32px] bg-surface-container-high/50 flex items-center justify-center">
             <md-icon className="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: 64 }}>
               album
             </md-icon>
           </div>
           <div>
-            <h4 className="text-headline-small font-medium">Your queue is empty</h4>
+            <h4 className="text-headline-small font-medium text-on-surface">Your queue is empty</h4>
             <p className="text-body-large text-on-surface-variant mt-2">Add some tracks to start the vibe.</p>
           </div>
         </div>
@@ -328,17 +328,17 @@ const QueueList: React.FC<QueueListProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-surface text-on-surface">
+    <div className="h-full flex flex-col relative bg-transparent text-on-surface">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6 shrink-0 bg-surface/95 backdrop-blur-xl z-30">
+      <div className="flex items-center justify-between px-6 py-6 shrink-0 bg-surface/20 backdrop-blur-md z-30 border-b border-white/5">
         <div className="flex items-baseline gap-3">
-          <h3 className="text-headline-medium font-bold">Queue</h3>
+          <h3 className="text-headline-medium font-bold text-on-surface">Queue</h3>
           <span className="text-title-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
         </div>
         {onClose && (
             // @ts-ignore
             <md-icon-button onClick={onClose}>
-                <md-icon class="material-symbols-rounded">close</md-icon>
+                <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
             </md-icon-button>
         )}
       </div>
@@ -351,7 +351,7 @@ const QueueList: React.FC<QueueListProps> = ({
         {current && tracks[current] && (
           <div
             ref={activeTrackRef}
-            className="my-6 sticky top-0 z-20 pt-4 -mx-4 px-4 pb-6 bg-surface/95 backdrop-blur-md shadow-sm rounded-b-[32px] ring-1 ring-white/5"
+            className="my-6 sticky top-0 z-20 pt-4 -mx-4 px-4 pb-6 bg-surface/20 backdrop-blur-md shadow-sm rounded-b-[32px] ring-1 ring-white/5"
           >
             <div className="text-label-medium font-bold text-primary uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
               Now Playing
