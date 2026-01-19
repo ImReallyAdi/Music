@@ -9,6 +9,8 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/chips/filter-chip.js';
 import '@material/web/progress/circular-progress.js';
+import '@material/web/list/list.js';
+import '@material/web/list/list-item.js';
 
 // Declare Material Web Components
 declare global {
@@ -21,6 +23,8 @@ declare global {
       'md-icon': any;
       'md-filter-chip': any;
       'md-circular-progress': any;
+      'md-list': any;
+      'md-list-item': any;
     }
   }
 }
@@ -306,40 +310,41 @@ const Search: React.FC<SearchProps> = ({
         {/* Local Results */}
         {!isWebMode && (
             <AnimatePresence mode='popLayout'>
+            <md-list class="bg-transparent">
             {filteredTracks.map(t => (
                 <motion.div
-                layout // Enables smooth position transitions when filtering
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                key={t.id}
-                whileTap={{ scale: 0.98, backgroundColor: 'var(--md-sys-color-surface-container-highest)' }}
-                onClick={() => handleTrackClick(t.id)}
-                className="group flex items-center gap-4 p-3 pr-4 rounded-[16px] cursor-pointer hover:bg-surface-container-high transition-colors active:scale-[0.98] border border-transparent hover:border-outline-variant/10"
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    key={t.id}
                 >
-                {/* Cover Art */}
-                <div className="w-14 h-14 bg-surface-container-highest rounded-[12px] flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm relative border border-outline-variant/10">
-                    {t.coverArt ? (
-                    <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
-                    ) : (
-                    <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
-                    )}
-                </div>
+                    <md-list-item
+                        type="button"
+                        onClick={() => handleTrackClick(t.id)}
+                        style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
+                    >
+                        {/* Cover Art */}
+                        <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
+                            {t.coverArt ? (
+                            <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover"/>
+                            ) : (
+                            <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
+                            )}
+                        </div>
 
-                {/* Text Info */}
-                <div className="flex-1 min-w-0">
-                    <h4 className="text-title-medium font-bold text-on-surface truncate group-hover:text-primary transition-colors flex items-center gap-2">
-                    {t.title}
-                    {t.source === 'youtube' && (
-                         <span className="text-[10px] bg-error-container text-on-error-container px-1.5 py-0.5 rounded-md font-bold tracking-wide">WEB</span>
-                    )}
-                    </h4>
-                    <p className="text-body-medium text-on-surface-variant truncate opacity-80">
-                    {t.artist}
-                    </p>
-                </div>
+                        {/* Text Info */}
+                        <div slot="headline" className="text-on-surface font-bold truncate flex items-center gap-2">
+                             {t.title}
+                             {t.source === 'youtube' && (
+                                <span className="text-[10px] bg-error-container text-on-error-container px-1.5 py-0.5 rounded-md font-bold tracking-wide">WEB</span>
+                             )}
+                        </div>
+                        <div slot="supporting-text" className="text-on-surface-variant truncate opacity-80">{t.artist}</div>
+                    </md-list-item>
                 </motion.div>
             ))}
+            </md-list>
             </AnimatePresence>
         )}
 

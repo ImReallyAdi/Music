@@ -7,6 +7,7 @@ import '@material/web/icon/icon.js';
 import '@material/web/elevation/elevation.js';
 import '@material/web/chips/assist-chip.js';
 import '@material/web/ripple/ripple.js';
+import '@material/web/labs/card/elevated-card.js';
 
 // Material Web Types
 declare global {
@@ -18,6 +19,7 @@ declare global {
         'md-icon': any;
         'md-assist-chip': any;
         'md-ripple': any;
+        'md-elevated-card': any;
     }
   }
 }
@@ -76,8 +78,12 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
     className="group cursor-pointer flex flex-col gap-3 relative"
     onClick={() => onPlay(track.id)}
   >
-    {/* Image Container */}
-    <div className="aspect-square rounded-[32px] bg-surface-container-highest overflow-hidden relative isolate shadow-elevation-1 group-hover:shadow-elevation-3 transition-shadow duration-300">
+    {/* Image Container using md-elevated-card */}
+    <md-elevated-card
+        clickable
+        class="aspect-square w-full relative overflow-hidden p-0"
+        style={{ '--md-elevated-card-container-shape': '32px', '--md-elevated-card-container-color': 'var(--md-sys-color-surface-container-highest)' }}
+    >
       <div className="absolute inset-0 bg-surface-container-highest z-0" />
 
       {/* Artwork */}
@@ -122,7 +128,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
 
       {/* Ripple */}
       <md-ripple></md-ripple>
-    </div>
+    </md-elevated-card>
 
     {/* Text Content */}
     <div className="px-1 flex flex-col gap-0.5">
