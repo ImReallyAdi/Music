@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { fetchLyrics } from '../utils/lyrics';
 import { Track, Lyrics } from '../types';
 import { useToast } from './Toast';
@@ -32,10 +32,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
   track,
   currentTime: rawCurrentTime,
   onSeek,
-  onClose,
   onTrackUpdate,
   lyricOffset = 0,
-  setLyricOffset,
   isFullscreen = false,
   onToggleFullscreen
 }) => {
@@ -43,30 +41,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const [localOffset, setLocalOffset] = useState(lyricOffset);
 
   // Apply offset to current time for sync logic
-  const currentTime = rawCurrentTime + (localOffset / 1000);
+  const currentTime = rawCurrentTime + (lyricOffset / 1000);
 
   const { addToast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  // Sync local offset with prop if it changes externally
-  useEffect(() => {
-    setLocalOffset(lyricOffset);
-  }, [lyricOffset]);
-
-  const updateOffset = (delta: number) => {
-    const newOffset = localOffset + delta;
-    setLocalOffset(newOffset);
-    if (setLyricOffset) setLyricOffset(newOffset);
-    
-    window.dispatchEvent(new CustomEvent('update-player-settings', {
-      detail: { lyricOffset: newOffset }
-    }));
-  };
 
   // Fetch Lyrics Logic
   useEffect(() => {
@@ -200,12 +182,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3 }}
-      className={`absolute inset-0 z-20 flex flex-col overflow-hidden rounded-3xl ${
+      className={`absolute inset-0 z-20 flex flex-col overflow-hidden rounded-[40px] ${
           isFullscreen ? 'bg-black/30 backdrop-blur-xl' : 'bg-black/40 backdrop-blur-md border border-white/5'
       }`}
     >
       {/* --- Controls Header --- */}
-      <div className="absolute top-0 left-0 right-0 z-50 p-4 md:p-6 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-50 p-6 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
         {/* Left: Fullscreen Toggle */}
         <div className="pointer-events-auto">
             {onToggleFullscreen && (
@@ -219,29 +201,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({
 
         {/* Right Side Controls */}
         <div className="flex flex-col items-end gap-3 pointer-events-auto">
-          {/* Close Button (only if not fullscreen or handled externally) */}
-          {!isFullscreen && onClose && (
-             <md-icon-button onClick={onClose} style={{ '--md-icon-button-icon-size': '24px' }}>
-                <md-icon class="material-symbols-rounded">close</md-icon>
-             </md-icon-button>
-          )}
-
-          {/* Sync Controls Group */}
-          <div className="flex flex-col gap-2 items-end">
-            <div className="flex items-center gap-1 bg-white/10 rounded-full p-1 backdrop-blur-md border border-white/5 shadow-lg">
-                <md-icon-button onClick={() => updateOffset(-100)} title="Delay Lyrics (-100ms)" style={{ '--md-icon-button-icon-size': '18px', '--md-icon-button-state-layer-width': '32px', '--md-icon-button-state-layer-height': '32px' }}>
-                    <md-icon class="material-symbols-rounded">remove</md-icon>
-                </md-icon-button>
-                
-                <span className="text-xs font-mono min-w-[3rem] text-center text-white/90 font-bold select-none">
-                  {localOffset > 0 ? '+' : ''}{localOffset}ms
-                </span>
-                
-                <md-icon-button onClick={() => updateOffset(100)} title="Advance Lyrics (+100ms)" style={{ '--md-icon-button-icon-size': '18px', '--md-icon-button-state-layer-width': '32px', '--md-icon-button-state-layer-height': '32px' }}>
-                    <md-icon class="material-symbols-rounded">add</md-icon>
-                </md-icon-button>
-            </div>
-
             {/* AI Sync Magic Button */}
             <md-icon-button
                onClick={handleGenerateWordSync}
@@ -253,7 +212,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                   {loading ? 'sync' : 'auto_awesome'}
                </md-icon>
             </md-icon-button>
-          </div>
         </div>
       </div>
 
@@ -291,7 +249,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                           <motion.div
                               key={i}
                               layout
-                              onClick={() => onSeek(line.time - (localOffset/1000))}
+                              onClick={() => onSeek(line.time - (lyricOffset/1000))}
                               initial={{ opacity: 0.5 }}
                               animate={{
                                   scale: isActive ? 1 : 0.98,
@@ -347,7 +305,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                       <motion.div
                           key={i}
                           layout
-                          onClick={() => onSeek(line.time - (localOffset/1000))}
+                          onClick={() => onSeek(line.time - (lyricOffset/1000))}
                           animate={{
                               scale: isActive ? 1 : 0.95,
                               opacity: isActive ? 1 : isPast ? 0.3 : 0.35,
