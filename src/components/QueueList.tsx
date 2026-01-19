@@ -26,7 +26,6 @@ interface QueueItemProps {
   index?: number;
   onPlay: () => void;
   onRemove: () => void;
-  onPlayNext?: () => void;
 }
 
 // --- Components ---
@@ -36,7 +35,6 @@ const QueueItem = memo(({
   isCurrent,
   onPlay,
   onRemove,
-  onPlayNext,
   isHistory,
   canDrag,
 }: QueueItemProps) => {
@@ -48,19 +46,19 @@ const QueueItem = memo(({
       <md-list-item
         type="button"
         headline={track.title}
-        supporting-text={track.artist} // Note: md-web often prefers hyphenated attributes in React or requires strict prop mapping
+        supporting-text={track.artist}
         onClick={onPlay}
-        class="w-full" // Ensure the custom element fills width
+        class="w-full"
         style={{
             cursor: 'pointer',
             '--md-list-item-leading-image-height': '56px',
             '--md-list-item-leading-image-width': '56px',
-            '--md-list-item-leading-image-shape': '12px',
+            '--md-list-item-leading-image-shape': '16px',
             '--md-list-item-headline-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
             '--md-list-item-supporting-text-color': isCurrent ? 'var(--md-sys-color-primary)' : 'inherit',
             backgroundColor: isCurrent ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
-            borderRadius: '16px',
-            marginBottom: '4px',
+            borderRadius: '24px',
+            marginBottom: '8px',
             opacity: isHistory ? 0.6 : 1,
             width: '100%'
         }}
@@ -77,13 +75,12 @@ const QueueItem = memo(({
                         controls.start(e);
                     }}
                 >
-                    {/* FIXED: class -> className */}
                     <md-icon className="material-symbols-rounded">drag_indicator</md-icon>
                 </div>
             )}
 
             {/* Artwork */}
-            <div className="relative w-14 h-14 rounded-[12px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5 shrink-0">
+            <div className="relative w-14 h-14 rounded-[16px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5 shrink-0">
                 <img
                     src={track.coverArt}
                     alt={track.title}
@@ -108,12 +105,6 @@ const QueueItem = memo(({
 
         {/* Actions */}
         <div slot="end" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-             {!isCurrent && onPlayNext && (
-                // @ts-ignore
-                <md-icon-button onClick={onPlayNext} title="Play Next">
-                    <md-icon className="material-symbols-rounded">queue_play_next</md-icon>
-                </md-icon-button>
-             )}
              {/* @ts-ignore */}
              <md-icon-button onClick={onRemove} title="Remove">
                  <md-icon className="material-symbols-rounded">close</md-icon>
@@ -158,9 +149,7 @@ const QueueList: React.FC<QueueListProps> = ({
   tracks, 
   onReorder, 
   onPlay, 
-  onRemove, 
-  onPlayNext, 
-  onClose 
+  onRemove
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeTrackRef = useRef<HTMLDivElement>(null);
@@ -201,21 +190,15 @@ const QueueList: React.FC<QueueListProps> = ({
     return (
       <div className="flex flex-col h-full bg-surface text-on-surface">
         <div className="flex w-full justify-between items-center px-6 pt-6">
-          <h3 className="text-headline-small font-bold">Queue</h3>
-          {onClose && (
-            // @ts-ignore
-            <md-icon-button onClick={onClose}>
-              <md-icon className="material-symbols-rounded">close</md-icon>
-            </md-icon-button>
-          )}
+          <h3 className="text-headline-medium font-bold">Queue</h3>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <div className="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center">
+          <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center">
              <md-icon className="material-symbols-rounded text-on-surface-variant/50" style={{fontSize: '64px'}}>album</md-icon>
           </div>
           <div>
-            <h4 className="text-title-large font-medium">Your queue is empty</h4>
-            <p className="text-body-medium text-on-surface-variant mt-2">Add some tracks to start the vibe.</p>
+            <h4 className="text-headline-small font-medium">Your queue is empty</h4>
+            <p className="text-body-large text-on-surface-variant mt-2">Add some tracks to start the vibe.</p>
           </div>
         </div>
       </div>
@@ -226,21 +209,15 @@ const QueueList: React.FC<QueueListProps> = ({
     <div className="h-full flex flex-col relative bg-surface text-on-surface">
       
       {/* --- Header --- */}
-      <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-surface/95 backdrop-blur-xl z-30 border-b border-outline-variant/10">
+      <div className="flex items-center justify-between px-6 py-6 shrink-0 bg-surface/95 backdrop-blur-xl z-30">
         <div className="flex items-baseline gap-3">
-           <h3 className="text-headline-small font-bold">Queue</h3>
-           <span className="text-body-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
+           <h3 className="text-headline-medium font-bold">Queue</h3>
+           <span className="text-title-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
         </div>
-        {onClose && (
-          // @ts-ignore
-          <md-icon-button onClick={onClose}>
-            <md-icon className="material-symbols-rounded">close</md-icon>
-          </md-icon-button>
-        )}
       </div>
 
       {/* --- Main Scroll Area --- */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-2 pb-32">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 pb-32">
         
         {/* History Section */}
         <AnimatePresence initial={false}>
@@ -250,12 +227,12 @@ const QueueList: React.FC<QueueListProps> = ({
               animate={{ opacity: 1, height: 'auto' }}
               className="mt-4 mb-2"
             >
-              <div className="flex items-center gap-3 px-4 mb-2 opacity-60">
-                 <span className="text-label-small font-bold uppercase tracking-widest text-on-surface-variant">History</span>
+              <div className="flex items-center gap-3 px-2 mb-4 opacity-60">
+                 <span className="text-label-medium font-bold uppercase tracking-widest text-on-surface-variant">History</span>
                  <div className="h-px bg-outline-variant flex-1 opacity-50" />
               </div>
               {/* @ts-ignore */}
-              <md-list>
+              <md-list class="bg-transparent">
                 {history.map((trackId, i) => tracks[trackId] && (
                     <QueueItem
                       key={`${trackId}-hist-${i}`}
@@ -264,7 +241,6 @@ const QueueList: React.FC<QueueListProps> = ({
                       isHistory={true}
                       onPlay={() => onPlay(trackId)}
                       onRemove={() => onRemove(trackId)}
-                      onPlayNext={() => onPlayNext(trackId)}
                     />
                 ))}
               </md-list>
@@ -274,12 +250,12 @@ const QueueList: React.FC<QueueListProps> = ({
 
         {/* Current Track (Hero Section) */}
         {current && tracks[current] && (
-          <div ref={activeTrackRef} className="my-6 sticky top-0 z-20 pt-2 -mx-2 px-2 pb-4 bg-surface/95 backdrop-blur-md shadow-sm rounded-b-3xl ring-1 ring-white/5">
-             <div className="text-label-small font-bold text-primary uppercase tracking-widest mb-3 px-4 flex items-center gap-2">
+          <div ref={activeTrackRef} className="my-6 sticky top-0 z-20 pt-4 -mx-4 px-4 pb-6 bg-surface/95 backdrop-blur-md shadow-sm rounded-b-[32px] ring-1 ring-white/5">
+             <div className="text-label-medium font-bold text-primary uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
                Now Playing
              </div>
              
-             <div className="relative px-2">
+             <div className="relative">
                <QueueItem
                  track={tracks[current]}
                  isCurrent={true}
@@ -292,14 +268,14 @@ const QueueList: React.FC<QueueListProps> = ({
 
         {/* Upcoming Section */}
         <div className="relative mt-4">
-          <div className="flex justify-between items-end mb-2 px-4">
-             <span className="text-label-small font-bold text-on-surface-variant uppercase tracking-widest">Next Up</span>
+          <div className="flex justify-between items-end mb-4 px-2">
+             <span className="text-label-medium font-bold text-on-surface-variant uppercase tracking-widest">Next Up</span>
              {upcoming.length > 0 && (
                <button 
                  onClick={() => onReorder([...history, (current || '')])}
-                 className="flex items-center gap-1 text-xs font-medium text-error hover:text-error-container transition-colors"
+                 className="flex items-center gap-1 text-label-small font-bold text-error hover:text-error-container transition-colors uppercase tracking-wider"
                >
-                 Clear
+                 Clear Queue
                </button>
              )}
           </div>
@@ -328,7 +304,6 @@ const QueueList: React.FC<QueueListProps> = ({
                         canDrag={true}
                         onPlay={() => onPlay(trackId)}
                         onRemove={() => onRemove(trackId)}
-                        onPlayNext={() => onPlayNext(trackId)}
                     />
                 ))}
                 </Reorder.Group>
@@ -342,7 +317,6 @@ const QueueList: React.FC<QueueListProps> = ({
                         isCurrent={false}
                         onPlay={() => onPlay(trackId)}
                         onRemove={() => onRemove(trackId)}
-                        onPlayNext={() => onPlayNext(trackId)}
                         />
                     ))}
                 </div>
@@ -352,7 +326,7 @@ const QueueList: React.FC<QueueListProps> = ({
           {upcoming.length === 0 && (
              <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4 text-on-surface-variant">
                  <md-icon className="material-symbols-rounded text-on-surface-variant/50" style={{fontSize: '32px'}}>queue_music</md-icon>
-                 <p className="text-body-medium font-medium">End of queue</p>
+                 <p className="text-body-large font-medium">End of queue</p>
              </div>
           )}
         </div>
