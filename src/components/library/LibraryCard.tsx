@@ -5,14 +5,6 @@ import '@material/web/ripple/ripple.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/icon/icon.js';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-elevated-card': any;
-    }
-  }
-}
-
 interface LibraryCardProps {
   title: string;
   subtitle: string;

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, Music, X, Play, Pause } from 'lucide-react';
 import { dbService } from '../db';
 import { Track } from '../types';
 import '@material/web/iconbutton/icon-button.js';
@@ -193,8 +192,8 @@ const AdiRetrograde: React.FC<{ isOpen: boolean; onClose: () => void; stats: any
         </div>
 
         {/* Close Button */}
-        <button onClick={onClose} className="absolute top-6 right-4 z-50 p-2 text-on-surface-variant/50 hover:text-tertiary">
-          <X size={28} strokeWidth={3} />
+        <button onClick={onClose} className="absolute top-6 right-4 z-50 p-2 text-on-surface-variant/50 hover:text-tertiary flex items-center justify-center">
+          <md-icon class="material-symbols-rounded" style={{ fontSize: '28px', fontWeight: 700 }}>close</md-icon>
         </button>
 
         {/* Slide Content */}
@@ -309,8 +308,8 @@ const Stats: React.FC<StatsProps> = ({ playTrack }) => {
                         <div className="text-label-large font-bold uppercase tracking-widest mb-1 opacity-80">Play</div>
                         <div className="text-headline-medium md:text-headline-large font-black font-serif tracking-tight">RETROGRADE '26</div>
                     </div>
-                    <div className="bg-on-tertiary-container/10 p-4 rounded-full">
-                        <Play fill="currentColor" size={32} />
+                    <div className="bg-on-tertiary-container/10 p-4 rounded-full flex items-center justify-center">
+                        <md-icon class="material-symbols-rounded filled" style={{ fontSize: '32px' }}>play_arrow</md-icon>
                     </div>
                 </div>
             </motion.button>
@@ -333,7 +332,7 @@ const Stats: React.FC<StatsProps> = ({ playTrack }) => {
             {/* Top Songs List */}
             <div>
                 <h3 className="text-title-large font-bold text-on-surface mb-4 flex items-center gap-2">
-                   <Music size={24} className="text-tertiary" /> Top Songs
+                   <md-icon class="material-symbols-rounded text-tertiary" style={{ fontSize: '24px' }}>music_note</md-icon> Top Songs
                 </h3>
                 <div className="space-y-2">
                     {topTracks.map((track, i) => (

@@ -12,22 +12,6 @@ import '@material/web/chips/assist-chip.js';
 import '@material/web/ripple/ripple.js';
 import '@material/web/labs/card/elevated-card.js';
 
-// --- TYPE DEFINITIONS ---
-// Extending global JSX for custom elements (Material Web)
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-filled-button': any;
-      'md-filled-tonal-button': any;
-      'md-elevation': any;
-      'md-icon': any;
-      'md-assist-chip': any;
-      'md-ripple': any;
-      'md-elevated-card': any;
-    }
-  }
-}
-
 interface HomeProps {
   filteredTracks: Track[];
   playTrack: (id: string, options?: any) => void;
@@ -216,7 +200,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
             {onFileUpload && (
               /* Removed wrapping <label> to prevent double event triggering */
               <md-filled-tonal-button
-                  style={{ height: '64px', borderRadius: '32px' }}
+                  className="h-16 rounded-[32px]"
                   onClick={handleImportClick}
               >
                 <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
@@ -224,16 +208,15 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               </md-filled-tonal-button>
             )}
 
-            <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '64px', borderRadius: '32px' }}>
+            <md-filled-tonal-button onClick={handleShufflePlay} className="h-16 rounded-[32px]">
                 <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
                 <span className="text-title-medium">Shuffle</span>
             </md-filled-tonal-button>
 
             <md-filled-button
                 onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
+                className="h-16 rounded-[32px]"
                 style={{ 
-                  height: '64px', 
-                  borderRadius: '32px', 
                   '--md-filled-button-container-color': 'var(--md-sys-color-primary)', 
                   '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' 
                 }}

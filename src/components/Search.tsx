@@ -14,24 +14,6 @@ import '@material/web/list/list-item.js';
 import '@material/web/labs/card/elevated-card.js';
 import '@material/web/ripple/ripple.js';
 
-// Declare Material Web Components
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-outlined-text-field': any;
-      'md-filled-button': any;
-      'md-text-button': any;
-      'md-icon-button': any;
-      'md-icon': any;
-      'md-circular-progress': any;
-      'md-list': any;
-      'md-list-item': any;
-      'md-elevated-card': any;
-      'md-ripple': any;
-    }
-  }
-}
-
 interface SearchProps {
   activeTab: string;
   searchQuery: string;

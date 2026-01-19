@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
-import { Play, Trash2, Plus, Shuffle, Music, ChevronLeft, GripVertical, Edit2, Save, Search, Clock } from 'lucide-react';
 import { Playlist, Track } from '../types';
 import { dbService } from '../db';
 import { LibraryCard } from './library/LibraryCard';
@@ -11,18 +10,6 @@ import '@material/web/icon/icon.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/filled-tonal-button.js';
 import '@material/web/textfield/outlined-text-field.js';
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-list': any;
-      'md-list-item': any;
-      'md-filled-button': any;
-      'md-filled-tonal-button': any;
-      'md-outlined-text-field': any;
-    }
-  }
-}
 
 interface PlaylistsProps {
   playlists: Record<string, Playlist>;
@@ -104,11 +91,11 @@ const PlaylistTrackItem = ({
 
           {/* Drag Handle */}
           <div slot="start" onPointerDown={(e) => controls.start(e)} className="pr-3 cursor-grab active:cursor-grabbing text-on-surface-variant">
-             <GripVertical size={20} />
+             <md-icon class="material-symbols-rounded" style={{ fontSize: '20px' }}>drag_indicator</md-icon>
           </div>
 
-          <div slot="start" className="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant">
-             {track.coverArt ? <img src={track.coverArt} className="w-full h-full object-cover" /> : <Music className="p-2 w-full h-full text-on-surface-variant"/>}
+          <div slot="start" className="w-12 h-12 rounded-lg overflow-hidden bg-surface-variant flex items-center justify-center">
+             {track.coverArt ? <img src={track.coverArt} className="w-full h-full object-cover" /> : <md-icon class="material-symbols-rounded text-on-surface-variant">music_note</md-icon>}
           </div>
 
           <md-icon-button slot="end" onClick={(e: any) => { e.stopPropagation(); onRemove(); }}>
@@ -205,7 +192,7 @@ const PlaylistDetail = ({
         <div className="flex flex-col justify-end items-center md:items-start flex-1 gap-4 min-w-0 w-full">
           <div className="w-full text-center md:text-left">
             <button onClick={onBack} className="text-on-surface-variant hover:text-on-surface flex items-center justify-center md:justify-start gap-2 mb-4 transition-colors">
-              <ChevronLeft size={20} /> Back to Playlists
+              <md-icon class="material-symbols-rounded" style={{ fontSize: '20px' }}>arrow_back</md-icon> Back to Playlists
             </button>
 
             {isEditing ? (
@@ -225,7 +212,7 @@ const PlaylistDetail = ({
 
                     <div className="flex gap-2 justify-center md:justify-start pt-2">
                         <md-filled-button onClick={handleSaveDetails}>
-                            <md-icon slot="icon"><Save size={18} /></md-icon>
+                            <md-icon slot="icon" class="material-symbols-rounded">save</md-icon>
                             Save
                         </md-filled-button>
                         <md-filled-tonal-button onClick={() => { setIsEditing(false); setEditName(playlist.name); setEditDesc(playlist.description || ''); }}>
@@ -250,7 +237,7 @@ const PlaylistDetail = ({
                     <p className="text-on-surface-variant/50 font-medium flex items-center justify-center md:justify-start gap-2 text-sm md:text-base mt-2">
                       <span>{items.length} tracks</span>
                       <span>•</span>
-                      <span className="flex items-center gap-1"><Clock size={14}/> {formattedDuration}</span>
+                      <span className="flex items-center gap-1"><md-icon class="material-symbols-rounded" style={{ fontSize: '14px' }}>schedule</md-icon> {formattedDuration}</span>
                     </p>
                 </>
             )}
@@ -258,11 +245,11 @@ const PlaylistDetail = ({
 
           <div className="flex gap-3 mt-4">
             <md-filled-button onClick={() => handlePlay(false)} disabled={items.length === 0 ? true : undefined}>
-                <md-icon slot="icon"><Play size={18} fill="currentColor" /></md-icon>
+                <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
                 Play
             </md-filled-button>
             <md-filled-tonal-button onClick={() => handlePlay(true)} disabled={items.length === 0 ? true : undefined}>
-                <md-icon slot="icon"><Shuffle size={18} /></md-icon>
+                <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
                 Shuffle
             </md-filled-tonal-button>
           </div>
@@ -273,7 +260,7 @@ const PlaylistDetail = ({
       <div className="space-y-1">
         {items.length === 0 ? (
             <div className="text-center py-20 text-on-surface-variant/40 bg-surface-container rounded-3xl border border-dashed border-outline-variant">
-                <Music size={48} className="mx-auto mb-4 opacity-50" />
+                <md-icon class="material-symbols-rounded mx-auto mb-4 opacity-50" style={{ fontSize: '48px' }}>music_note</md-icon>
                 <p className="text-lg font-medium">This playlist is empty.</p>
                 <p className="text-sm">Add songs from your library to get started.</p>
             </div>
