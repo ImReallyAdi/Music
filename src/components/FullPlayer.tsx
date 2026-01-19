@@ -88,6 +88,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 }) => {
   const [showQueue, setShowQueue] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [isLyricsFullscreen, setIsLyricsFullscreen] = useState(false);
   const [tracks, setTracks] = useState<Record<string, Track>>({});
 
   // Local state for the slider to ensure immediate feedback
@@ -212,30 +213,23 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           }}
           className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
         >
-          {/* Dynamic Background with improved gradient for visibility */}
+          {/* Dynamic Background */}
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             {/* Base Color wash */}
              <motion.div
                 animate={{ background: `linear-gradient(to bottom, ${colors.primary}20, ${colors.background} 90%)` }}
                 transition={{ duration: 1 }}
                 className="absolute inset-0"
              />
-
-            {/* Blurred Artwork */}
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.3 }}
               transition={{ duration: 1 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[100px] scale-125 brightness-50" // Lower brightness for contrast
+              className="w-full h-full object-cover blur-[100px] scale-125 brightness-50"
               alt=""
             />
-
-            {/* Gradient Overlay for Text Readability */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/80" />
-
-            {/* Grain Overlay */}
             <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
             />
@@ -249,14 +243,39 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             <div className="w-16 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors backdrop-blur-md shadow-sm" />
           </div>
 
-          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0">
+          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0 relative">
             
-            {/* Left: Artwork */}
+            {/* FULLSCREEN LYRICS */}
+            <AnimatePresence>
+                {isLyricsFullscreen && (
+                    <motion.div
+                        layoutId="lyrics-view"
+                        className="fixed inset-0 z-50 flex flex-col"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <LyricsView
+                            track={currentTrack}
+                            currentTime={currentTime}
+                            onSeek={handleSeek}
+                            onTrackUpdate={onTrackUpdate}
+                            lyricOffset={playerState.lyricOffset}
+                            setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))}
+                            isFullscreen={true}
+                            onToggleFullscreen={() => setIsLyricsFullscreen(false)}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Left: Artwork / Inline Lyrics */}
             <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
               <AnimatePresence mode="wait">
-                {showLyrics ? (
+                {!isLyricsFullscreen && showLyrics ? (
                   <motion.div
                      key="lyrics"
+                     layoutId="lyrics-view"
                      initial={{ opacity: 0, scale: 0.95 }}
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
@@ -271,6 +290,8 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                        onTrackUpdate={onTrackUpdate}
                        lyricOffset={playerState.lyricOffset}
                        setLyricOffset={(o) => setPlayerState(p => ({...p, lyricOffset: o}))}
+                       isFullscreen={false}
+                       onToggleFullscreen={() => setIsLyricsFullscreen(true)}
                      />
                   </motion.div>
                 ) : showQueue ? (
@@ -313,14 +334,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                       className="w-full h-full object-cover"
                       alt="Album Art"
                     />
-
-                    {/* WEB MODE BADGE */}
-                    {currentTrack.source === 'youtube' && (
-                        <div className="absolute top-4 right-4 bg-error-container text-on-error-container px-3 py-1 rounded-full shadow-lg backdrop-blur-md z-10 font-bold text-label-small flex items-center gap-1 border border-white/10">
-                            <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>smart_display</md-icon>
-                            <span>WEB</span>
-                        </div>
-                    )}
 
                     {/* Beat Glow Flash */}
                     <motion.div

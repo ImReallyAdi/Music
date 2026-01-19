@@ -20,8 +20,8 @@ export interface Track {
   playCount?: number;
   lastPlayed?: number;
   isFavorite?: boolean;
-  // NEW: YouTube / Web Playback support
-  source?: 'local' | 'youtube';
+  // NEW: Import support
+  source?: 'local' | 'url';
   externalUrl?: string;
 }
 

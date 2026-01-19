@@ -1,31 +1,42 @@
-from playwright.sync_api import Page, expect, sync_playwright
-import time
+from playwright.sync_api import sync_playwright, expect
 
-def verify_ui(page: Page):
-    print("Navigating to home (Dark Mode)...")
+def run(playwright):
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context()
+    page = context.new_page()
+
+    # 1. Go to Home
     page.goto("http://localhost:3000")
+    page.wait_for_load_state("networkidle")
 
-    # Wait for app to load
-    print("Waiting for app to load...")
-    page.wait_for_selector("text=Fresh picks", timeout=10000)
+    page.screenshot(path="verification/home.png")
+    print("Home screenshot taken.")
 
-    # Take screenshot of Home
-    print("Taking screenshot of Home...")
-    time.sleep(2) # Wait for animations
-    page.screenshot(path="verification/home_dark.png")
+    # 2. Go to Search
+    # Use index-based selection for web components
+    search_tab = page.locator("md-navigation-tab").nth(1)
+    if search_tab.is_visible():
+        search_tab.click()
+    else:
+        print("Search tab not found.")
 
-    print("Done.")
+    page.wait_for_timeout(1000)
+    page.screenshot(path="verification/search.png")
+    print("Search screenshot taken.")
 
-if __name__ == "__main__":
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        # Force dark color scheme
-        context = browser.new_context(viewport={"width": 1280, "height": 800}, color_scheme='dark')
-        page = context.new_page()
-        try:
-            verify_ui(page)
-        except Exception as e:
-            print(f"Error: {e}")
-            page.screenshot(path="verification/error.png")
-        finally:
-            browser.close()
+    # 3. Type a URL in Search to see Import UI
+    search_field = page.locator("md-outlined-text-field")
+    if search_field.count() > 0:
+        # Focusing the field often requires clicking the internal input or just clicking the component
+        search_field.first.click()
+        page.keyboard.type("https://example.com/audio.mp3")
+        page.wait_for_timeout(1000)
+        page.screenshot(path="verification/search_import.png")
+        print("Search Import UI screenshot taken.")
+    else:
+        print("Search field not found.")
+
+    browser.close()
+
+with sync_playwright() as playwright:
+    run(playwright)

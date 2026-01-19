@@ -470,36 +470,55 @@ const Library: React.FC<LibraryProps> = ({
                 ) : (
                     <AnimatePresence mode="wait">
 
-                        {/* VIEW: SONGS / FAVORITES (Grid of Cards) */}
+                        {/* VIEW: SONGS / FAVORITES (List) */}
                         {(libraryTab === 'Songs' || libraryTab === 'Favorites') && (
                             <motion.div 
-                                key="songs-grid"
+                                key="songs-list"
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+                                className="w-full max-w-5xl mx-auto"
                             >
                                 {tracksToRender.length > 0 ? (
-                                    tracksToRender.map((track) => (
-                                        <LibraryCard
-                                            key={track.id}
-                                            title={track.title}
-                                            subtitle={track.artist}
-                                            image={track.coverArt}
-                                            active={playerState.currentTrackId === track.id}
-                                            playing={playerState.isPlaying}
-                                            onPlay={(e) => handlePlayTrack(track.id)}
-                                            onClick={() => handlePlayTrack(track.id)} // Click plays for now
-                                            actions={
-                                                <>
-                                                    <md-icon-button onClick={(e: any) => { e.stopPropagation(); openAddToPlaylist(track.id); }}>
-                                                        <md-icon class="material-symbols-rounded">playlist_add</md-icon>
-                                                    </md-icon-button>
-                                                    <md-icon-button onClick={(e: any) => { e.stopPropagation(); handleDelete(track.id); }}>
-                                                        <md-icon class="material-symbols-rounded">delete</md-icon>
-                                                    </md-icon-button>
-                                                </>
-                                            }
-                                        />
-                                    ))
+                                    <md-list class="bg-transparent">
+                                        {tracksToRender.map((track) => (
+                                            <motion.div
+                                                layout
+                                                key={track.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                            >
+                                                <md-list-item
+                                                    type="button"
+                                                    onClick={() => handlePlayTrack(track.id)}
+                                                    style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
+                                                >
+                                                    <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
+                                                        {track.coverArt ? (
+                                                        <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover"/>
+                                                        ) : (
+                                                        <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
+                                                        )}
+                                                    </div>
+
+                                                    <div slot="headline" className={`font-bold truncate ${playerState.currentTrackId === track.id ? 'text-primary' : 'text-on-surface'}`}>
+                                                        {track.title}
+                                                    </div>
+                                                    <div slot="supporting-text" className="text-on-surface-variant truncate opacity-80">{track.artist}</div>
+
+                                                    <div slot="end" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                        <span className="text-label-small text-on-surface-variant/70 mr-4 hidden md:block">{formatDuration(track.duration)}</span>
+
+                                                        <md-icon-button onClick={() => openAddToPlaylist(track.id)}>
+                                                            <md-icon class="material-symbols-rounded">playlist_add</md-icon>
+                                                        </md-icon-button>
+
+                                                        <md-icon-button onClick={() => handleDelete(track.id)}>
+                                                            <md-icon class="material-symbols-rounded">delete</md-icon>
+                                                        </md-icon-button>
+                                                    </div>
+                                                </md-list-item>
+                                            </motion.div>
+                                        ))}
+                                    </md-list>
                                 ) : (
                                     <div className="col-span-full flex flex-col items-center justify-center py-20 text-on-surface-variant/40">
                                         <md-icon class="material-symbols-rounded" style={{ fontSize: '64px', opacity: 0.5 }}>{libraryTab === 'Favorites' ? 'favorite' : 'music_off'}</md-icon>

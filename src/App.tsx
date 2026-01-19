@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import JSZip from 'jszip';
-import ReactPlayer from 'react-player/youtube';
 import { dbService } from './db';
-import { Track, LibraryState, RepeatMode, Playlist } from './types';
+import { Track, LibraryState, Playlist } from './types';
 import { useMetadata } from './hooks/useMetadata';
 import { parseTrackMetadata } from './utils/metadata';
 import { extractDominantColor, ThemePalette } from './utils/colors';
-import { YouTubeTrack } from './utils/youtube';
 import LoadingOverlay from './components/LoadingOverlay';
 import Home from './components/Home';
 import Library from './components/Library';
@@ -89,14 +87,7 @@ function MusicApp() {
     toggleShuffle,
     playTrack,
     setAudioElement,
-    setCrossfadeAudioElement,
-    setWebPlayer, // NEW
-    webMuted,
-    onWebProgress, // NEW
-    onWebDuration, // NEW
-    onWebEnded, // NEW
-    onWebPlay, // NEW
-    onWebPause // NEW
+    setCrossfadeAudioElement
   } = useAudioPlayer(library.tracks, updateMediaSession);
 
   const [audioElementNode, setAudioElementNode] = useState<HTMLAudioElement | null>(null);
@@ -138,75 +129,6 @@ function MusicApp() {
       window.addEventListener('update-player-settings', handleSettingsUpdate);
       return () => window.removeEventListener('update-player-settings', handleSettingsUpdate);
   }, [setPlayer]);
-
-  const handleAddWebTrack = useCallback(async (url: string, metadata?: YouTubeTrack) => {
-      // Create a temporary track
-      const id = crypto.randomUUID();
-
-      const newTrack: Track = {
-          id,
-          title: metadata ? metadata.title : 'YouTube Stream',
-          artist: metadata ? metadata.channel : 'YouTube',
-          album: 'Web',
-          duration: metadata ? metadata.duration : 0, // already in seconds
-          addedAt: Date.now(),
-          source: 'youtube',
-          externalUrl: url,
-          // Use formatted artwork or fallback
-          coverArt: metadata ? metadata.thumbnail : 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?q=80&w=512'
-      };
-
-      // Save to DB so it persists and is in library
-      await dbService.saveTrack(newTrack, new Blob([])); // Empty blob for web tracks
-      await refreshLibrary();
-
-      // Play it
-      playTrack(id, { immediate: true, trackDef: newTrack });
-  }, [refreshLibrary, playTrack]);
-
-  const handleCreatePlaylist = useCallback(async (name: string) => {
-    const newPlaylist: Playlist = {
-        id: crypto.randomUUID(),
-        name,
-        trackIds: [],
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
-    await dbService.savePlaylist(newPlaylist);
-    await refreshLibrary();
-    addToast(`Created playlist "${name}"`, 'success');
-  }, [refreshLibrary, addToast]);
-
-  const handleAddTrackToPlaylist = useCallback(async (playlistId: string, trackId: string) => {
-    const playlist = library.playlists[playlistId];
-    if (!playlist) return;
-
-    if (playlist.trackIds.includes(trackId)) {
-        addToast("Track already in playlist", 'info');
-        return;
-    }
-
-    const updatedPlaylist = {
-        ...playlist,
-        trackIds: [...playlist.trackIds, trackId],
-        updatedAt: Date.now()
-    };
-    await dbService.savePlaylist(updatedPlaylist);
-    await refreshLibrary();
-    addToast("Added to playlist", 'success');
-  }, [library.playlists, refreshLibrary, addToast]);
-
-  const handleAddYouTubeTrack = useCallback(async (ytTrack: YouTubeTrack) => {
-    const track = await dbService.addYouTubeTrack(ytTrack);
-    await refreshLibrary();
-    addToast(`Added "${track.title}" to library`, 'success');
-  }, [refreshLibrary, addToast]);
-
-  const handleAddYouTubeToPlaylist = useCallback(async (playlistId: string, ytTrack: YouTubeTrack) => {
-     const track = await dbService.addYouTubeTrack(ytTrack);
-     await refreshLibrary(); // Ensure track is in library first
-     await handleAddTrackToPlaylist(playlistId, track.id);
-  }, [handleAddTrackToPlaylist, refreshLibrary]);
 
   // --- DERIVED STATE ---
 
@@ -393,8 +315,6 @@ function MusicApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, handleSeek, currentTime, player.volume, setVolume]);
 
-  const isYouTubeActive = currentTrack?.source === 'youtube';
-
   return (
     <>
       <audio 
@@ -422,30 +342,6 @@ function MusicApp() {
         preload="auto"
         controlsList="nodownload"
         className="hidden"
-      />
-
-      <ReactPlayer
-        ref={(p) => {
-          if (p) setWebPlayer(p);
-        }}
-        url="https://www.youtube.com/watch?v=jfKfPfyJRdk" // STABLE URL - Valid ID required for init
-        playing={player.isPlaying && isYouTubeActive}
-        muted={webMuted}
-        playsinline
-        width={1}
-        height={1}
-        style={{
-          position: 'fixed',
-          top: '-100px',
-          left: '-100px',
-          opacity: 0,
-          pointerEvents: 'none'
-        }}
-        onPlay={onWebPlay}
-        onPause={onWebPause}
-        onProgress={onWebProgress}
-        onDuration={onWebDuration}
-        onEnded={onWebEnded}
       />
 
       <Layout 
@@ -487,12 +383,9 @@ function MusicApp() {
                 setSearchQuery={setSearchQuery}
                 filteredTracks={filteredTracks}
                 playTrack={playTrack}
-                onAddWebTrack={handleAddWebTrack}
                 libraryTracks={library.tracks}
                 playlists={Object.values(library.playlists)}
-                onAddYouTubeTrack={handleAddYouTubeTrack}
-                onAddYouTubeToPlaylist={handleAddYouTubeToPlaylist}
-                onCreatePlaylist={handleCreatePlaylist}
+                refreshLibrary={refreshLibrary}
               />
             )}
             {activeTab === 'stats' && (

@@ -124,15 +124,6 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
         </motion.div>
       </div>
 
-      {/* Web Badge */}
-      {track.source === 'youtube' && (
-         <div className="absolute top-3 right-3 z-30">
-            <div className="bg-black/60 backdrop-blur-md rounded-full p-1.5 text-white shadow-sm border border-white/10">
-                <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>smart_display</md-icon>
-            </div>
-         </div>
-      )}
-
       {/* Ripple Effect */}
       <md-ripple></md-ripple>
     </md-elevated-card>
