@@ -38,23 +38,12 @@ const QueueItem = memo(function QueueItem({
 }: QueueItemProps) {
   const controls = useDragControls();
 
-  // FIX: Explicitly set MD3 color tokens to ensure text is visible inside Shadow DOM
   const listItemStyle: React.CSSProperties = {
     cursor: 'pointer',
     '--md-list-item-leading-image-height': '56px',
     '--md-list-item-leading-image-width': '56px',
     '--md-list-item-leading-image-shape': '16px',
-    
-    // Headline (Title) Color
-    '--md-list-item-headline-color': isCurrent 
-      ? 'var(--md-sys-color-primary)' 
-      : 'var(--md-sys-color-on-surface)',
-      
-    // Supporting Text (Artist) Color
-    '--md-list-item-supporting-text-color': isCurrent 
-      ? 'var(--md-sys-color-primary)' 
-      : 'var(--md-sys-color-on-surface-variant)',
-      
+
     backgroundColor: isCurrent ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
     borderRadius: 24,
     marginBottom: 8,
