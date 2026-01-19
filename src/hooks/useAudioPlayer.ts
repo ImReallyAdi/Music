@@ -96,7 +96,11 @@ export const useAudioPlayer = (
 
 
   // --- INITIALIZATION ---
+  const isInitializedRef = useRef(false);
+
   useEffect(() => {
+    if (isInitializedRef.current || !audioElement) return;
+
     dbService.getSetting<PlayerState>('playerState').then(saved => {
       if (saved) {
         setPlayer(prev => ({ ...prev, ...saved, isPlaying: false }));
@@ -108,7 +112,7 @@ export const useAudioPlayer = (
         // Restore local blob if needed
         if (saved.currentTrackId) {
              const track = libraryTracks[saved.currentTrackId];
-             // In local-first mode, we assume everything is local or a direct URL blob
+             // Only restore if track metadata is available (library loaded)
              if (track) {
                 dbService.getAudioBlob(saved.currentTrackId).then(blob => {
                     if (blob && audioElement) {
@@ -116,13 +120,23 @@ export const useAudioPlayer = (
                         const url = URL.createObjectURL(blob);
                         currentUrlRef.current = url;
                         audioElement.src = url;
+                        // Mark as initialized only after successful restoration
+                        isInitializedRef.current = true;
                     }
                 });
              }
+        } else {
+            // If no track to restore, we are initialized
+            isInitializedRef.current = true;
         }
+      } else {
+         isInitializedRef.current = true;
       }
     });
+  }, [audioElement, libraryTracks]);
 
+  // Cleanup on unmount (separate effect)
+  useEffect(() => {
     return () => {
         if (currentUrlRef.current) {
             URL.revokeObjectURL(currentUrlRef.current);
@@ -137,7 +151,7 @@ export const useAudioPlayer = (
             crossfadeUrlRef.current = null;
         }
     };
-  }, [audioElement, libraryTracks]);
+  }, []);
 
   useEffect(() => {
     saveState(player);
