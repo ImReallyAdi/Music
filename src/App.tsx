@@ -150,10 +150,7 @@ function MusicApp() {
       extractDominantColor(currentTrack.coverArt).then(palette => {
         if (palette) {
           setTheme(palette);
-          const rgb = palette.primary.match(/\d+, \d+, \d+/)?.[0];
-          if (rgb) {
-              document.documentElement.style.setProperty('--color-primary', rgb);
-          }
+          // extractDominantColor now applies M3 tokens globally
         }
       });
     }

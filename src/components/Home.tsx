@@ -184,63 +184,80 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       <div className="max-w-[1400px] mx-auto space-y-16 py-8">
 
         {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[56px] bg-surface-container-low p-8 md:p-16 shadow-elevation-1">
-          {/* Decorative Background */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/20 via-tertiary/20 to-transparent blur-[80px] rounded-full pointer-events-none -translate-y-1/3 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/10 blur-[100px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/4" />
+        <header className="relative w-full overflow-hidden rounded-[56px] bg-surface-container-low p-8 md:p-12 min-h-[400px] flex flex-col justify-end shadow-elevation-1 isolate">
+          {/* Animated Background Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-surface-container-low to-secondary/10 z-0" />
 
-          <div className="space-y-8 relative z-10 max-w-2xl">
+          {/* Blob-like Album Art Collage */}
+           <div className="absolute top-0 right-0 w-full md:w-[60%] h-full opacity-60 z-0 pointer-events-none mix-blend-multiply dark:mix-blend-screen">
+              {randomMix.slice(0, 3).map((track, i) => (
+                  <motion.div
+                    key={track.id}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: i * 0.1, duration: 1 }}
+                    className="absolute shadow-xl"
+                    style={{
+                        top: i === 0 ? '-10%' : i === 1 ? '10%' : '40%',
+                        right: i === 0 ? '10%' : i === 1 ? '-10%' : '15%',
+                        width: 'clamp(200px, 40vw, 300px)',
+                        height: 'clamp(200px, 40vw, 300px)',
+                        borderRadius: i === 0 ? '40% 60% 70% 30% / 40% 50% 60% 50%' : i === 1 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '50%',
+                        overflow: 'hidden',
+                        zIndex: 3 - i,
+                    }}
+                  >
+                      <img src={track.coverArt || ''} className="w-full h-full object-cover" alt="" />
+                  </motion.div>
+              ))}
+           </div>
+
+          <div className="relative z-10 flex flex-col gap-6 max-w-2xl">
             <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm">
-                  <md-icon class="material-symbols-rounded filled">auto_awesome</md-icon>
-                  <span>Discovery Mix</span>
-              </div>
+               <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
+                 Your <span className="text-primary italic">Mix</span>
+               </h1>
+               <p className="text-headline-small text-on-surface-variant mt-4 font-medium max-w-md">
+                 Fresh tunes, curated just for you.
+               </p>
             </motion.div>
 
-            <div>
-                <h2 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
-                  Fresh picks<br/>
-                  <span className="text-primary-container bg-primary/90 bg-clip-text text-transparent bg-gradient-to-r from-primary to-tertiary">Just for you</span>
-                </h2>
-                <p className="text-headline-small text-on-surface-variant max-w-lg leading-relaxed pt-4 opacity-90 font-medium">
-                  A curated selection from your library, served fresh every time you visit.
-                </p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 flex-wrap relative z-10">
-            {onFileUpload && (
-              /* Removed wrapping <label> to prevent double event triggering */
-              <md-filled-tonal-button
-                  style={{ height: '64px', borderRadius: '32px' }}
-                  onClick={handleImportClick}
-              >
-                <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
-                <span className="text-title-medium">Add Music</span>
-              </md-filled-tonal-button>
-            )}
-
-            <md-filled-tonal-button onClick={handleShufflePlay} style={{ height: '64px', borderRadius: '32px' }}>
-                <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
-                <span className="text-title-medium">Shuffle</span>
-            </md-filled-tonal-button>
-
-            <md-filled-button
-                onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-                style={{ 
-                  height: '64px', 
-                  borderRadius: '32px', 
-                  '--md-filled-button-container-color': 'var(--md-sys-color-primary)', 
-                  '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' 
-                }}
+            <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
+                className="flex flex-wrap items-center gap-6 mt-4"
             >
-                <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
-                <span className="text-title-medium font-bold">Play All</span>
-            </md-filled-button>
+                <button
+                    onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
+                    className="w-24 h-24 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-elevation-4 hover:scale-105 active:scale-95 transition-transform"
+                    aria-label="Play Your Mix"
+                >
+                    <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>play_arrow</md-icon>
+                </button>
+
+                <div className="flex flex-col gap-2">
+                     <span className="text-label-large text-on-surface uppercase tracking-widest font-bold opacity-60">Start Listening</span>
+                     <div className="flex items-center gap-4">
+                        <div className="flex -space-x-4">
+                            {randomMix.slice(0, 4).map((t, i) => (
+                                <div key={i} className="w-10 h-10 rounded-full border-2 border-surface-container-low overflow-hidden bg-surface-container-high">
+                                    {t.coverArt && <img src={t.coverArt} className="w-full h-full object-cover" alt="" />}
+                                </div>
+                            ))}
+                        </div>
+                        {onFileUpload && (
+                            <md-filled-tonal-button onClick={handleImportClick}>
+                                <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
+                                Add Music
+                            </md-filled-tonal-button>
+                        )}
+                     </div>
+                </div>
+            </motion.div>
           </div>
         </header>
 

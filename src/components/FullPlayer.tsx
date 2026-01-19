@@ -97,13 +97,13 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   const { beat } = analyzerData || { beat: false };
 
-  // Memoize color values
-  const colors = useMemo(() => ({
-    primary: theme?.primary || 'var(--md-sys-color-primary)',
-    secondary: theme?.secondary || 'var(--md-sys-color-secondary)',
-    muted: 'var(--md-sys-color-on-surface-variant)', // Force high contrast muted
-    background: theme?.background || 'var(--md-sys-color-background)'
-  }), [theme]);
+  // Use CSS variables directly
+  const colors = {
+    primary: 'var(--md-sys-color-primary)',
+    secondary: 'var(--md-sys-color-secondary)',
+    muted: 'var(--md-sys-color-on-surface-variant)',
+    background: 'var(--md-sys-color-background)'
+  };
 
   // Beat Animations
   const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
@@ -215,11 +215,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             <motion.div
-                animate={{ background: `linear-gradient(to bottom, ${colors.primary}20, ${colors.background} 90%)` }}
-                transition={{ duration: 1 }}
-                className="absolute inset-0"
-             />
+             <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-background/90" />
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
@@ -397,13 +393,16 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     onPointerDown={handleScrubStart}
                     style={{
                       width: '100%',
-                      '--md-slider-handle-color': colors.primary,
-                      '--md-slider-handle-width': '20px',
-                      '--md-slider-handle-height': '20px',
-                      '--md-slider-active-track-color': colors.primary,
-                      '--md-slider-inactive-track-color': 'rgba(255,255,255,0.2)',
-                      '--md-slider-active-track-height': '6px',
-                      '--md-slider-inactive-track-height': '6px'
+                      '--md-slider-handle-color': 'var(--md-sys-color-primary)',
+                      '--md-slider-handle-width': '24px',
+                      '--md-slider-handle-height': '24px',
+                      '--md-slider-handle-shape': '8px',
+                      '--md-slider-active-track-color': 'var(--md-sys-color-primary)',
+                      '--md-slider-inactive-track-color': 'var(--md-sys-color-surface-container-highest)',
+                      '--md-slider-active-track-height': '12px',
+                      '--md-slider-inactive-track-height': '12px',
+                      '--md-slider-active-track-shape': '6px',
+                      '--md-slider-inactive-track-shape': '6px'
                     }}
                  ></md-slider>
 

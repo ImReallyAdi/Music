@@ -55,6 +55,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
   const [isEnhancing, setIsEnhancing] = useState(false); // AI Sync active
   const [activeLineIndex, setActiveLineIndex] = useState(-1);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [viewMode, setViewMode] = useState<'synced' | 'static'>('synced');
 
   // Refs
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -205,53 +206,66 @@ const LyricsView: React.FC<LyricsViewProps> = ({
       }`}
     >
       {/* 1. Dynamic Background from Cover Art */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-surface-container-low transition-colors duration-1000">
+         <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5 }}
+            className="absolute inset-0 bg-primary/20 mix-blend-overlay"
+         />
          <motion.img
            key={track.coverArt}
            src={track.coverArt}
            initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
+           animate={{ opacity: 0.3 }}
            transition={{ duration: 1 }}
-           className="w-full h-full object-cover blur-[80px] scale-150 brightness-[0.4]"
+           className="w-full h-full object-cover blur-[100px] scale-150 mix-blend-multiply dark:mix-blend-overlay"
            alt=""
          />
-         {/* Tonal Scrim for Readability */}
-         <div className="absolute inset-0 bg-surface/40 mix-blend-multiply" />
-         {/* Gradient Vignette */}
-         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+         {/* High Contrast Gradient Overlay for Readability */}
+         <div className="absolute inset-0 bg-gradient-to-b from-surface/90 via-surface/80 to-surface/95" />
       </div>
 
-      {/* Header - Glassmorphism */}
-      <div className="relative z-50 px-4 py-3 flex items-center justify-between backdrop-blur-md bg-white/5 border-b border-white/5">
-        {/* Track Info */}
-        <div className="flex flex-col ml-2">
-          <span className="text-title-medium font-bold text-on-surface tracking-wide truncate max-w-[200px]">
+      {/* Header */}
+      <div className="relative z-50 px-4 py-4 flex items-center justify-between">
+        {/* Track Info or Toggle */}
+        <div className="flex flex-col ml-2 flex-1 min-w-0 mr-4">
+          <span className="text-title-medium font-bold text-on-surface tracking-wide truncate">
             {track.title}
           </span>
-          <span className="text-label-medium font-medium text-on-surface-variant truncate max-w-[200px]">
+          <span className="text-label-medium font-medium text-on-surface-variant truncate">
             {track.artist}
           </span>
         </div>
 
-        {/* Actions Toolbar */}
-        <div className="flex items-center gap-1 bg-black/20 p-1 rounded-full border border-white/5">
-          {onToggleFullscreen && (
-            <md-icon-button onClick={onToggleFullscreen} title="Toggle Fullscreen">
-              <md-icon class="material-symbols-rounded text-on-surface">
-                {isFullscreen ? 'close_fullscreen' : 'open_in_full'}
-              </md-icon>
-            </md-icon-button>
-          )}
+        {/* Controls */}
+        <div className="flex items-center gap-2">
+           {isFullscreen && lyrics?.synced && (
+               <div className="flex bg-surface-variant/50 rounded-full p-1 gap-1 backdrop-blur-sm mr-2">
+                    <button
+                        onClick={() => setViewMode('synced')}
+                        className={`px-3 py-1.5 rounded-full text-label-small font-bold transition-colors ${viewMode === 'synced' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+                    >
+                        Synced
+                    </button>
+                    <button
+                        onClick={() => setViewMode('static')}
+                        className={`px-3 py-1.5 rounded-full text-label-small font-bold transition-colors ${viewMode === 'static' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+                    >
+                        Static
+                    </button>
+               </div>
+           )}
 
-          {/* Primary Action: Enhanced Button */}
-          <div className="relative group">
-            <md-filled-icon-button 
+          {/* AI Enhancement */}
+          <md-filled-icon-button
               onClick={handleGenerateWordSync} 
               disabled={isEnhancing}
               title="AI Magic Sync"
               style={{
-                '--md-sys-color-primary': isEnhancing ? 'var(--md-sys-color-surface-variant)' : 'var(--md-sys-color-primary-container)',
-                '--md-sys-color-on-primary': isEnhancing ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-primary-container)',
+                 width: '40px', height: '40px',
+                '--md-sys-color-primary': isEnhancing ? 'var(--md-sys-color-surface-variant)' : 'var(--md-sys-color-tertiary-container)',
+                '--md-sys-color-on-primary': isEnhancing ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-tertiary-container)',
               }}
             >
               {isEnhancing ? (
@@ -259,12 +273,19 @@ const LyricsView: React.FC<LyricsViewProps> = ({
               ) : (
                 <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
               )}
-            </md-filled-icon-button>
-          </div>
+          </md-filled-icon-button>
 
-          {onClose && (
+          {onToggleFullscreen && (
+            <md-icon-button onClick={onToggleFullscreen} title={isFullscreen ? "Minimize" : "Expand"}>
+              <md-icon class="material-symbols-rounded text-on-surface-variant">
+                {isFullscreen ? 'close_fullscreen' : 'open_in_full'}
+              </md-icon>
+            </md-icon-button>
+          )}
+
+           {onClose && (
             <md-icon-button onClick={onClose} title="Close">
-              <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
+              <md-icon class="material-symbols-rounded text-on-surface-variant">close</md-icon>
             </md-icon-button>
           )}
         </div>
@@ -282,11 +303,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({
           renderSkeleton()
         ) : !lyrics || (lyrics.lines.length === 0 && !lyrics.plain) ? (
           <div className="flex flex-col items-center justify-center h-full text-on-surface-variant gap-4">
-            <md-icon class="material-symbols-rounded text-[48px] opacity-40">music_off</md-icon>
-            <p className="text-body-large">Lyrics not available</p>
+             <div className="w-20 h-20 rounded-full bg-surface-container-highest flex items-center justify-center mb-2">
+                <md-icon class="material-symbols-rounded text-[40px] opacity-40">music_off</md-icon>
+             </div>
+             <p className="text-body-large font-medium">Lyrics not available</p>
           </div>
-        ) : lyrics.synced ? (
-          <div className="py-[45vh] px-6 max-w-4xl mx-auto flex flex-col gap-6">
+        ) : (lyrics.synced && viewMode === 'synced') ? (
+          <div className="py-[50vh] px-6 max-w-4xl mx-auto flex flex-col gap-8">
             <div ref={scrollRef} className="contents">
               {lyrics.lines.map((line, i) => {
                 const isActive = i === activeLineIndex;
@@ -301,8 +324,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                       onClick={() => onSeek(line.time - (lyricOffset/1000))}
                       className={`cursor-pointer origin-left transition-all duration-500`}
                     >
-                      <p className={`font-bold leading-tight flex flex-wrap gap-x-[0.3em] gap-y-2 ${
-                        line.words.length > 8 ? 'text-4xl md:text-5xl' : 'text-5xl md:text-6xl'
+                      <p className={`font-black leading-tight flex flex-wrap gap-x-[0.3em] gap-y-2 ${
+                        line.words.length > 8 ? 'text-3xl md:text-5xl' : 'text-4xl md:text-6xl'
                       } tracking-tight`}>
                         {line.words.map((word, wIdx) => {
                           const isWordActive = isActive && activeWordInfo?.index === wIdx;
@@ -313,16 +336,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                               key={wIdx} 
                               className="relative inline-block transition-all duration-200"
                               style={{
-                                // Word-level activation: Primary for active word, Muted for others
                                 color: isWordActive
                                     ? 'var(--md-sys-color-primary)'
                                     : (isWordPast || isPast
                                         ? 'var(--md-sys-color-on-surface)'
                                         : 'var(--md-sys-color-on-surface-variant)'),
-                                opacity: isWordActive ? 1 : (isWordPast || isPast ? 0.8 : 0.4),
-                                transform: isWordActive ? 'scale(1.1) translateY(-2px)' : 'scale(1)',
-                                textShadow: isWordActive ? '0 0 30px var(--md-sys-color-primary)' : 'none',
-                                filter: isWordActive ? 'brightness(1.2)' : 'none'
+                                opacity: isWordActive ? 1 : (isWordPast || isPast ? 0.6 : 0.3),
+                                transform: isWordActive ? 'scale(1.05) translateY(-2px)' : 'scale(1)',
+                                filter: isWordActive ? 'brightness(1.1)' : 'none'
                               }}
                             >
                               {word.text}
@@ -341,18 +362,18 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                     layout
                     onClick={() => onSeek(line.time - (lyricOffset/1000))}
                     animate={{
-                      scale: isActive ? 1 : 0.95,
-                      opacity: isActive ? 1 : isPast ? 0.4 : 0.3,
-                      x: isActive ? 0 : 0,
-                      filter: isActive ? 'blur(0px)' : 'blur(1.5px)'
+                      scale: isActive ? 1 : 0.98,
+                      opacity: isActive ? 1 : isPast ? 0.5 : 0.3,
+                      y: isActive ? 0 : 0,
+                      filter: isActive ? 'blur(0px)' : 'blur(0.5px)'
                     }}
-                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                    className="cursor-pointer origin-left group py-4"
+                    transition={{ type: "spring", stiffness: 250, damping: 30 }}
+                    className="cursor-pointer origin-left group py-3"
                   >
-                    <p className={`font-bold transition-colors duration-300 tracking-tight ${
+                    <p className={`font-bold transition-colors duration-300 tracking-tight leading-tight ${
                        isActive
-                        ? 'text-4xl md:text-5xl text-primary'
-                        : 'text-2xl md:text-3xl text-on-surface-variant group-hover:text-on-surface'
+                        ? 'text-3xl md:text-5xl text-on-surface drop-shadow-sm'
+                        : 'text-2xl md:text-4xl text-on-surface-variant'
                     }`}>
                       {line.text}
                     </p>
@@ -367,9 +388,17 @@ const LyricsView: React.FC<LyricsViewProps> = ({
             </div>
           </div>
         ) : (
-          /* Plain Lyrics */
-          <div className="py-20 px-8 text-center whitespace-pre-wrap text-body-large text-on-surface leading-relaxed font-medium">
-            {lyrics.plain}
+          /* Static / Plain Lyrics */
+          <div className="py-20 px-8 text-center text-body-large text-on-surface leading-loose font-medium max-w-2xl mx-auto">
+             {lyrics.lines && lyrics.lines.length > 0 ? (
+                 lyrics.lines.map((line, i) => (
+                     <p key={i} className={`mb-6 ${i === activeLineIndex ? 'text-primary font-bold scale-105 transition-transform' : 'opacity-80'}`}>
+                         {line.text}
+                     </p>
+                 ))
+             ) : (
+                <div className="whitespace-pre-wrap">{lyrics.plain}</div>
+             )}
           </div>
         )}
       </div>
