@@ -40,7 +40,7 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({
       <md-elevated-card
         clickable
         class="w-full h-full flex flex-col p-0 overflow-hidden"
-        style={{ '--md-elevated-card-container-shape': '24px' }}
+        style={{ '--md-elevated-card-container-shape': 'var(--md-sys-shape-corner-large)' }}
       >
           {/* Image Container */}
           <div className="relative aspect-square w-full bg-surface-container-highest overflow-hidden">

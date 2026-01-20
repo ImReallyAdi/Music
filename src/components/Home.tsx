@@ -71,7 +71,7 @@ const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) 
         clickable
         class="aspect-square w-full relative overflow-hidden p-0"
         style={{ 
-          '--md-elevated-card-container-shape': '32px', 
+          '--md-elevated-card-container-shape': 'var(--md-sys-shape-corner-extra-large)',
           '--md-elevated-card-container-color': 'var(--md-sys-color-surface-container-highest)' 
         }}
     >
@@ -179,8 +179,8 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm ring-1 ring-white/10">
-                  <md-icon class="material-symbols-rounded filled" style={{ fontSize: '20px' }}>auto_awesome</md-icon>
+              <div className="inline-flex h-8 items-center gap-2 px-4 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm ring-1 ring-white/10">
+                  <md-icon class="material-symbols-rounded filled" style={{ fontSize: '18px' }}>auto_awesome</md-icon>
                   <span>Discovery Mix</span>
               </div>
             </motion.div>

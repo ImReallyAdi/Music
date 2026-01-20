@@ -5,7 +5,7 @@ import { dbService } from './db';
 import { Track, LibraryState, Playlist } from './types';
 import { useMetadata } from './hooks/useMetadata';
 import { parseTrackMetadata } from './utils/metadata';
-import { extractDominantColor, ThemePalette } from './utils/colors';
+import { extractDominantColor, applyThemeToDom, ThemePalette } from './utils/colors';
 import LoadingOverlay from './components/LoadingOverlay';
 import Home from './components/Home';
 import Library from './components/Library';
@@ -149,10 +149,7 @@ function MusicApp() {
       extractDominantColor(currentTrack.coverArt).then(palette => {
         if (palette) {
           setTheme(palette);
-          const rgb = palette.primary.match(/\d+, \d+, \d+/)?.[0];
-          if (rgb) {
-              document.documentElement.style.setProperty('--color-primary', rgb);
-          }
+          applyThemeToDom(palette);
         }
       });
     }
