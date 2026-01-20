@@ -155,7 +155,7 @@ const Search: React.FC<SearchProps> = ({
                     value={searchQuery}
                     onInput={handleInput}
                     ref={inputRef}
-                    style={{ width: '100%', '--md-outlined-text-field-container-shape': '28px' }}
+                    style={{ width: '100%', '--md-outlined-text-field-container-shape': 'var(--md-sys-shape-corner-extra-large)' }}
                 >
                     <md-icon slot="leading-icon" class="material-symbols-rounded">
                         {isUrl ? 'link' : 'search'}
@@ -247,7 +247,7 @@ const Search: React.FC<SearchProps> = ({
                                      <md-elevated-card
                                         clickable
                                         class="aspect-square relative overflow-hidden"
-                                        style={{ '--md-elevated-card-container-shape': '24px' }}
+                                        style={{ '--md-elevated-card-container-shape': 'var(--md-sys-shape-corner-large)' }}
                                      >
                                          <div className="absolute inset-0 bg-surface-container-high flex items-center justify-center text-on-surface-variant/50">
                                             <md-icon class="material-symbols-rounded" style={{ fontSize: '48px' }}>queue_music</md-icon>

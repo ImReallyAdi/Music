@@ -49,22 +49,22 @@
   --md-sys-color-surface-container-high: #322B2A;
   --md-sys-color-surface-container-highest: #3D3635;
 
-  /* Typography - Plus Jakarta Sans */
-  --md-sys-typescale-body-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-body-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-body-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-small-font: 'Plus Jakarta Sans', sans-serif;
+  /* Typography - Roboto Flex */
+  --md-sys-typescale-body-large-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-body-medium-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-body-small-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-label-large-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-label-medium-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-label-small-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-title-large-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-title-medium-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-title-small-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-headline-large-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-headline-medium-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-headline-small-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-display-large-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-display-medium-font: 'Roboto Flex', system-ui, sans-serif;
+  --md-sys-typescale-display-small-font: 'Roboto Flex', system-ui, sans-serif;
 
   /* Component Overrides for @material/web */
 
@@ -202,6 +202,43 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@layer components {
+  /* M3 State Layer Implementation */
+  .state-layer {
+    @apply relative overflow-hidden isolate;
+  }
+  .state-layer::before {
+    content: '';
+    @apply absolute inset-0 bg-current opacity-0 transition-opacity duration-short4 ease-standard pointer-events-none;
+  }
+  .state-layer:hover::before {
+    opacity: 0.08;
+  }
+  .state-layer:focus-visible::before {
+    opacity: 0.12;
+  }
+  .state-layer:active::before {
+    opacity: 0.12;
+  }
+
+  /* Surface Tints */
+  .surface-tint-1 {
+    @apply bg-surface-container-low;
+  }
+  .surface-tint-2 {
+    @apply bg-surface-container;
+  }
+  .surface-tint-3 {
+    @apply bg-surface-container-high;
+  }
+  .surface-tint-4 {
+    @apply bg-surface-container-highest;
+  }
+  .surface-tint-5 {
+    @apply bg-surface-container-highest; /* Tint logic usually involves primary overlay, but container levels approximate it well in practice */
+  }
 }
 
 /* Premium Glassmorphism */
