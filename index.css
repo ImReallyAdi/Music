@@ -2,244 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Dark Theme Color Palette - Material Web (Red Expressive) */
-
-  /* Primary: Vivid Red */
-  --md-sys-color-primary: #FFB4AB;
-  --md-sys-color-on-primary: #690005;
-  --md-sys-color-primary-container: #93000A;
-  --md-sys-color-on-primary-container: #FFDAD6;
-
-  /* Secondary: Soft Reddish Brown */
-  --md-sys-color-secondary: #E7BDB8;
-  --md-sys-color-on-secondary: #442927;
-  --md-sys-color-secondary-container: #5D3F3C;
-  --md-sys-color-on-secondary-container: #FFDAD6;
-
-  /* Tertiary: Gold/Yellow - Adds Vibrancy */
-  --md-sys-color-tertiary: #E6C15D;
-  --md-sys-color-on-tertiary: #3E2E04;
-  --md-sys-color-tertiary-container: #564519;
-  --md-sys-color-on-tertiary-container: #FFEFA6;
-
-  /* Error */
-  --md-sys-color-error: #FFB4AB;
-  --md-sys-color-on-error: #690005;
-  --md-sys-color-error-container: #93000A;
-  --md-sys-color-on-error-container: #FFDAD6;
-
-  /* Neutral Surfaces - Warm Dark Red/Brown base */
-  --md-sys-color-background: #201A19;
-  --md-sys-color-on-background: #EDE0DE;
-
-  --md-sys-color-surface: #201A19;
-  --md-sys-color-on-surface: #EDE0DE;
-
-  --md-sys-color-surface-variant: #534341;
-  --md-sys-color-on-surface-variant: #D8C2BF;
-
-  --md-sys-color-outline: #A08C8A;
-  --md-sys-color-outline-variant: #534341;
-
-  /* Tonal Surfaces for Cards/Containers */
-  --md-sys-color-surface-container-lowest: #140F0E;
-  --md-sys-color-surface-container-low: #231D1C;
-  --md-sys-color-surface-container: #272120;
-  --md-sys-color-surface-container-high: #322B2A;
-  --md-sys-color-surface-container-highest: #3D3635;
-
-  /* Typography - Plus Jakarta Sans */
-  --md-sys-typescale-body-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-body-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-body-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-label-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-title-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-headline-small-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-large-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-medium-font: 'Plus Jakarta Sans', sans-serif;
-  --md-sys-typescale-display-small-font: 'Plus Jakarta Sans', sans-serif;
-
-  /* Component Overrides for @material/web */
-
-  /* Navigation Bar */
-  --md-navigation-bar-container-color: var(--md-sys-color-surface-container);
-  --md-navigation-bar-label-text-color: var(--md-sys-color-on-surface-variant);
-  --md-navigation-bar-active-indicator-color: var(--md-sys-color-secondary-container);
-  --md-navigation-bar-active-hover-indicator-color: var(--md-sys-color-secondary-container);
-  --md-navigation-bar-active-label-text-color: var(--md-sys-color-on-surface);
-  --md-navigation-bar-active-icon-color: var(--md-sys-color-on-secondary-container);
-  --md-navigation-bar-inactive-icon-color: var(--md-sys-color-on-surface-variant);
-  --md-navigation-bar-inactive-label-text-color: var(--md-sys-color-on-surface-variant);
-
-  /* Slider */
-  --md-slider-handle-color: var(--md-sys-color-primary);
-  --md-slider-focus-handle-color: var(--md-sys-color-primary);
-  --md-slider-hover-handle-color: var(--md-sys-color-primary);
-  --md-slider-active-track-color: var(--md-sys-color-primary);
-  --md-slider-inactive-track-color: var(--md-sys-color-surface-variant);
-  --md-slider-handle-width: 20px;
-  --md-slider-handle-height: 20px;
-
-  /* Tabs */
-  --md-primary-tab-active-indicator-color: var(--md-sys-color-primary);
-  --md-primary-tab-label-text-color: var(--md-sys-color-on-surface-variant);
-  --md-primary-tab-active-label-text-color: var(--md-sys-color-primary);
-  --md-primary-tab-active-icon-color: var(--md-sys-color-primary);
-  --md-primary-tab-icon-color: var(--md-sys-color-on-surface-variant);
-
-  /* List Items */
-  --md-list-item-label-text-color: var(--md-sys-color-on-surface);
-  --md-list-item-supporting-text-color: var(--md-sys-color-on-surface-variant);
-  --md-list-item-trailing-supporting-text-color: var(--md-sys-color-on-surface-variant);
-
-  /* Shape */
-  --md-sys-shape-corner-extra-small: 4px;
-  --md-sys-shape-corner-small: 8px;
-  --md-sys-shape-corner-medium: 12px;
-  --md-sys-shape-corner-large: 16px;
-  --md-sys-shape-corner-extra-large: 28px;
-  --md-sys-shape-corner-full: 9999px;
-
-  /* Elevated Card Override */
-  --md-elevated-card-container-color: var(--md-sys-color-surface-container-high);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    /* Light Theme - Red Expressive */
-    /* Primary */
-    --md-sys-color-primary: #BF0031;
-    --md-sys-color-on-primary: #FFFFFF;
-    --md-sys-color-primary-container: #FFDAD6;
-    --md-sys-color-on-primary-container: #41000B;
-
-    /* Secondary */
-    --md-sys-color-secondary: #775653;
-    --md-sys-color-on-secondary: #FFFFFF;
-    --md-sys-color-secondary-container: #FFDAD6;
-    --md-sys-color-on-secondary-container: #2C1514;
-
-    /* Tertiary */
-    --md-sys-color-tertiary: #725C0C;
-    --md-sys-color-on-tertiary: #FFFFFF;
-    --md-sys-color-tertiary-container: #FFEFA6;
-    --md-sys-color-on-tertiary-container: #241A00;
-
-    /* Error */
-    --md-sys-color-error: #BA1A1A;
-    --md-sys-color-on-error: #FFFFFF;
-    --md-sys-color-error-container: #FFDAD6;
-    --md-sys-color-on-error-container: #410002;
-
-    /* Surfaces */
-    --md-sys-color-background: #FFFBFF;
-    --md-sys-color-on-background: #201A19;
-
-    --md-sys-color-surface: #FFFBFF;
-    --md-sys-color-on-surface: #201A19;
-
-    --md-sys-color-surface-variant: #F5DEDC;
-    --md-sys-color-on-surface-variant: #534341;
-
-    --md-sys-color-outline: #857371;
-    --md-sys-color-outline-variant: #D8C2BF;
-
-    /* Tonal Surfaces */
-    --md-sys-color-surface-container-lowest: #FFFFFF;
-    --md-sys-color-surface-container-low: #FFF1F0;
-    --md-sys-color-surface-container: #FCEAE9;
-    --md-sys-color-surface-container-high: #F6E5E3;
-    --md-sys-color-surface-container-highest: #F0DFDD;
-
-    /* Elevated Card Override */
-    --md-elevated-card-container-color: var(--md-sys-color-surface-container-low);
-  }
-}
-
 @layer base {
+  :root {
+    --background: 0 0% 4%; /* #0A0A0A */
+    --foreground: 0 0% 98%; /* #FAFAFA */
+
+    --card: 0 0% 6%; /* #0F0F0F */
+    --card-foreground: 0 0% 98%; /* #FAFAFA */
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 14 100% 50%; /* #FF3D00 */
+    --primary-foreground: 0 0% 4%; /* #0A0A0A */
+
+    --secondary: 0 0% 98%;
+    --secondary-foreground: 0 0% 4%;
+
+    --muted: 0 0% 10%; /* #1A1A1A */
+    --muted-foreground: 0 0% 45%; /* #737373 */
+
+    --accent: 14 100% 50%; /* #FF3D00 */
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 15%; /* #262626 */
+    --input: 0 0% 10%; /* #1A1A1A */
+    --ring: 14 100% 50%; /* #FF3D00 */
+
+    --radius: 0px;
+  }
+
   body {
-    @apply bg-background text-on-background font-sans overflow-hidden select-none antialiased;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: none;
-    touch-action: pan-x pan-y;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-accent selection:text-accent-foreground;
+    background-color: #0A0A0A;
+    color: #FAFAFA;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   }
 
-  /* Force focus ring visibility for keyboard users */
-  :focus-visible {
-    outline: 2px solid var(--md-sys-color-primary);
-    outline-offset: 2px;
+  /* Noise Texture */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 9999px;
-  border: 2px solid var(--md-sys-color-background); /* Creates padding effect */
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: var(--md-sys-color-outline);
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide Scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe Areas */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pl-safe { padding-left: env(safe-area-inset-left); }
+  .pr-safe { padding-right: env(safe-area-inset-right); }
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Premium Glassmorphism */
-.glass {
-  background: rgba(32, 26, 25, 0.7); /* Adjusted for new background */
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* Utils */
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-.pt-safe { padding-top: env(safe-area-inset-top); }
-.pl-safe { padding-left: env(safe-area-inset-left); }
-.pr-safe { padding-right: env(safe-area-inset-right); }
-
-/* Range Input Reset */
-input[type=range] {
-  -webkit-appearance: none;
-  background: transparent;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-}
-input[type=range]:focus {
-  outline: none;
-}
-
-.mask-image-gradient {
-  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Custom Scrollbar for desktop */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
 }

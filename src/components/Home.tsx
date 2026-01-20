@@ -1,16 +1,10 @@
 import React, { memo, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// Ensure you have a types file or define Track locally if needed
 import { Track } from '../types'; 
-
-// Import Material Web Components
-import '@material/web/button/filled-button.js';
-import '@material/web/button/filled-tonal-button.js';
-import '@material/web/icon/icon.js';
-import '@material/web/elevation/elevation.js';
-import '@material/web/chips/assist-chip.js';
-import '@material/web/ripple/ripple.js';
-import '@material/web/labs/card/elevated-card.js';
+import { Play, Shuffle, Upload, Clock, Sparkles, Music2 } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { cn } from '../utils/cn';
 
 interface HomeProps {
   filteredTracks: Track[];
@@ -47,77 +41,59 @@ const cardVariants = {
 // --- SKELETON LOADER ---
 const SkeletonCard = () => (
   <div className="flex flex-col gap-4">
-    <div className="aspect-square rounded-[32px] bg-surface-container-high relative overflow-hidden isolate">
+    <div className="aspect-square bg-muted relative overflow-hidden isolate">
       <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_1.5s_infinite] z-10" />
     </div>
     <div className="space-y-2 px-1">
-      <div className="h-5 w-3/4 bg-surface-container-high rounded-full animate-pulse" />
-      <div className="h-4 w-1/2 bg-surface-container-high/50 rounded-full animate-pulse" />
+      <div className="h-5 w-3/4 bg-muted animate-pulse" />
+      <div className="h-4 w-1/2 bg-muted/50 animate-pulse" />
     </div>
   </div>
 );
 
-// --- EXPRESSIVE TRACK CARD ---
+// --- BOLD TRACK CARD ---
 const TrackCard = memo(({ track, onPlay }: { track: Track; onPlay: (id: string) => void }) => (
   <motion.div
     variants={cardVariants}
     whileHover="hover"
     whileTap="tap"
-    className="group cursor-pointer flex flex-col gap-3 relative"
+    className="group cursor-pointer flex flex-col gap-4 relative"
     onClick={() => onPlay(track.id)}
   >
     {/* Image Container */}
-    <md-elevated-card
-        clickable
-        class="aspect-square w-full relative overflow-hidden p-0"
-        style={{ 
-          '--md-elevated-card-container-shape': '32px', 
-          '--md-elevated-card-container-color': 'var(--md-sys-color-surface-container-highest)' 
-        }}
-    >
-      <div className="absolute inset-0 bg-surface-container-highest z-0" />
-
+    <div className="aspect-square w-full relative overflow-hidden bg-muted border border-transparent group-hover:border-accent/50 transition-colors duration-300">
       {/* Artwork */}
       {track.coverArt ? (
         <motion.img 
           src={track.coverArt} 
           alt={track.title}
-          className="w-full h-full object-cover z-10 relative"
+          className="w-full h-full object-cover z-10 relative filter grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
           variants={{
-             hover: { scale: 1.1 }
+             hover: { scale: 1.05 }
           }}
           transition={{ duration: 0.5 }}
           loading="lazy"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-surface-container-highest z-10 relative">
-          <md-icon class="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: '48px' }}>music_note</md-icon>
+        <div className="w-full h-full flex items-center justify-center bg-muted z-10 relative">
+          <Music2 className="text-muted-foreground opacity-50 w-12 h-12" />
         </div>
       )}
       
-      {/* Play Overlay */}
-      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center backdrop-blur-[2px]">
-        <motion.div
-          variants={{
-            hover: { scale: 1, opacity: 1 },
-            hidden: { scale: 0.8, opacity: 0 }
-          }}
-          className="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-elevation-3"
-        >
-          <md-icon class="material-symbols-rounded" style={{ fontSize: '36px' }}>play_arrow</md-icon>
-        </motion.div>
+      {/* Play Overlay - Minimal */}
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center">
+        <div className="w-16 h-16 bg-accent text-accent-foreground flex items-center justify-center">
+          <Play className="w-8 h-8 fill-current" />
+        </div>
       </div>
-
-      {/* Ripple Effect */}
-      <md-ripple></md-ripple>
-    </md-elevated-card>
+    </div>
 
     {/* Text Content */}
-    <div className="px-1 flex flex-col gap-0.5">
-      <h3 className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight group-hover:text-primary transition-colors">
+    <div className="flex flex-col gap-1">
+      <h3 className="text-lg font-bold font-display leading-tight truncate group-hover:text-accent transition-colors">
         {track.title}
       </h3>
-      <p className="text-body-medium text-on-surface-variant font-medium truncate opacity-80">
+      <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider truncate">
         {track.artist}
       </p>
     </div>
@@ -128,7 +104,6 @@ TrackCard.displayName = 'TrackCard';
 
 // --- MAIN COMPONENT ---
 const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoading = false, onFileUpload }) => {
-  // Use a single ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const randomMix = useMemo(() => {
@@ -163,89 +138,84 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full h-full overflow-y-auto pt-safe pb-40 px-4 md:px-8 scrollbar-hide"
+      className="w-full min-h-full pt-12 pb-40"
     >
-      <div className="max-w-[1400px] mx-auto space-y-16 py-8">
+      <div className="space-y-32">
 
-        {/* Expressive Header */}
-        <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-8 relative overflow-hidden rounded-[56px] bg-surface-container-high p-8 md:p-16 shadow-elevation-1 ring-1 ring-white/5">
-          {/* Decorative Background */}
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-primary/30 via-tertiary/20 to-transparent blur-[100px] rounded-full pointer-events-none -translate-y-1/4 translate-x-1/4 mix-blend-screen" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/20 blur-[120px] rounded-full pointer-events-none translate-y-1/3 -translate-x-1/3 mix-blend-screen" />
-
-          <div className="space-y-8 relative z-10 max-w-3xl">
+        {/* Hero Section */}
+        <header className="flex flex-col gap-12 relative">
+          <div className="space-y-6 relative z-10">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-tertiary-container text-on-tertiary-container text-label-large font-bold shadow-sm ring-1 ring-white/10">
-                  <md-icon class="material-symbols-rounded filled" style={{ fontSize: '20px' }}>auto_awesome</md-icon>
-                  <span>Discovery Mix</span>
-              </div>
+              <span className="text-accent font-mono uppercase tracking-widest text-sm font-bold">
+                  // Discovery Mix
+              </span>
             </motion.div>
 
             <div>
-                <h2 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.05]">
-                  Fresh picks<br/>
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-tertiary to-primary bg-[length:200%_auto] animate-gradient">Just for you</span>
-                </h2>
-                <p className="text-headline-small text-on-surface-variant max-w-xl leading-relaxed pt-6 opacity-90 font-medium">
-                  A curated selection from your library, served fresh every time you visit.
+                <h1 className="text-7xl md:text-8xl lg:text-9xl font-black font-display tracking-tighter leading-[0.9] text-foreground uppercase">
+                  Fresh <br/>
+                  <span className="text-muted-foreground">Picks</span>
+                </h1>
+                <div className="h-2 w-32 bg-accent mt-8" />
+                <p className="text-xl md:text-2xl text-muted-foreground max-w-xl leading-relaxed pt-8 font-serif italic">
+                  "A curated selection from your library, served fresh every time you visit."
                 </p>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 flex-wrap relative z-10">
+          <div className="flex flex-wrap gap-6 relative z-10 items-center">
+            <Button
+                variant="primary"
+                size="lg"
+                onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
+            >
+                <Play className="mr-2 h-5 w-5" />
+                Play All
+            </Button>
+
+            <Button
+                variant="ghost"
+                size="lg"
+                onClick={handleShufflePlay}
+            >
+                <Shuffle className="mr-2 h-5 w-5" />
+                Shuffle
+            </Button>
+
             {onFileUpload && (
-              /* Removed wrapping <label> to prevent double event triggering */
-              <md-filled-tonal-button
-                  className="h-16 rounded-[32px]"
+              <Button
+                  variant="secondary"
+                  size="lg"
                   onClick={handleImportClick}
               >
-                <md-icon slot="icon" class="material-symbols-rounded">add</md-icon>
-                <span className="text-title-medium">Add Music</span>
-              </md-filled-tonal-button>
+                <Upload className="mr-2 h-5 w-5" />
+                Add Music
+              </Button>
             )}
-
-            <md-filled-tonal-button onClick={handleShufflePlay} className="h-16 rounded-[32px]">
-                <md-icon slot="icon" class="material-symbols-rounded">shuffle</md-icon>
-                <span className="text-title-medium">Shuffle</span>
-            </md-filled-tonal-button>
-
-            <md-filled-button
-                onClick={() => randomMix[0] && playTrack(randomMix[0].id, { customQueue: randomMix.map(t => t.id) })}
-                className="h-16 rounded-[32px]"
-                style={{ 
-                  '--md-filled-button-container-color': 'var(--md-sys-color-primary)', 
-                  '--md-filled-button-label-text-color': 'var(--md-sys-color-on-primary)' 
-                }}
-            >
-                <md-icon slot="icon" class="material-symbols-rounded">play_arrow</md-icon>
-                <span className="text-title-medium font-bold">Play All</span>
-            </md-filled-button>
           </div>
         </header>
 
         {/* Recently Played Section */}
         {recentlyPlayed.length > 0 && (
-            <section className="space-y-8">
+            <section className="space-y-12">
                  <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-4 text-on-surface px-2"
+                  className="flex items-center justify-between border-b border-border pb-6"
                 >
-                  <div className="p-3 rounded-full bg-surface-container-high text-primary">
-                      <md-icon class="material-symbols-rounded">schedule</md-icon>
-                  </div>
-                  <h3 className="text-headline-medium font-bold">Recently Played</h3>
+                  <h3 className="text-4xl md:text-5xl font-bold font-display tracking-tight uppercase">Recently Played</h3>
+                  <Clock className="w-8 h-8 text-muted-foreground" />
                 </motion.div>
 
                 <motion.div
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12"
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-16"
                 >
                       <AnimatePresence mode="popLayout">
                       {recentlyPlayed.map((track) => (
@@ -261,22 +231,20 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
         )}
 
         {/* Discovery Grid */}
-        <section className="space-y-8">
+        <section className="space-y-12">
             <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-4 text-on-surface px-2"
+                  className="flex items-center justify-between border-b border-border pb-6"
                 >
-                  <div className="p-3 rounded-full bg-surface-container-high text-tertiary">
-                       <md-icon class="material-symbols-rounded">auto_awesome</md-icon>
-                  </div>
-                  <h3 className="text-headline-medium font-bold">Jump Back In</h3>
+                   <h3 className="text-4xl md:text-5xl font-bold font-display tracking-tight uppercase">Jump Back In</h3>
+                   <Sparkles className="w-8 h-8 text-accent" />
             </motion.div>
              <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-16"
             >
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, i) => (
@@ -301,20 +269,19 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-on-surface-variant"
+            className="flex flex-col items-center justify-center py-32 text-muted-foreground border border-dashed border-border p-12"
           >
-            <div className="w-32 h-32 rounded-[32px] bg-surface-container-high flex items-center justify-center mb-6">
-              <md-icon class="material-symbols-rounded" style={{ fontSize: '64px', opacity: 0.3 }}>music_off</md-icon>
+            <div className="w-24 h-24 bg-muted flex items-center justify-center mb-6">
+              <Music2 className="w-12 h-12 opacity-50" />
             </div>
-            <p className="text-headline-small font-bold text-on-surface">No tracks found</p>
-            <p className="text-body-large mt-2">Import music to get started.</p>
+            <p className="text-2xl font-bold text-foreground font-display uppercase tracking-tight">No tracks found</p>
+            <p className="text-lg mt-2 font-serif italic">"Silence is golden, but music is better."</p>
             {onFileUpload && (
-              /* Removed wrapping <label> and duplicate input */
-              <div className="mt-6">
-                 <md-filled-button onClick={handleImportClick}>
-                    <md-icon slot="icon" class="material-symbols-rounded">upload_file</md-icon>
+              <div className="mt-8">
+                 <Button onClick={handleImportClick} variant="primary">
+                    <Upload className="mr-2 h-4 w-4" />
                     Import Tracks
-                 </md-filled-button>
+                 </Button>
               </div>
             )}
           </motion.div>

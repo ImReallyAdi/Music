@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { Reorder, useDragControls, motion, AnimatePresence } from 'framer-motion';
 import { Track } from '../types';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/icon/icon.js';
-import '@material/web/list/list.js';
-import '@material/web/list/list-item.js';
+import { X, GripVertical, Disc, Music2 } from 'lucide-react';
+import { cn } from '../utils/cn';
 
 // --- Types ---
 interface QueueListProps {
@@ -38,87 +36,68 @@ const QueueItem = memo(function QueueItem({
 }: QueueItemProps) {
   const controls = useDragControls();
 
-  const listItemStyle: React.CSSProperties = {
-    cursor: 'pointer',
-    '--md-list-item-leading-image-height': '56px',
-    '--md-list-item-leading-image-width': '56px',
-    '--md-list-item-leading-image-shape': '16px',
-
-    backgroundColor: isCurrent ? 'var(--md-sys-color-surface-container-high)' : 'transparent',
-    borderRadius: 24,
-    marginBottom: 8,
-    opacity: isHistory ? 0.6 : 1,
-    width: '100%',
-  } as React.CSSProperties;
-
-  // @ts-ignore - Custom Element
-  const listItem = (
-    // @ts-ignore
-    <md-list-item
-      type="button"
-      onClick={onPlay}
-      className="w-full"
-      style={listItemStyle}
-      aria-current={isCurrent ? 'true' : undefined}
+  const content = (
+    <div
+        className={cn(
+            "flex items-center gap-4 p-3 w-full group transition-colors",
+            isCurrent ? "bg-accent/10 border-l-2 border-accent" : "hover:bg-muted/50 border-l-2 border-transparent",
+            isHistory && "opacity-50"
+        )}
+        onClick={onPlay}
     >
-      <div slot="headline" className={`truncate text-body-large font-medium ${isCurrent ? 'text-primary' : 'text-on-surface'}`}>
-        {track.title}
-      </div>
-      <div slot="supporting-text" className={`truncate text-body-medium ${isCurrent ? 'text-primary' : 'text-on-surface-variant'}`}>
-        {track.artist}
-      </div>
-      <div slot="start" className="flex items-center gap-3">
-        {canDrag && (
-          <div
-            className="cursor-grab active:cursor-grabbing text-on-surface-variant opacity-60 hover:opacity-100 p-2 -ml-3 touch-none"
-            style={{ touchAction: 'none' }}
+      {/* Drag Handle */}
+      {canDrag && (
+        <div
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
               controls.start(e);
             }}
-          >
-            <md-icon className="material-symbols-rounded">drag_indicator</md-icon>
-          </div>
-        )}
+        >
+          <GripVertical size={20} />
+        </div>
+      )}
 
-        <div className="relative w-14 h-14 rounded-[16px] overflow-hidden bg-surface-variant flex items-center justify-center border border-white/5 shrink-0">
-          <img
+      {/* Art */}
+      <div className="relative w-12 h-12 overflow-hidden bg-muted flex items-center justify-center shrink-0">
+        <img
             src={track.coverArt}
             alt={track.title}
             loading="lazy"
-            className={`w-full h-full object-cover ${isHistory ? 'grayscale' : ''}`}
-          />
-          {isCurrent && (
+            className={cn("w-full h-full object-cover", isHistory && "grayscale")}
+        />
+        {isCurrent && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <div className="flex gap-1 items-end h-4 pb-1">
-                {[0.6, 0.8, 1.0].map((d, i) => (
-                  <motion.span
-                    key={i}
-                    animate={{ height: ['20%', '100%', '20%'] }}
-                    transition={{ duration: d, repeat: Infinity, ease: 'easeInOut' }}
-                    className="w-1 bg-primary rounded-full"
-                  />
-                ))}
-              </div>
+               <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
             </div>
-          )}
-        </div>
+        )}
       </div>
 
-      <div slot="end" className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
-        {/* @ts-ignore */}
-        <md-icon-button 
-            onClick={(e: any) => { 
-                e.stopPropagation(); 
-                onRemove(); 
-            }} 
-            title="Remove"
-        >
-          <md-icon className="material-symbols-rounded">close</md-icon>
-        </md-icon-button>
+      {/* Text */}
+      <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <span className={cn(
+            "text-base font-bold font-display truncate leading-none uppercase tracking-tight",
+            isCurrent ? "text-accent" : "text-foreground"
+        )}>
+          {track.title}
+        </span>
+        <span className="text-xs font-mono text-muted-foreground truncate uppercase tracking-wider">
+          {track.artist}
+        </span>
       </div>
-    </md-list-item>
+
+      {/* Actions */}
+      <button
+        onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+        }}
+        className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <X size={18} />
+      </button>
+    </div>
   );
 
   if (canDrag) {
@@ -132,16 +111,16 @@ const QueueItem = memo(function QueueItem({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, height: 0 }}
         style={{ listStyle: 'none' }}
-        className="w-full relative"
+        className="w-full relative border-b border-border/50 last:border-0"
       >
-        {listItem}
+        {content}
       </Reorder.Item>
     );
   }
 
   return (
-    <motion.div layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full">
-      {listItem}
+    <motion.div layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full border-b border-border/50 last:border-0">
+      {content}
     </motion.div>
   );
 });
@@ -208,14 +187,12 @@ const QueueList: React.FC<QueueListProps> = ({
     if (!history || history.length === 0) return null;
     return (
       <AnimatePresence initial={false}>
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-4 mb-2">
-          <div className="flex items-center gap-3 px-2 mb-4 opacity-60">
-            <span className="text-label-medium font-bold uppercase tracking-widest text-on-surface-variant">History</span>
-            <div className="h-px bg-outline-variant flex-1 opacity-50" />
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4">
+          <div className="flex items-center gap-3 px-4 py-2 opacity-60">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">History</span>
+            <div className="h-px bg-border flex-1" />
           </div>
-
-          {/* @ts-ignore */}
-          <md-list className="bg-transparent">
+          <div>
             {history.map((trackId, idx) => {
               const t = tracks[trackId];
               if (!t) return null;
@@ -229,7 +206,7 @@ const QueueList: React.FC<QueueListProps> = ({
                 />
               );
             })}
-          </md-list>
+          </div>
         </motion.div>
       </AnimatePresence>
     );
@@ -238,11 +215,9 @@ const QueueList: React.FC<QueueListProps> = ({
   const upcomingList = useMemo(() => {
     if (!upcoming || upcoming.length === 0) {
       return (
-        <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4 text-on-surface-variant">
-          <md-icon className="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: 32 }}>
-            queue_music
-          </md-icon>
-          <p className="text-body-large font-medium">End of queue</p>
+        <div className="py-12 flex flex-col items-center justify-center opacity-30 gap-4 text-muted-foreground">
+          <Music2 size={32} />
+          <p className="text-lg font-display uppercase tracking-tight">End of queue</p>
         </div>
       );
     }
@@ -254,7 +229,7 @@ const QueueList: React.FC<QueueListProps> = ({
           values={upcoming}
           onReorder={handleReorderUpcoming}
           style={{ listStyle: 'none', padding: 0 }}
-          className="flex flex-col gap-1"
+          className="flex flex-col"
         >
           {upcoming.map((trackId) => {
             const t = tracks[trackId];
@@ -275,7 +250,7 @@ const QueueList: React.FC<QueueListProps> = ({
 
     // Static fallback
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         {upcoming.map((trackId, idx) => {
           const t = tracks[trackId];
           if (!t) return null;
@@ -295,25 +270,20 @@ const QueueList: React.FC<QueueListProps> = ({
   // --- Empty State ---
   if (!queue || queue.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-transparent text-on-surface">
-        <div className="flex w-full justify-between items-center px-6 pt-6">
-          <h3 className="text-headline-medium font-bold text-on-surface">Queue</h3>
+      <div className="flex flex-col h-full bg-background text-foreground">
+        <div className="flex w-full justify-between items-center px-6 py-6 border-b border-border">
+          <h3 className="text-3xl font-display font-black uppercase tracking-tighter">Queue</h3>
           {onClose && (
-            // @ts-ignore
-            <md-icon-button onClick={onClose}>
-                <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
-            </md-icon-button>
+            <button onClick={onClose} className="hover:text-accent transition-colors">
+                <X size={24} />
+            </button>
           )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-          <div className="w-32 h-32 rounded-[32px] bg-surface-container-high/50 flex items-center justify-center">
-            <md-icon className="material-symbols-rounded text-on-surface-variant/50" style={{ fontSize: 64 }}>
-              album
-            </md-icon>
-          </div>
+          <Disc size={64} className="text-muted-foreground opacity-20" />
           <div>
-            <h4 className="text-headline-small font-medium text-on-surface">Your queue is empty</h4>
-            <p className="text-body-large text-on-surface-variant mt-2">Add some tracks to start the vibe.</p>
+            <h4 className="text-xl font-bold font-display uppercase tracking-tight">Your queue is empty</h4>
+            <p className="text-muted-foreground mt-2 font-mono text-sm">Add some tracks to start the vibe.</p>
           </div>
         </div>
       </div>
@@ -321,65 +291,56 @@ const QueueList: React.FC<QueueListProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-transparent text-on-surface">
+    <div className="h-full flex flex-col relative bg-background text-foreground">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6 shrink-0 bg-surface/20 backdrop-blur-md z-30 border-b border-white/5">
-        <div className="flex items-baseline gap-3">
-          <h3 className="text-headline-medium font-bold text-on-surface">Queue</h3>
-          <span className="text-title-medium text-on-surface-variant font-medium">{queue.length} tracks</span>
+      <div className="flex items-center justify-between px-6 py-6 shrink-0 border-b border-border z-30 bg-background">
+        <div className="flex items-baseline gap-4">
+          <h3 className="text-4xl font-display font-black uppercase tracking-tighter">Queue</h3>
+          <span className="text-sm font-mono text-accent font-bold">{queue.length} tracks</span>
         </div>
         {onClose && (
-            // @ts-ignore
-            <md-icon-button onClick={onClose}>
-                <md-icon class="material-symbols-rounded text-on-surface">close</md-icon>
-            </md-icon-button>
+            <button onClick={onClose} className="hover:text-accent transition-colors">
+                <X size={24} />
+            </button>
         )}
       </div>
 
       {/* Main Scroll Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 pb-32">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 pb-32">
         {renderHistory}
 
         {/* Current (Hero) */}
         {current && tracks[current] && (
           <div
             ref={activeTrackRef}
-            className="my-6 sticky top-0 z-20 pt-4 -mx-4 px-4 pb-6 bg-surface/20 backdrop-blur-md shadow-sm rounded-b-[32px] ring-1 ring-white/5"
+            className="sticky top-0 z-20 bg-background border-b border-border"
           >
-            <div className="text-label-medium font-bold text-primary uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+            <div className="text-xs font-mono font-bold text-accent uppercase tracking-widest px-4 py-2 bg-muted/30">
               Now Playing
             </div>
 
-            <div className="relative">
-              <QueueItem
+            <QueueItem
                 track={tracks[current]}
                 isCurrent
                 onPlay={() => {}}
                 onRemove={() => onRemove(current)}
-              />
-            </div>
+            />
           </div>
         )}
 
         {/* Upcoming */}
         <div className="relative mt-4">
-          <div className="flex justify-between items-end mb-4 px-2">
-            <span className="text-label-medium font-bold text-on-surface-variant uppercase tracking-widest">Next Up</span>
+          <div className="flex justify-between items-end mb-2 px-4">
+            <span className="text-xs font-mono font-bold text-muted-foreground uppercase tracking-widest">Next Up</span>
             {upcoming.length > 0 && (
               <button
                 onClick={() => onReorder([...history, current ?? ''])}
-                className="flex items-center gap-1 text-label-small font-bold text-error hover:text-error-container transition-colors uppercase tracking-wider"
+                className="text-xs font-mono font-bold text-destructive hover:text-red-400 transition-colors uppercase tracking-wider"
               >
                 Clear Queue
               </button>
             )}
           </div>
-
-          {!canReorder && upcoming.length > 0 && (
-            <div className="mx-2 mb-4 p-3 bg-error-container text-on-error-container rounded-xl flex items-center gap-2 text-xs font-medium">
-              <span>⚠️ Shuffle active or duplicates present. Reordering disabled.</span>
-            </div>
-          )}
 
           <div className="w-full">{upcomingList}</div>
         </div>

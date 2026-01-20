@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Plus } from 'lucide-react';
 import JSZip from 'jszip';
 import { dbService } from './db';
 import { Track, LibraryState, Playlist } from './types';
@@ -143,32 +144,16 @@ function MusicApp() {
     return tracks.sort((a: Track, b: Track) => b.addedAt - a.addedAt);
   }, [library.tracks, searchQuery]);
 
-  // Dynamic Theme Color from Cover Art
+  // Dynamic Theme Color from Cover Art (Preserved for Player only, no global overrides)
   useEffect(() => {
     if (currentTrack?.coverArt) {
       extractDominantColor(currentTrack.coverArt).then(palette => {
         if (palette) {
           setTheme(palette);
-          const rgb = palette.primary.match(/\d+, \d+, \d+/)?.[0];
-          if (rgb) {
-              document.documentElement.style.setProperty('--color-primary', rgb);
-          }
         }
       });
     }
   }, [currentTrack]);
-
-  useEffect(() => {
-    if (theme?.background) {
-      let metaThemeColor = document.querySelector("meta[name='theme-color']");
-      if (!metaThemeColor) {
-        metaThemeColor = document.createElement('meta');
-        metaThemeColor.setAttribute('name', 'theme-color');
-        document.head.appendChild(metaThemeColor);
-      }
-      metaThemeColor.setAttribute('content', theme.background);
-    }
-  }, [theme]);
 
   // --- FILE UPLOAD LOGIC ---
 
@@ -405,13 +390,13 @@ function MusicApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-primary/20 backdrop-blur-sm border-4 border-primary border-dashed m-4 rounded-3xl flex items-center justify-center pointer-events-none"
+            className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm m-4 border-2 border-dashed border-accent flex items-center justify-center pointer-events-none"
           >
-             <div className="bg-surface p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
-                 <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center">
-                    <md-icon class="material-symbols-rounded text-primary" style={{ fontSize: '32px' }}>add</md-icon>
+             <div className="bg-card p-8 border border-border flex flex-col items-center gap-6">
+                 <div className="w-20 h-20 bg-accent/10 flex items-center justify-center">
+                    <Plus className="text-accent w-10 h-10" />
                  </div>
-                 <h2 className="text-xl font-bold text-on-surface">Drop files to add</h2>
+                 <h2 className="text-3xl font-bold font-display tracking-tight text-foreground">Drop files to add</h2>
              </div>
           </motion.div>
         )}
