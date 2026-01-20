@@ -149,26 +149,25 @@ function MusicApp() {
       extractDominantColor(currentTrack.coverArt).then(palette => {
         if (palette) {
           setTheme(palette);
-          const rgb = palette.primary.match(/\d+, \d+, \d+/)?.[0];
-          if (rgb) {
-              document.documentElement.style.setProperty('--color-primary', rgb);
+
+          // Apply all colors to CSS variables for Global M3 Theming
+          Object.entries(palette).forEach(([key, value]) => {
+             const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+             document.documentElement.style.setProperty(`--md-sys-color-${kebabKey}`, value);
+          });
+
+          // Set meta theme color
+          let metaThemeColor = document.querySelector("meta[name='theme-color']");
+          if (!metaThemeColor) {
+            metaThemeColor = document.createElement('meta');
+            metaThemeColor.setAttribute('name', 'theme-color');
+            document.head.appendChild(metaThemeColor);
           }
+          metaThemeColor.setAttribute('content', palette.background);
         }
       });
     }
   }, [currentTrack]);
-
-  useEffect(() => {
-    if (theme?.background) {
-      let metaThemeColor = document.querySelector("meta[name='theme-color']");
-      if (!metaThemeColor) {
-        metaThemeColor = document.createElement('meta');
-        metaThemeColor.setAttribute('name', 'theme-color');
-        document.head.appendChild(metaThemeColor);
-      }
-      metaThemeColor.setAttribute('content', theme.background);
-    }
-  }, [theme]);
 
   // --- FILE UPLOAD LOGIC ---
 
