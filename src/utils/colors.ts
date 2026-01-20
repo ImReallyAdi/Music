@@ -1,13 +1,48 @@
 export interface ThemePalette {
   primary: string;
+  onPrimary: string;
+  primaryContainer: string;
+  onPrimaryContainer: string;
+
   secondary: string;
-  muted: string;
+  onSecondary: string;
+  secondaryContainer: string;
+  onSecondaryContainer: string;
+
+  tertiary: string;
+  onTertiary: string;
+  tertiaryContainer: string;
+  onTertiaryContainer: string;
+
+  error: string;
+  onError: string;
+  errorContainer: string;
+  onErrorContainer: string;
+
   background: string;
+  onBackground: string;
+
+  surface: string;
+  onSurface: string;
+  surfaceVariant: string;
+  onSurfaceVariant: string;
+
+  outline: string;
+  outlineVariant: string;
+
+  surfaceContainerLowest: string;
+  surfaceContainerLow: string;
+  surfaceContainer: string;
+  surfaceContainerHigh: string;
+  surfaceContainerHighest: string;
+
+  inverseSurface: string;
+  inverseOnSurface: string;
+  inversePrimary: string;
 }
 
 // --- Helpers ---
 
-// RGB to HSL (0-1 range)
 function rgbToHsl(r: number, g: number, b: number) {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -25,42 +60,103 @@ function rgbToHsl(r: number, g: number, b: number) {
     }
     h /= 6;
   }
-  return { h, s, l };
+  return { h: h * 360, s, l };
 }
 
-// HSL to RGB (Returns 0-255)
 function hslToRgb(h: number, s: number, l: number) {
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l; 
-  } else {
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1/3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
-  }
-  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+  h = h % 360;
+  if (h < 0) h += 360;
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+
+  let r = 0, g = 0, b = 0;
+
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255)
+  };
 }
 
-// Check color distance (Euclidean in RGB is fast/decent enough for this)
-function colorDistance(c1: {r:number, g:number, b:number}, c2: {r:number, g:number, b:number}) {
-  return Math.sqrt(
-    Math.pow(c1.r - c2.r, 2) + 
-    Math.pow(c1.g - c2.g, 2) + 
-    Math.pow(c1.b - c2.b, 2)
-  );
-}
+const toHex = (c: {r:number, g:number, b:number}) =>
+  "#" + ((1 << 24) + (c.r << 16) + (c.g << 8) + c.b).toString(16).slice(1);
 
-// --- Main Logic ---
+// Generate Tonal Palette for Dark Mode
+function generateTonalPalette(h: number, s: number): ThemePalette {
+  // Clamp saturation for better UI colors
+  const sPrimary = Math.max(0.6, Math.min(0.9, s));
+  const sSecondary = Math.max(0.4, s * 0.7);
+  const sTertiary = Math.max(0.5, s * 0.8);
+  const sNeutral = s * 0.1;
+  const sNeutralVariant = s * 0.2;
+
+  // Hue shifts
+  const hSecondary = (h + 15) % 360;
+  const hTertiary = (h + 60) % 360; // Triadic shift
+  const hError = 0; // Red
+
+  const getColor = (hue: number, sat: number, lum: number) =>
+    toHex(hslToRgb(hue, sat, lum));
+
+  return {
+    // Primary (L=80 for Dark Mode accessibility)
+    primary: getColor(h, sPrimary, 0.80),
+    onPrimary: getColor(h, sPrimary, 0.20),
+    primaryContainer: getColor(h, sPrimary, 0.30),
+    onPrimaryContainer: getColor(h, sPrimary, 0.90),
+
+    // Secondary
+    secondary: getColor(hSecondary, sSecondary, 0.80),
+    onSecondary: getColor(hSecondary, sSecondary, 0.20),
+    secondaryContainer: getColor(hSecondary, sSecondary, 0.30),
+    onSecondaryContainer: getColor(hSecondary, sSecondary, 0.90),
+
+    // Tertiary
+    tertiary: getColor(hTertiary, sTertiary, 0.80),
+    onTertiary: getColor(hTertiary, sTertiary, 0.20),
+    tertiaryContainer: getColor(hTertiary, sTertiary, 0.30),
+    onTertiaryContainer: getColor(hTertiary, sTertiary, 0.90),
+
+    // Error
+    error: getColor(hError, 0.8, 0.80),
+    onError: getColor(hError, 0.8, 0.20),
+    errorContainer: getColor(hError, 0.8, 0.30),
+    onErrorContainer: getColor(hError, 0.8, 0.90),
+
+    // Background & Surface (Dark Mode: L=6-20 range)
+    background: getColor(h, sNeutral, 0.06),
+    onBackground: getColor(h, sNeutral, 0.90),
+
+    surface: getColor(h, sNeutral, 0.06),
+    onSurface: getColor(h, sNeutral, 0.90),
+    surfaceVariant: getColor(h, sNeutralVariant, 0.30),
+    onSurfaceVariant: getColor(h, sNeutralVariant, 0.80),
+
+    outline: getColor(h, sNeutralVariant, 0.60),
+    outlineVariant: getColor(h, sNeutralVariant, 0.30),
+
+    // Surface Container Levels (Tonal Elevation)
+    surfaceContainerLowest: getColor(h, sNeutral, 0.04),
+    surfaceContainerLow: getColor(h, sNeutral, 0.10),
+    surfaceContainer: getColor(h, sNeutral, 0.12),
+    surfaceContainerHigh: getColor(h, sNeutral, 0.17),
+    surfaceContainerHighest: getColor(h, sNeutral, 0.22),
+
+    // Inverse
+    inverseSurface: getColor(h, sNeutral, 0.90),
+    inverseOnSurface: getColor(h, sNeutral, 0.20),
+    inversePrimary: getColor(h, sPrimary, 0.40),
+  };
+}
 
 export const extractDominantColor = async (imageUrl: string): Promise<ThemePalette | null> => {
   return new Promise((resolve) => {
@@ -73,96 +169,36 @@ export const extractDominantColor = async (imageUrl: string): Promise<ThemePalet
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) { resolve(null); return; }
 
-      // Keep small for performance, but 128 is a good balance
-      canvas.width = 128;
-      canvas.height = 128;
-      ctx.drawImage(img, 0, 0, 128, 128);
+      canvas.width = 100;
+      canvas.height = 100;
+      ctx.drawImage(img, 0, 0, 100, 100);
 
-      const imageData = ctx.getImageData(0, 0, 128, 128).data;
-      
-      // We will store colors as "Quantized Buckets"
-      // Instead of simple averaging, we store the "best" representative of the bucket
-      const colorCounts: Record<string, { r:number, g:number, b:number, count:number, s:number, l:number }> = {};
-      
-      const quality = 10; // Check every 10th pixel
-      
-      for (let i = 0; i < imageData.length; i += 4 * quality) {
-        const r = imageData[i];
-        const g = imageData[i + 1];
-        const b = imageData[i + 2];
-        const a = imageData[i + 3];
+      const imageData = ctx.getImageData(0, 0, 100, 100).data;
+      let rTotal = 0, gTotal = 0, bTotal = 0, count = 0;
 
-        if (a < 128) continue;
+      for (let i = 0; i < imageData.length; i += 40) { // Sample every 10th pixel
+         const r = imageData[i];
+         const g = imageData[i+1];
+         const b = imageData[i+2];
+         const a = imageData[i+3];
 
-        const { h, s, l } = rgbToHsl(r, g, b);
+         if (a < 128) continue;
 
-        // IGNORE boring colors for the palette generation
-        // Too white (>0.95), too black (<0.05), or too gray (s < 0.05)
-        if (l > 0.95 || l < 0.05) continue; 
-
-        // Quantize: Round RGB values to nearest 10 to group similar colors
-        // This prevents "muddying" by grouping tight clusters
-        const qR = Math.round(r / 10) * 10;
-        const qG = Math.round(g / 10) * 10;
-        const qB = Math.round(b / 10) * 10;
-        const key = `${qR},${qG},${qB}`;
-
-        if (!colorCounts[key]) {
-          colorCounts[key] = { r: qR, g: qG, b: qB, count: 0, s, l };
-        }
-        
-        colorCounts[key].count++;
+         rTotal += r;
+         gTotal += g;
+         bTotal += b;
+         count++;
       }
 
-      // Convert to array
-      let colors = Object.values(colorCounts);
+      if (count === 0) { resolve(null); return; }
 
-      // SCORING ALGORITHM
-      // We don't just want the most frequent. We want the most "Vibrant Dominant".
-      // Score = Count * (Saturation + SaturationBonus)
-      colors.sort((a, b) => {
-        const scoreA = a.count * (a.s * 2 + 0.5); // Boost saturation weight
-        const scoreB = b.count * (b.s * 2 + 0.5);
-        return scoreB - scoreA;
-      });
+      const r = rTotal / count;
+      const g = gTotal / count;
+      const b = bTotal / count;
 
-      if (colors.length === 0) { resolve(null); return; }
+      const { h, s } = rgbToHsl(r, g, b);
 
-      // 1. Pick Primary (Best Score)
-      const primary = colors[0];
-
-      // 2. Pick Secondary (Distinct from Primary)
-      // Look for a color that is at least a certain "distance" away
-      let secondary = colors.find(c => colorDistance(c, primary) > 100) || colors[1] || primary;
-
-      // 3. Pick Background
-      // STRATEGY: Create a dark background TINTED with the primary hue.
-      // This looks much better than trying to find a black pixel in the image.
-      const primaryHsl = rgbToHsl(primary.r, primary.g, primary.b);
-      // Very dark (L=0.07), slight saturation (S=0.2) of the primary hue
-      const bgRgb = hslToRgb(primaryHsl.h, 0.2, 0.07); 
-
-      // 4. Muted
-      // Just desaturate the primary or secondary
-      const mutedRgb = hslToRgb(primaryHsl.h, Math.max(0, primaryHsl.s - 0.4), 0.6);
-
-      // 5. Final Primary Adjusment
-      // Ensure primary pops against the dark background. 
-      // If primary is too dark (navy blue), lighten it up.
-      let finalPrimary = primary;
-      if (primary.l < 0.4) {
-         const adj = hslToRgb(primaryHsl.h, primaryHsl.s, 0.6);
-         finalPrimary = { ...finalPrimary, ...adj };
-      }
-
-      const toStr = (c: {r:number, g:number, b:number}) => `rgb(${c.r}, ${c.g}, ${c.b})`;
-
-      resolve({
-        primary: toStr(finalPrimary),
-        secondary: toStr(secondary),
-        muted: toStr(mutedRgb),
-        background: toStr(bgRgb)
-      });
+      resolve(generateTonalPalette(h, s));
     };
 
     img.onerror = () => resolve(null);
