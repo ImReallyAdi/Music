@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Track, PlayerState } from '../types';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/icon/icon.js';
-import '@material/web/progress/linear-progress.js';
+import { Play, Pause, SkipForward, Music2 } from 'lucide-react';
+import { cn } from '../utils/cn';
 
 interface MiniPlayerProps {
   currentTrack: Track | null;
@@ -43,78 +42,74 @@ const MiniPlayer: React.FC<MiniPlayerProps> = React.memo(({
 
   return (
     <motion.div
-      initial={{ y: 150, opacity: 0, scale: 0.9 }}
-      animate={{ y: 0, opacity: 1, scale: 1 }}
-      exit={{ y: 150, opacity: 0, scale: 0.9 }}
-      whileTap={{ scale: 0.98 }}
-      whileHover={{ scale: 1.02 }}
+      initial={{ y: 150, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 150, opacity: 0 }}
       transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.8 }}
       onClick={onOpen}
-      className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 md:left-auto md:right-6 md:w-[420px]
-                 h-[76px] bg-surface-container-high/60 backdrop-blur-3xl saturate-200 rounded-[24px]
-                 flex items-center pl-3 pr-3 shadow-elevation-4 z-[500] cursor-pointer
-                 border border-white/10 overflow-hidden group hover:shadow-elevation-5 transition-all"
+      className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-0 right-0 md:left-auto md:right-12 md:w-[400px]
+                 h-[80px] bg-background border-t border-border md:border md:border-border md:rounded-none
+                 flex items-center pl-4 pr-6 shadow-2xl z-[500] cursor-pointer
+                 group hover:border-accent/50 transition-colors"
       layoutId="mini-player"
     >
-      {/* Progress Bar at Bottom - Material Web */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-         <md-linear-progress
-            value={progress}
-            style={{
-                '--md-linear-progress-track-height': '2px',
-                '--md-linear-progress-active-indicator-height': '2px',
-                '--md-linear-progress-track-color': 'transparent',
-                '--md-sys-color-primary': 'var(--md-sys-color-primary)',
-                width: '100%'
-            }}
-         ></md-linear-progress>
+      {/* Progress Bar at Top - Minimal */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-muted pointer-events-none">
+         <motion.div
+            className="h-full bg-accent"
+            style={{ width: `${progress * 100}%` }}
+         />
       </div>
 
       {/* Album Art */}
       <motion.div
         layoutId={`artwork-${currentTrack.id}`}
-        className="relative w-[52px] h-[52px] rounded-[16px] overflow-hidden flex-shrink-0 shadow-md bg-surface-container-highest flex items-center justify-center border border-white/5"
+        className="relative w-12 h-12 overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center border border-border"
       >
         {!imgError && currentTrack.coverArt ? (
           <img
             src={currentTrack.coverArt}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover filter grayscale-[20%]"
             alt={currentTrack.title}
             onError={() => setImgError(true)}
           />
         ) : (
-          <md-icon class="material-symbols-rounded text-on-surface-variant/50">music_note</md-icon>
+          <Music2 size={24} className="text-muted-foreground" />
         )}
       </motion.div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center px-4 gap-0.5">
+      <div className="flex-1 min-w-0 flex flex-col justify-center px-4 gap-1">
         <motion.h4
            layoutId={`title-${currentTrack.id}`}
-           className="text-title-medium font-bold text-on-surface truncate leading-tight tracking-tight"
+           className="text-base font-bold font-display text-foreground truncate leading-none uppercase tracking-tight"
         >
           {currentTrack.title}
         </motion.h4>
         <motion.p
            layoutId={`artist-${currentTrack.id}`}
-           className="text-body-medium text-on-surface-variant truncate leading-tight opacity-80"
+           className="text-xs font-mono text-muted-foreground truncate leading-none uppercase tracking-wider"
         >
           {currentTrack.artist}
         </motion.p>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2">
-         <md-icon-button onClick={handleTogglePlay} style={{ '--md-icon-button-icon-color': 'var(--md-sys-color-primary)', '--md-icon-button-icon-size': '32px' }}>
-            <md-icon class="material-symbols-rounded filled">
-                {playerState.isPlaying ? 'pause' : 'play_arrow'}
-            </md-icon>
-         </md-icon-button>
+      <div className="flex items-center gap-6">
+         <button
+            onClick={handleTogglePlay}
+            className="text-foreground hover:text-accent transition-colors"
+         >
+            {playerState.isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+         </button>
 
          {onNext && (
-           <md-icon-button onClick={handleNext} style={{ '--md-icon-button-icon-size': '32px' }}>
-             <md-icon class="material-symbols-rounded">skip_next</md-icon>
-           </md-icon-button>
+           <button
+                onClick={handleNext}
+                className="text-foreground hover:text-accent transition-colors"
+           >
+             <SkipForward size={24} />
+           </button>
          )}
       </div>
 

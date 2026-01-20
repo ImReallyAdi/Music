@@ -5,19 +5,14 @@ import {
   useMotionValue,
   useTransform,
   useDragControls,
-  useSpring
 } from 'framer-motion';
 import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
 import QueueList from './QueueList';
 import LyricsView from './LyricsView';
-import { ThemePalette } from '../utils/colors';
 import { AudioAnalysis } from '../hooks/useAudioAnalyzer';
-import '@material/web/slider/slider.js';
-import '@material/web/iconbutton/filled-icon-button.js';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/iconbutton/filled-tonal-icon-button.js';
-import '@material/web/icon/icon.js';
+import { Shuffle, SkipBack, SkipForward, Play, Pause, Repeat, Repeat1, Heart, ListMusic, Mic2, ChevronDown } from 'lucide-react';
+import { cn } from '../utils/cn';
 
 // Helper to format time (mm:ss)
 const formatTime = (seconds: number) => {
@@ -49,9 +44,9 @@ interface FullPlayerProps {
   toggleShuffle: () => void;
   onRemoveTrack?: (id: string) => void;
   onTrackUpdate?: (track: Track) => void;
-  theme: ThemePalette | null;
+  theme: any; // Legacy prop, ignored
   themeColor?: string;
-  analyzerData?: AudioAnalysis; // Accept data from prop
+  analyzerData?: AudioAnalysis;
 }
 
 const FullPlayer: React.FC<FullPlayerProps> = ({
@@ -73,7 +68,6 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   toggleShuffle,
   onRemoveTrack,
   onTrackUpdate,
-  theme,
   analyzerData
 }) => {
   const [showQueue, setShowQueue] = useState(false);
@@ -84,57 +78,33 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   const [localScrubValue, setLocalScrubValue] = useState<number | null>(null);
   const isScrubbing = localScrubValue !== null;
 
-  const { beat } = analyzerData || { beat: false };
-
-  // Memoize color values
-  const colors = useMemo(() => ({
-    primary: theme?.primary || 'var(--md-sys-color-primary)',
-    secondary: theme?.secondary || 'var(--md-sys-color-secondary)',
-    muted: 'var(--md-sys-color-on-surface-variant)', // Force high contrast muted
-    background: theme?.background || 'var(--md-sys-color-background)'
-  }), [theme]);
-
-  // Beat Animations
-  const beatScale = useSpring(1, { stiffness: 300, damping: 10 });
-  const glowOpacity = useSpring(0, { stiffness: 200, damping: 20 });
-
-  useEffect(() => {
-      if (beat && isPlayerOpen) {
-          beatScale.set(1.03); // Pop
-          glowOpacity.set(0.6); // Flash
-          setTimeout(() => {
-              beatScale.set(1);
-              glowOpacity.set(0);
-          }, 100);
-      }
-  }, [beat, beatScale, glowOpacity, isPlayerOpen]);
-
-  const safeDuration = Math.max(duration, 0.01);
   const dragControls = useDragControls();
   const dragY = useMotionValue(0);
   const opacity = useTransform(dragY, [0, 200], [1, 0]);
 
   // Display value
   const displayValue = isScrubbing ? localScrubValue : currentTime;
+  const progressPercent = duration > 0 ? (displayValue / duration) * 100 : 0;
 
   // --- SCRUBBING HANDLERS ---
   const handleScrubStart = () => {
       if (startScrub) startScrub();
   };
 
-  const handleScrubInput = (e: Event) => {
-      // @ts-ignore
-      const value = e.target.value as number;
+  const handleScrubInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseFloat(e.target.value);
       setLocalScrubValue(value);
   };
 
-  const handleScrubEnd = (e: Event) => {
-      // @ts-ignore
-      const value = e.target.value as number;
-      handleSeek(value);
-      setLocalScrubValue(null);
-      if (endScrub) endScrub();
+  const handleScrubEnd = (e: React.MouseEvent | React.TouchEvent) => {
+      if (localScrubValue !== null) {
+        handleSeek(localScrubValue);
+        setLocalScrubValue(null);
+        if (endScrub) endScrub();
+      }
   };
+
+  // Also handle mouse up globally if needed, but for now simple event is ok
 
   const toggleRepeat = useCallback(() => {
     const modes: RepeatMode[] = ['OFF', 'ALL', 'ONE'];
@@ -177,55 +147,47 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           dragListener={false}
           dragConstraints={{ top: 0 }}
           dragElastic={0.05}
-          style={{ opacity, y: dragY, background: colors.background, willChange: 'transform, opacity' }}
+          style={{ opacity, y: dragY }}
           onDragEnd={(_, i) => {
             if (i.offset.y > 100 || i.velocity.y > 500) onClose();
             else dragY.set(0);
           }}
-          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
+          className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden bg-background text-foreground"
         >
-          {/* Dynamic Background */}
-          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             <motion.div
-                animate={{ background: `linear-gradient(to bottom, ${colors.primary}20, ${colors.background} 90%)` }}
-                transition={{ duration: 1 }}
-                className="absolute inset-0"
-             />
-            <motion.img
-              key={currentTrack.coverArt}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.3 }}
-              transition={{ duration: 1 }}
-              src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[100px] scale-125 brightness-50"
-              alt=""
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/80" />
-            <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
-                 style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-            />
-          </div>
+          {/* Noise Overlay */}
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none z-0"
+               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+          />
 
-          {/* Drag Handle */}
+          {/* Drag Handle & Header */}
           <div 
             onPointerDown={(e) => dragControls.start(e)}
-            className="h-14 w-full flex items-center justify-center cursor-grab active:cursor-grabbing z-20 shrink-0"
+            className="h-16 w-full flex items-center justify-between px-6 cursor-grab active:cursor-grabbing z-20 shrink-0 border-b border-border bg-background/50 backdrop-blur-md"
           >
-            <div className="w-16 h-1.5 bg-white/20 rounded-full hover:bg-white/40 transition-colors backdrop-blur-md shadow-sm" />
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDown size={28} />
+            </button>
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">Now Playing</span>
+            <div className="w-7" /> {/* Spacer */}
           </div>
 
-          <main className="flex-1 px-6 pb-8 flex flex-col landscape:flex-row items-center justify-center gap-8 landscape:gap-16 min-h-0 relative">
+          <main className="flex-1 px-6 pb-12 flex flex-col landscape:flex-row items-center justify-center gap-12 landscape:gap-16 min-h-0 relative z-10 pt-8">
             
             {/* FULLSCREEN LYRICS */}
             <AnimatePresence>
                 {isLyricsFullscreen && (
                     <motion.div
                         layoutId="lyrics-view"
-                        className="fixed inset-0 z-50 flex flex-col"
+                        className="fixed inset-0 z-50 flex flex-col bg-background"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                     >
+                         <div className="p-6">
+                            <button onClick={() => setIsLyricsFullscreen(false)} className="text-foreground hover:text-accent">
+                                <ChevronDown size={32} />
+                            </button>
+                         </div>
                         <LyricsView
                             track={currentTrack}
                             currentTime={currentTime}
@@ -250,7 +212,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                      initial={{ opacity: 0, scale: 0.95 }}
                      animate={{ opacity: 1, scale: 1 }}
                      exit={{ opacity: 0, scale: 0.95 }}
-                     className="absolute inset-0 rounded-[40px] overflow-hidden bg-black/20 backdrop-blur-md border border-white/5"
+                     className="absolute inset-0 border border-border bg-card/50 backdrop-blur-md overflow-hidden"
                      onPointerDown={(e) => e.stopPropagation()}
                   >
                      <LyricsView
@@ -271,7 +233,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-xl rounded-[40px] border border-white/10 overflow-hidden flex flex-col"
+                    className="absolute inset-0 bg-background border border-border overflow-hidden flex flex-col"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <QueueList
@@ -293,23 +255,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     animate={{
                         opacity: 1,
                         scale: playerState.isPlaying ? 1 : 0.95,
-                        rotate: playerState.isPlaying ? 0 : 0
                     }}
-                    style={{ scale: playerState.isPlaying ? beatScale : 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, type: 'spring', bounce: 0.2 }}
-                    className="relative w-full h-full shadow-[0_24px_64px_rgba(0,0,0,0.6)] rounded-[40px] overflow-hidden bg-surface-container-high ring-1 ring-white/10"
+                    className="relative w-full h-full border border-border bg-muted overflow-hidden shadow-2xl"
                   >
                      <img
                       src={currentTrack.coverArt}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover grayscale-[10%]"
                       alt="Album Art"
-                    />
-
-                    {/* Beat Glow Flash */}
-                    <motion.div
-                        style={{ opacity: glowOpacity, background: colors.primary }}
-                        className="absolute inset-0 mix-blend-overlay pointer-events-none"
                     />
                   </motion.div>
                 )}
@@ -317,28 +271,24 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             </div>
 
             {/* Right: Info & Controls */}
-            <div className="w-full max-w-[380px] flex flex-col justify-end gap-10 shrink-0 pb-4">
+            <div className="w-full max-w-[380px] flex flex-col justify-end gap-10 shrink-0">
               
               {/* Text Info & Favorite */}
               <div className="flex items-center justify-between gap-4">
-                  <div className="text-left flex-1 min-w-0">
+                  <div className="text-left flex-1 min-w-0 flex flex-col gap-2">
                     <motion.h1
-                        animate={{ color: '#ffffff' }}
-                        className="text-headline-large font-black leading-tight line-clamp-1 tracking-tight drop-shadow-md"
-                        title={currentTrack.title}
+                        className="text-4xl font-black font-display leading-none tracking-tighter uppercase"
                     >
                       {currentTrack.title}
                     </motion.h1>
                     <motion.p
-                        animate={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                        className="text-title-large line-clamp-1 mt-1 font-medium tracking-tight"
-                        title={currentTrack.artist}
+                        className="text-lg font-mono text-muted-foreground uppercase tracking-wider truncate"
                     >
                       {currentTrack.artist}
                     </motion.p>
                   </div>
 
-                  <md-icon-button
+                  <button
                     onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         dbService.toggleFavorite(currentTrack.id).then(updatedTrack => {
@@ -347,140 +297,126 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             }
                         });
                     }}
-                    style={{ '--md-icon-button-icon-color': currentTrack.isFavorite ? colors.primary : 'rgba(255,255,255,0.7)', '--md-icon-button-icon-size': '32px' }}
+                    className={cn(
+                        "p-3 transition-colors hover:text-accent",
+                        currentTrack.isFavorite ? "text-accent fill-current" : "text-muted-foreground"
+                    )}
                   >
-                     <md-icon class="material-symbols-rounded">
-                        {currentTrack.isFavorite ? "favorite" : "favorite_border"}
-                     </md-icon>
-                  </md-icon-button>
+                     <Heart size={28} fill={currentTrack.isFavorite ? "currentColor" : "none"} />
+                  </button>
               </div>
 
-              {/* Material Progress Slider */}
-              <div className="w-full flex flex-col gap-2">
-                 <md-slider
-                    min="0"
-                    max={safeDuration}
-                    value={displayValue}
-                    step="0.1"
+              {/* Custom Slider */}
+              <div className="w-full flex flex-col gap-3 group">
+                 <div className="relative h-6 w-full flex items-center cursor-pointer touch-none">
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 100}
+                        step="0.1"
+                        value={displayValue}
+                        onChange={handleScrubInput}
+                        onMouseDown={handleScrubStart}
+                        onMouseUp={handleScrubEnd}
+                        onTouchStart={handleScrubStart}
+                        onTouchEnd={handleScrubEnd}
+                        className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                    />
 
-                    onInput={handleScrubInput}
-                    onChange={handleScrubEnd}
-                    onPointerDown={handleScrubStart}
-                    style={{
-                      width: '100%',
-                      '--md-slider-handle-color': colors.primary,
-                      '--md-slider-handle-width': '20px',
-                      '--md-slider-handle-height': '20px',
-                      '--md-slider-active-track-color': colors.primary,
-                      '--md-slider-inactive-track-color': 'rgba(255,255,255,0.2)',
-                      '--md-slider-active-track-height': '6px',
-                      '--md-slider-inactive-track-height': '6px'
-                    }}
-                 ></md-slider>
+                    {/* Track Background */}
+                    <div className="w-full h-1 bg-muted overflow-hidden">
+                         {/* Progress Fill */}
+                         <div
+                            className="h-full bg-accent relative"
+                            style={{ width: `${progressPercent}%` }}
+                         >
+                            {/* Thumb (Visual Only) */}
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                         </div>
+                    </div>
+                 </div>
 
-                <div className="flex justify-between text-label-medium font-bold font-mono tracking-wider opacity-80 px-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <div className="flex justify-between text-xs font-mono font-bold text-muted-foreground tracking-widest">
                   <span>{formatTime(displayValue)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
               {/* Main Controls */}
-              <div className="flex items-center justify-between px-2">
-                <md-icon-button
+              <div className="flex items-center justify-between">
+                <button
                     onClick={toggleShuffle} 
-                    toggle
-                    selected={playerState.shuffle}
-                    style={{
-                        '--md-icon-button-icon-color': 'rgba(255,255,255,0.6)',
-                        '--md-icon-button-selected-icon-color': colors.primary,
-                        '--md-icon-button-icon-size': '28px'
-                    }}
+                    className={cn(
+                        "p-2 transition-colors",
+                        playerState.shuffle ? "text-accent" : "text-muted-foreground hover:text-foreground"
+                    )}
                 >
-                   <md-icon class="material-symbols-rounded">shuffle</md-icon>
-                </md-icon-button>
+                   <Shuffle size={24} />
+                </button>
 
                 <div className="flex items-center gap-8">
-                  <md-icon-button onClick={prevTrack} style={{ '--md-icon-size': '42px', '--md-icon-button-icon-color': '#ffffff' }}>
-                    <md-icon class="material-symbols-rounded">skip_previous</md-icon>
-                  </md-icon-button>
-                  
-                  <md-filled-icon-button
-                    onClick={togglePlay}
-                    style={{
-                        '--md-filled-icon-button-container-width': '84px',
-                        '--md-filled-icon-button-container-height': '84px',
-                        '--md-filled-icon-button-icon-size': '42px',
-                        '--md-sys-color-primary': '#ffffff',
-                        '--md-sys-color-on-primary': '#000000', // High contrast play button
-                        borderRadius: '28px'
-                    }}
+                  <button
+                    onClick={prevTrack}
+                    className="text-foreground hover:text-accent transition-colors"
                   >
-                    <md-icon class="material-symbols-rounded">
-                        {playerState.isPlaying ? 'pause' : 'play_arrow'}
-                    </md-icon>
-                  </md-filled-icon-button>
+                    <SkipBack size={32} fill="currentColor" />
+                  </button>
                   
-                  <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '42px', '--md-icon-button-icon-color': '#ffffff' }}>
-                     <md-icon class="material-symbols-rounded">skip_next</md-icon>
-                  </md-icon-button>
+                  <button
+                    onClick={togglePlay}
+                    className="w-20 h-20 bg-foreground text-background flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+                  >
+                    {playerState.isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
+                  </button>
+                  
+                  <button
+                    onClick={nextTrack}
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                     <SkipForward size={32} fill="currentColor" />
+                  </button>
                 </div>
 
-                <md-icon-button
+                <button
                     onClick={toggleRepeat}
-                    style={{
-                        '--md-icon-button-icon-color': playerState.repeat !== 'OFF' ? colors.primary : 'rgba(255,255,255,0.6)',
-                        '--md-icon-button-icon-size': '28px'
-                    }}
+                    className={cn(
+                        "p-2 transition-colors",
+                        playerState.repeat !== 'OFF' ? "text-accent" : "text-muted-foreground hover:text-foreground"
+                    )}
                 >
-                   <div className="relative">
-                       <md-icon class="material-symbols-rounded">
-                           {playerState.repeat === 'ONE' ? 'repeat_one' : 'repeat'}
-                       </md-icon>
-                   </div>
-                </md-icon-button>
+                   {playerState.repeat === 'ONE' ? <Repeat1 size={24} /> : <Repeat size={24} />}
+                </button>
               </div>
 
               {/* Bottom Row (Queue & Lyrics) */}
-              <div className="flex items-center justify-between mt-4 px-6 gap-6">
-                 <md-filled-tonal-icon-button
+              <div className="flex items-center justify-center gap-12 mt-4">
+                 <button
                     onClick={() => {
                         setShowLyrics(!showLyrics);
                         if (!showLyrics) setShowQueue(false);
                     }}
-                    toggle
-                    selected={showLyrics}
-                    style={{
-                        width: '100%',
-                        height: '56px',
-                        borderRadius: '20px',
-                        '--md-sys-color-secondary-container': showLyrics ? colors.primary : 'rgba(255,255,255,0.1)',
-                        '--md-sys-color-on-secondary-container': showLyrics ? 'var(--md-sys-color-surface)' : '#ffffff',
-                        '--md-icon-size': '28px'
-                    }}
+                    className={cn(
+                        "flex flex-col items-center gap-2 group",
+                        showLyrics ? "text-accent" : "text-muted-foreground hover:text-foreground"
+                    )}
                  >
-                    <md-icon class="material-symbols-rounded">lyrics</md-icon>
-                 </md-filled-tonal-icon-button>
+                    <Mic2 size={24} />
+                    <span className="text-[10px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Lyrics</span>
+                 </button>
 
-                 <md-filled-tonal-icon-button
+                 <button
                     onClick={() => {
                         setShowQueue(!showQueue);
                         if (!showQueue) setShowLyrics(false);
                     }}
-                    toggle
-                    selected={showQueue}
-                    style={{
-                        width: '100%',
-                        height: '56px',
-                        borderRadius: '20px',
-                        '--md-sys-color-secondary-container': showQueue ? colors.primary : 'rgba(255,255,255,0.1)',
-                        '--md-sys-color-on-secondary-container': showQueue ? 'var(--md-sys-color-surface)' : '#ffffff',
-                        '--md-icon-size': '28px'
-                    }}
+                    className={cn(
+                        "flex flex-col items-center gap-2 group",
+                        showQueue ? "text-accent" : "text-muted-foreground hover:text-foreground"
+                    )}
                  >
-                    <md-icon class="material-symbols-rounded">
-                        {showQueue ? 'expand_more' : 'queue_music'}
-                    </md-icon>
-                 </md-filled-tonal-icon-button>
+                    <ListMusic size={24} />
+                    <span className="text-[10px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Queue</span>
+                 </button>
               </div>
 
             </div>

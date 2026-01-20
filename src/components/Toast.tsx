@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import '@material/web/icon/icon.js';
+import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { cn } from '../utils/cn';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -46,22 +47,23 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           {toasts.map(toast => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              layout
-              className={`pointer-events-auto flex items-center gap-3 p-4 rounded-xl shadow-elevation-3 backdrop-blur-md border border-white/10 ${
-                toast.type === 'error' ? 'bg-error-container text-error-on-container' :
-                toast.type === 'success' ? 'bg-primary-container text-primary-on-container' :
-                'bg-surface-container-highest text-surface-on'
-              }`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={cn(
+                  "pointer-events-auto flex items-center gap-4 p-4 w-full bg-card border border-border shadow-none text-foreground",
+                  toast.type === 'error' && "border-destructive text-destructive",
+                  toast.type === 'success' && "border-accent",
+              )}
             >
-              {toast.type === 'success' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>check_circle</md-icon>}
-              {toast.type === 'error' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>error</md-icon>}
-              {toast.type === 'info' && <md-icon class="material-symbols-rounded shrink-0" style={{ fontSize: '20px' }}>info</md-icon>}
-              <span className="text-body-medium font-medium flex-1">{toast.message}</span>
-              <button onClick={() => removeToast(toast.id)} className="p-1 hover:bg-black/10 rounded-full flex items-center justify-center">
-                <md-icon class="material-symbols-rounded" style={{ fontSize: '16px' }}>close</md-icon>
+              {toast.type === 'success' && <CheckCircle2 size={20} className="text-accent shrink-0" />}
+              {toast.type === 'error' && <AlertCircle size={20} className="text-destructive shrink-0" />}
+              {toast.type === 'info' && <Info size={20} className="text-muted-foreground shrink-0" />}
+
+              <span className="text-sm font-medium flex-1 font-mono tracking-tight">{toast.message}</span>
+
+              <button onClick={() => removeToast(toast.id)} className="p-1 hover:text-accent transition-colors">
+                <X size={16} />
               </button>
             </motion.div>
           ))}
