@@ -184,13 +184,13 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                  <div className="flex flex-col gap-6 max-w-2xl">
                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 backdrop-blur-md border border-outline-variant/20 w-fit">
                          <md-icon class="material-symbols-rounded filled text-primary" style={{ fontSize: '18px' }}>sparkles</md-icon>
-                         <span className="text-label-large text-on-surface font-bold uppercase tracking-wide">Daily Mix</span>
+                         <span className="text-label-large text-on-surface font-bold uppercase tracking-wide">Personalized</span>
                      </div>
 
                      <div>
                         <h1 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
-                            Your <span className="text-primary">Vibe</span>,<br/>
-                            Perfectly Tuned.
+                            Your <span className="text-primary">Mix</span>,<br/>
+                            Ready to Play.
                         </h1>
                         <p className="text-headline-small text-on-surface-variant mt-4 max-w-lg font-medium opacity-80">
                             A dynamic selection of tracks tailored to your listening habits.

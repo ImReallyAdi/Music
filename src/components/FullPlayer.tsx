@@ -11,6 +11,7 @@ import { Track, PlayerState, RepeatMode } from '../types';
 import { dbService } from '../db';
 import QueueList from './QueueList';
 import LyricsView from './LyricsView';
+import Waveform from './Waveform';
 import { ThemePalette } from '../utils/colors';
 import { AudioAnalysis } from '../hooks/useAudioAnalyzer';
 import '@material/web/slider/slider.js';
@@ -223,7 +224,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                 {isLyricsFullscreen && (
                     <motion.div
                         layoutId="lyrics-view-fs"
-                        className="fixed inset-0 z-50 flex flex-col bg-surface"
+                        className="absolute inset-0 z-40 flex flex-col bg-surface/50 backdrop-blur-3xl"
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
@@ -239,15 +240,17 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             onToggleFullscreen={() => setIsLyricsFullscreen(false)}
                             onClose={() => setIsLyricsFullscreen(false)}
                         />
+                        {/* Gradient Fade for Bottom Controls */}
+                        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-surface via-surface/80 to-transparent pointer-events-none z-10" />
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* MAIN CONTENT AREA */}
             {/* Left: Artwork / Inline Lyrics / Queue */}
-            <div className="w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0">
+            <div className={`w-full max-w-[360px] landscape:max-w-[400px] aspect-square relative flex items-center justify-center shrink-0 ${isLyricsFullscreen ? 'opacity-0 pointer-events-none' : ''}`}>
               <AnimatePresence mode="wait">
-                {!isLyricsFullscreen && showLyrics ? (
+                {showLyrics ? (
                   <motion.div
                      key="lyrics-inline"
                      layoutId="lyrics-view-inline"
@@ -361,7 +364,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </div>
 
               {/* Progress Slider */}
-              <div className="w-full flex flex-col gap-2">
+              <div className={`w-full flex flex-col gap-2 transition-all duration-300 ${isLyricsFullscreen ? 'z-50' : ''}`}>
+                 <div className="px-1">
+                     <Waveform isPlaying={playerState.isPlaying} color="var(--md-sys-color-primary)" barCount={40} />
+                 </div>
                  {/* Custom styling for expressiveness */}
                  <md-slider
                     min="0"
@@ -391,7 +397,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
               </div>
 
               {/* Playback Controls */}
-              <div className="flex items-center justify-between px-2">
+              <div className={`flex items-center justify-between px-2 transition-all duration-300 ${isLyricsFullscreen ? 'z-50' : ''}`}>
                 <md-icon-button
                     onClick={toggleShuffle} 
                     toggle
