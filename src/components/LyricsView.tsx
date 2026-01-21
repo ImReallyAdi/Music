@@ -5,9 +5,6 @@ import { Track, Lyrics } from '../types';
 import { useToast } from './Toast';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
-// Using generic buttons for toggle if segmented isn't available, but trying to implement a custom M3 toggle visual if needed.
-// Actually, let's use a simple styled div for the toggle to ensure it looks M3 without experimental imports risk
-// or just standard filled/outlined buttons.
 
 interface LyricsViewProps {
   track: Track;
@@ -128,7 +125,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
 
   // Handle User Interaction (Scroll)
   const handleUserScroll = useCallback(() => {
-    if (viewMode === 'static') return; // Don't auto-scroll in static mode logic anyway
+    if (viewMode === 'static') return;
 
     setIsUserScrolling(true);
     if (userScrollTimeout.current) clearTimeout(userScrollTimeout.current);
@@ -138,7 +135,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     }, 3000);
   }, [viewMode]);
 
-  // Cleanup timeout
   useEffect(() => {
     return () => {
       if (userScrollTimeout.current) clearTimeout(userScrollTimeout.current);
@@ -205,7 +201,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                 const isActive = i === activeLineIndex;
                 const isPast = i < activeLineIndex;
                 
-                // Font Size Logic: Long lines slightly smaller
+                // Font Size Logic
                 const wordCount = line.words ? line.words.length : line.text.split(' ').length;
                 const isLongLine = wordCount > 10;
                 
@@ -220,13 +216,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             onClick={() => onSeek(line.time)}
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{
-                                scale: isActive ? 1 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                                scale: isActive ? 1.05 : 0.95,
+                                opacity: isActive ? 1 : isPast ? 0.3 : 0.15, // Higher contrast
+                                filter: isActive ? 'blur(0px)' : 'blur(1px)',
                                 y: 0,
-                                x: isActive ? 20 : 0 // Subtle indentation for active line
+                                x: isActive ? 0 : 0
                             }}
-                            transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
                             className="cursor-pointer origin-left will-change-transform"
                         >
                              <p className={`font-black tracking-tight leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 transition-colors ${
@@ -253,19 +249,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                                                  color: isActive
                                                    ? (isWordActive || isWordPast ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)')
                                                    : 'inherit',
-                                                 opacity: isActive && !isWordActive && !isWordPast ? 0.5 : 1
+                                                 opacity: isActive && !isWordActive && !isWordPast ? 0.6 : 1,
+                                                 textShadow: isWordActive ? '0 0 20px rgba(var(--md-sys-color-primary-rgb), 0.5)' : 'none'
                                              }}
                                             >
                                                {word.text}
                                             </span>
-
-                                            {isWordActive && (
-                                              <motion.span
-                                                layoutId="activeWordGlow"
-                                                className="absolute inset-0 bg-primary/20 blur-lg rounded-full -z-10 scale-150"
-                                                transition={{ duration: 0.2 }}
-                                              />
-                                            )}
                                        </span>
                                    );
                                })}
@@ -291,13 +280,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
-                            scale: isActive ? 1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                            scale: isActive ? 1.05 : 0.95,
+                            opacity: isActive ? 1 : isPast ? 0.3 : 0.15, // Higher contrast
+                            filter: isActive ? 'blur(0px)' : 'blur(1px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
-                            x: isActive ? 20 : 0
                         }}
-                        transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                        transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
                          <p className={`font-black tracking-tight leading-tight ${
@@ -325,28 +313,32 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${isFullscreen ? 'bg-surface' : 'bg-surface/90 backdrop-blur-2xl rounded-[32px] md:rounded-[40px]'}`}
+        className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${
+            isFullscreen
+            ? 'bg-transparent'  /* Allow FullPlayer background to show */
+            : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
+        }`}
     >
       {/* Header Controls */}
-      <div className="flex items-center justify-between p-4 z-50 bg-gradient-to-b from-surface/80 to-transparent">
+      <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (Segmented Button Style) */}
-         <div className="flex bg-surface-container-highest rounded-full p-1 border border-outline-variant">
+         <div className="flex bg-surface-container-high rounded-full p-1 border border-outline-variant/20 shadow-sm">
              <button
                onClick={() => setViewMode('synced')}
-               className={`px-4 py-2 rounded-full text-label-large font-medium transition-all ${
+               className={`px-6 py-2 rounded-full text-label-large font-bold transition-all ${
                    viewMode === 'synced'
                    ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'text-on-surface-variant hover:text-on-surface'
+                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
                }`}
              >
                Synced
              </button>
              <button
                onClick={() => setViewMode('static')}
-               className={`px-4 py-2 rounded-full text-label-large font-medium transition-all ${
+               className={`px-6 py-2 rounded-full text-label-large font-bold transition-all ${
                    viewMode === 'static'
                    ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'text-on-surface-variant hover:text-on-surface'
+                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
                }`}
              >
                Static
@@ -356,7 +348,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
          <div className="flex gap-2">
             <button
               onClick={handleGenerateWordSync}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-primary"
+              className="w-12 h-12 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-primary"
               title="Enhance Sync"
             >
               <md-icon class={`material-symbols-rounded ${loading ? 'animate-spin' : ''}`}>auto_awesome</md-icon>
@@ -365,7 +357,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
             {onToggleFullscreen && (
                 <button
                 onClick={onToggleFullscreen}
-                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-on-surface"
+                className="w-12 h-12 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-on-surface"
                 >
                 <md-icon class="material-symbols-rounded">{isFullscreen ? 'close_fullscreen' : 'open_in_full'}</md-icon>
                 </button>
@@ -373,7 +365,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
              {onClose && (
                 <button
                 onClick={onClose}
-                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-on-surface"
+                className="w-12 h-12 rounded-full flex items-center justify-center hover:bg-surface-container-highest transition-colors text-on-surface"
                 >
                 <md-icon class="material-symbols-rounded">close</md-icon>
                 </button>
