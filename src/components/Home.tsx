@@ -231,7 +231,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-20 h-20 bg-primary text-on-primary rounded-[28px] shadow-elevation-3 flex items-center justify-center z-20 cursor-pointer border-4 border-surface"
+                              className="absolute -bottom-4 -right-4 w-20 h-20 bg-primary text-on-primary rounded-full shadow-elevation-3 flex items-center justify-center z-20 cursor-pointer border-4 border-surface"
                            >
                                <md-icon class="material-symbols-rounded filled" style={{ fontSize: '40px' }}>play_arrow</md-icon>
                            </motion.button>

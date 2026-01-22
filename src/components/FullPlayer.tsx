@@ -241,7 +241,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             onClose={() => setIsLyricsFullscreen(false)}
                         />
                         {/* Gradient Fade for Bottom Controls */}
-                        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-surface via-surface/80 to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10" />
                     </motion.div>
                 )}
             </AnimatePresence>
