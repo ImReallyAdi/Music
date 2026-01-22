@@ -321,26 +321,28 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     >
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
-         {/* Toggle View Mode (Segmented Button Style) */}
-         <div className="flex bg-surface-container-high rounded-full p-1 border border-outline-variant/20 shadow-sm">
+         {/* Toggle View Mode (M3 Segmented Button) */}
+         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden">
              <button
                onClick={() => setViewMode('synced')}
-               className={`px-6 py-2 rounded-full text-label-large font-bold transition-all ${
+               className={`flex h-full items-center px-5 text-label-large font-medium transition-all ${
                    viewMode === 'synced'
-                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
+                   ? 'bg-secondary-container text-on-secondary-container'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
+               {viewMode === 'synced' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
                Synced
              </button>
              <button
                onClick={() => setViewMode('static')}
-               className={`px-6 py-2 rounded-full text-label-large font-bold transition-all ${
+               className={`flex h-full items-center px-5 text-label-large font-medium transition-all ${
                    viewMode === 'static'
-                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
+                   ? 'bg-secondary-container text-on-secondary-container'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
+               {viewMode === 'static' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
                Static
              </button>
          </div>
