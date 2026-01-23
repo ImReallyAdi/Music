@@ -188,11 +188,11 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                      </div>
 
                      <div>
-                        <h1 className="text-display-medium md:text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
+                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
                             Your <span className="text-primary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
-                        <p className="text-headline-small text-on-surface-variant mt-4 max-w-lg font-medium opacity-80">
+                        <p className="text-headline-small text-on-surface-variant mt-6 max-w-lg font-medium opacity-90 leading-snug">
                             A dynamic selection of tracks tailored to your listening habits.
                         </p>
                      </div>
@@ -203,7 +203,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                       <div className="relative w-48 h-48 md:w-64 md:h-64">
                           {/* Blob Shape */}
                            <motion.div
-                              className="absolute inset-0 bg-surface-container-highest overflow-hidden shadow-elevation-2"
+                              className="absolute inset-0 bg-surface-container-highest overflow-hidden shadow-elevation-3"
                               style={{
                                   borderRadius: '42% 58% 70% 30% / 45% 45% 55% 55%',
                                   backgroundImage: headerArt ? `url(${headerArt})` : undefined,
@@ -213,11 +213,12 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                               animate={{
                                   borderRadius: [
                                       '42% 58% 70% 30% / 45% 45% 55% 55%',
-                                      '58% 42% 30% 70% / 55% 55% 45% 45%',
+                                      '40% 60% 60% 40% / 60% 30% 70% 40%',
+                                      '35% 65% 55% 45% / 55% 35% 65% 45%',
                                       '42% 58% 70% 30% / 45% 45% 55% 55%'
                                   ]
                               }}
-                              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
                            >
                               {!headerArt && (
                                   <div className="w-full h-full flex items-center justify-center bg-primary-container text-on-primary-container">
@@ -228,12 +229,12 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.15, rotate: 5 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-20 h-20 bg-primary text-on-primary rounded-full shadow-elevation-3 flex items-center justify-center z-20 cursor-pointer border-4 border-surface"
+                              className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
                            >
-                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '40px' }}>play_arrow</md-icon>
+                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '48px' }}>play_arrow</md-icon>
                            </motion.button>
                       </div>
                  </div>

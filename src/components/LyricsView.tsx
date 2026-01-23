@@ -216,13 +216,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             onClick={() => onSeek(line.time)}
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{
-                                scale: isActive ? 1.05 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.3 : 0.15, // Higher contrast
-                                filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                                scale: isActive ? 1.1 : 0.95,
+                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
+                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
                                 y: 0,
                                 x: isActive ? 0 : 0
                             }}
-                            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
                             className="cursor-pointer origin-left will-change-transform"
                         >
                              <p className={`font-black tracking-tight leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 transition-colors ${
@@ -280,19 +280,19 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
-                            scale: isActive ? 1.05 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.3 : 0.15, // Higher contrast
-                            filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                            scale: isActive ? 1.1 : 0.95,
+                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
+                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
                         }}
-                        transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                        transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
                          <p className={`font-black tracking-tight leading-tight ${
                             isLongLine 
                                 ? 'text-2xl md:text-3xl lg:text-4xl'
                                 : 'text-3xl md:text-4xl lg:text-5xl'
-                         }`}>
+                         }`} style={{ fontWeight: isActive ? 900 : 700 }}>
                            {line.text}
                          </p>
                          {line.translation && (
@@ -322,27 +322,40 @@ const LyricsView: React.FC<LyricsViewProps> = ({
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden">
+         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
              <button
                onClick={() => setViewMode('synced')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all ${
+               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
                    viewMode === 'synced'
                    ? 'bg-secondary-container text-on-secondary-container'
                    : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
-               {viewMode === 'synced' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
+               <AnimatePresence>
+                 {viewMode === 'synced' && (
+                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
+                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
+                    </motion.span>
+                 )}
+               </AnimatePresence>
                Synced
              </button>
+             <div className="w-px h-full bg-outline" />
              <button
                onClick={() => setViewMode('static')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all ${
+               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
                    viewMode === 'static'
                    ? 'bg-secondary-container text-on-secondary-container'
                    : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
-               {viewMode === 'static' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
+                <AnimatePresence>
+                 {viewMode === 'static' && (
+                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
+                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
+                    </motion.span>
+                 )}
+               </AnimatePresence>
                Static
              </button>
          </div>
