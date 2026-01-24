@@ -216,7 +216,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             onClick={() => onSeek(line.time)}
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{
-                                scale: isActive ? 1.1 : 0.95,
+                                scale: isActive ? 1.15 : 0.95,
                                 opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
                                 filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
                                 y: 0,
@@ -280,7 +280,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
-                            scale: isActive ? 1.1 : 0.95,
+                            scale: isActive ? 1.15 : 0.95,
                             opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
                             filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
@@ -315,14 +315,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         exit={{ opacity: 0 }}
         className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${
             isFullscreen
-            ? 'bg-transparent'  /* Allow FullPlayer background to show */
+            ? 'bg-black/30'  /* Scrim for readability over adaptive background */
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
     >
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
+         <div className="inline-flex h-10 items-center rounded-full border border-outline-variant overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
              <button
                onClick={() => setViewMode('synced')}
                className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
@@ -340,7 +340,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                </AnimatePresence>
                Synced
              </button>
-             <div className="w-px h-full bg-outline" />
+             <div className="w-px h-full bg-outline-variant" />
              <button
                onClick={() => setViewMode('static')}
                className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
