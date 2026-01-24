@@ -182,13 +182,13 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 h-full">
 
                  <div className="flex flex-col gap-6 max-w-2xl">
-                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 backdrop-blur-md border border-outline-variant/20 w-fit">
-                         <md-icon class="material-symbols-rounded filled text-primary" style={{ fontSize: '18px' }}>sparkles</md-icon>
-                         <span className="text-label-large text-on-surface font-bold uppercase tracking-wide">Personalized</span>
+                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-tertiary-container backdrop-blur-md w-fit">
+                     <md-icon class="material-symbols-rounded filled text-on-tertiary-container" style={{ fontSize: '18px' }}>sparkles</md-icon>
+                     <span className="text-label-large text-on-tertiary-container font-bold uppercase tracking-wide">Personalized</span>
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
+                    <h1 className="text-5xl md:text-[5rem] font-black text-on-surface tracking-tighter leading-[0.9]">
                             Your <span className="text-primary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
@@ -218,7 +218,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                                       '42% 58% 70% 30% / 45% 45% 55% 55%'
                                   ]
                               }}
-                              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
                            >
                               {!headerArt && (
                                   <div className="w-full h-full flex items-center justify-center bg-primary-container text-on-primary-container">
