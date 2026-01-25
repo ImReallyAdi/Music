@@ -227,8 +227,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         >
                              <p className={`font-black tracking-tight leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 transition-colors ${
                                 isLongLine 
-                                  ? 'text-2xl md:text-3xl lg:text-4xl'
-                                  : 'text-3xl md:text-4xl lg:text-5xl'
+                                  ? 'text-3xl md:text-4xl lg:text-5xl'
+                                  : 'text-4xl md:text-5xl lg:text-6xl'
                              }`}>
                                {line.words.map((word, wIdx) => {
                                    const nextWordTime = word.endTime ?? line.words![wIdx + 1]?.time ?? Infinity;
@@ -238,9 +238,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                                    return (
                                        <span 
                                          key={wIdx}
-                                         className="relative inline-block transition-transform duration-200"
+                                         className="relative inline-block transition-transform duration-200 origin-left"
                                          style={{
-                                            transform: isWordActive ? 'scale(1.1)' : 'scale(1)',
+                                            transform: isWordActive ? 'scale(1.15)' : 'scale(1)',
                                          }}
                                        >
                                             <span
@@ -249,8 +249,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                                                  color: isActive
                                                    ? (isWordActive || isWordPast ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)')
                                                    : 'inherit',
-                                                 opacity: isActive && !isWordActive && !isWordPast ? 0.6 : 1,
-                                                 textShadow: isWordActive ? '0 0 20px rgba(var(--md-sys-color-primary-rgb), 0.5)' : 'none'
+                                                 opacity: isActive && !isWordActive && !isWordPast ? 0.7 : 1,
+                                                 textShadow: isWordActive ? '0 0 30px var(--md-sys-color-primary)' : 'none'
                                              }}
                                             >
                                                {word.text}
@@ -280,18 +280,18 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
-                            scale: isActive ? 1.1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                            scale: isActive ? 1.05 : 0.95,
+                            opacity: isActive ? 1 : 0.5,
+                            filter: isActive ? 'blur(0px)' : 'blur(0px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
                         }}
-                        transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
                          <p className={`font-black tracking-tight leading-tight ${
                             isLongLine 
-                                ? 'text-2xl md:text-3xl lg:text-4xl'
-                                : 'text-3xl md:text-4xl lg:text-5xl'
+                                ? 'text-3xl md:text-4xl lg:text-5xl'
+                                : 'text-4xl md:text-5xl lg:text-6xl'
                          }`} style={{ fontWeight: isActive ? 900 : 700 }}>
                            {line.text}
                          </p>
@@ -315,14 +315,25 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         exit={{ opacity: 0 }}
         className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${
             isFullscreen
-            ? 'bg-transparent'  /* Allow FullPlayer background to show */
-            : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
+            ? 'bg-transparent'
+            : 'rounded-[32px] md:rounded-[40px] bg-surface-container-low'
         }`}
     >
+      {/* Dynamic Background (Inline Mode) */}
+      {!isFullscreen && (
+          <>
+            <div
+                className="absolute inset-0 z-0 opacity-40 bg-cover bg-center blur-3xl transition-all duration-1000"
+                style={{ backgroundImage: track.coverArt ? `url(${track.coverArt})` : undefined }}
+            />
+            <div className="absolute inset-0 z-0 bg-black/40 backdrop-blur-xl" />
+          </>
+      )}
+
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
+         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-transparent">
              <button
                onClick={() => setViewMode('synced')}
                className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
