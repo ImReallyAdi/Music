@@ -170,25 +170,25 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
       <div className="max-w-[1400px] mx-auto space-y-12 py-8">
 
         {/* --- HERO SECTION --- */}
-        <section className="relative overflow-hidden rounded-[48px] bg-surface-container-low p-8 md:p-12 min-h-[360px] flex flex-col justify-between">
+        <section className="relative overflow-hidden rounded-[48px] bg-surface-container-low p-8 md:p-12 min-h-[360px] flex flex-col justify-between shadow-sm">
              {/* Dynamic Background Mesh */}
-             <div className="absolute inset-0 z-0">
-                 <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/20 blur-[100px] rounded-full mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
-                 <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-tertiary/20 blur-[80px] rounded-full mix-blend-screen" />
-                 <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-secondary/10 blur-[60px] rounded-full mix-blend-screen" />
+             <div className="absolute inset-0 z-0 bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-low">
+                 <div className="absolute top-[-50%] right-[-20%] w-[800px] h-[800px] bg-primary/20 blur-[130px] rounded-full mix-blend-screen animate-[pulse_8s_infinite]" />
+                 <div className="absolute bottom-[-50%] left-[-20%] w-[800px] h-[800px] bg-tertiary/15 blur-[130px] rounded-full mix-blend-screen animate-[pulse_12s_infinite_reverse]" />
+                 <div className="absolute top-[20%] left-[20%] w-[600px] h-[600px] bg-secondary/15 blur-[100px] rounded-full mix-blend-screen animate-[pulse_10s_infinite]" />
              </div>
 
              {/* Content */}
              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 h-full">
 
                  <div className="flex flex-col gap-6 max-w-2xl">
-                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/50 backdrop-blur-md border border-outline-variant/20 w-fit">
-                         <md-icon class="material-symbols-rounded filled text-primary" style={{ fontSize: '18px' }}>sparkles</md-icon>
-                         <span className="text-label-large text-on-surface font-bold uppercase tracking-wide">Personalized</span>
+                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/30 backdrop-blur-md border border-white/10 w-fit shadow-sm">
+                         <md-icon class="material-symbols-rounded filled text-primary" style={{ fontSize: '18px' }}>auto_awesome</md-icon>
+                         <span className="text-label-large text-on-surface font-bold uppercase tracking-wide">Personalized for you</span>
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
+                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none drop-shadow-sm">
                             Your <span className="text-primary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
@@ -229,8 +229,10 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.15, rotate: 5 }}
-                              whileTap={{ scale: 0.95 }}
+                              whileHover={{ scale: 1.1, opacity: 0.95 }}
+                              whileTap={{ scale: 0.95, opacity: 0.9 }}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
                               onClick={handlePlayAll}
                               className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
                            >

@@ -193,7 +193,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         ref={containerRef}
         onWheel={handleUserScroll}
         onTouchMove={handleUserScroll}
-        className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient"
+        className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient relative z-10"
         style={{ scrollBehavior: 'smooth' }}
       >
         <div ref={scrollRef} className="flex flex-col gap-10 text-left max-w-4xl mx-auto">
@@ -216,9 +216,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             onClick={() => onSeek(line.time)}
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{
-                                scale: isActive ? 1.1 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                                scale: isActive ? 1.15 : 0.95,
+                                opacity: isActive ? 1 : isPast ? 0.3 : 0.15,
+                                filter: isActive ? 'blur(0px)' : 'blur(2px)',
                                 y: 0,
                                 x: isActive ? 0 : 0
                             }}
@@ -280,9 +280,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
-                            scale: isActive ? 1.1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                            scale: isActive ? 1.15 : 0.95,
+                            opacity: isActive ? 1 : isPast ? 0.3 : 0.15,
+                            filter: isActive ? 'blur(0px)' : 'blur(2px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
                         }}
                         transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
@@ -319,6 +319,20 @@ const LyricsView: React.FC<LyricsViewProps> = ({
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
     >
+      {/* Dynamic Background (only if inline mode to ensure contrast) */}
+      {!isFullscreen && (
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none rounded-[32px] md:rounded-[40px]">
+             {track.coverArt && (
+                 <img
+                   src={track.coverArt}
+                   className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-150 brightness-50"
+                   alt=""
+                 />
+             )}
+             <div className="absolute inset-0 bg-surface/40" />
+          </div>
+      )}
+
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (M3 Segmented Button) */}

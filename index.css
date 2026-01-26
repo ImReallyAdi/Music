@@ -71,10 +71,10 @@
   /* Navigation Bar */
   --md-navigation-bar-container-color: var(--md-sys-color-surface-container);
   --md-navigation-bar-label-text-color: var(--md-sys-color-on-surface-variant);
-  --md-navigation-bar-active-indicator-color: var(--md-sys-color-secondary-container);
-  --md-navigation-bar-active-hover-indicator-color: var(--md-sys-color-secondary-container);
+  --md-navigation-bar-active-indicator-color: var(--md-sys-color-primary-container);
+  --md-navigation-bar-active-hover-indicator-color: var(--md-sys-color-primary-container);
   --md-navigation-bar-active-label-text-color: var(--md-sys-color-on-surface);
-  --md-navigation-bar-active-icon-color: var(--md-sys-color-on-secondary-container);
+  --md-navigation-bar-active-icon-color: var(--md-sys-color-on-primary-container);
   --md-navigation-bar-inactive-icon-color: var(--md-sys-color-on-surface-variant);
   --md-navigation-bar-inactive-label-text-color: var(--md-sys-color-on-surface-variant);
 
