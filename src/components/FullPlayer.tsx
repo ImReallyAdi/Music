@@ -380,15 +380,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{
                       width: '100%',
                       '--md-slider-handle-color': 'var(--md-sys-color-primary)',
-                      '--md-slider-handle-width': '20px',
-                      '--md-slider-handle-height': '20px',
+                      '--md-slider-handle-width': '24px',
+                      '--md-slider-handle-height': '24px',
                       '--md-slider-active-track-color': 'var(--md-sys-color-primary)',
                       '--md-slider-inactive-track-color': 'var(--md-sys-color-surface-container-highest)',
-                      '--md-slider-active-track-height': '12px',
-                      '--md-slider-inactive-track-height': '12px',
+                      '--md-slider-active-track-height': '16px',
+                      '--md-slider-inactive-track-height': '16px',
                       '--md-slider-active-track-shape': '999px',
                       '--md-slider-inactive-track-shape': '999px',
-                      '--md-slider-handle-shape': '8px',
+                      '--md-slider-handle-shape': '12px',
                     }}
                  ></md-slider>
 
