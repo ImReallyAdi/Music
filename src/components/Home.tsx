@@ -188,11 +188,11 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
+                        <h1 className="text-display-large font-black text-on-surface tracking-tight leading-[1.1]">
                             Your <span className="text-primary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
-                        <p className="text-headline-small text-on-surface-variant mt-6 max-w-lg font-medium opacity-90 leading-snug">
+                        <p className="text-title-large text-on-surface-variant mt-6 max-w-lg font-medium opacity-80 leading-relaxed">
                             A dynamic selection of tracks tailored to your listening habits.
                         </p>
                      </div>
@@ -229,11 +229,13 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.15, rotate: 5 }}
+                              whileHover={{ scale: 1.1, rotate: 5 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
+                              className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-3 hover:shadow-elevation-5 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface overflow-hidden isolate"
                            >
+                               {/* State Layer */}
+                               <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity" />
                                <md-icon class="material-symbols-rounded filled" style={{ fontSize: '48px' }}>play_arrow</md-icon>
                            </motion.button>
                       </div>
