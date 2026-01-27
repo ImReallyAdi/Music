@@ -145,10 +145,21 @@ const LyricsView: React.FC<LyricsViewProps> = ({
   useEffect(() => {
     if (viewMode === 'static') return;
 
-    if (activeLineIndex !== -1 && scrollRef.current && !isUserScrolling) {
+    if (activeLineIndex !== -1 && scrollRef.current && containerRef.current && !isUserScrolling) {
       const activeEl = scrollRef.current.children[activeLineIndex] as HTMLElement;
       if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const container = containerRef.current;
+        const containerHeight = container.clientHeight;
+        const elOffsetTop = activeEl.offsetTop;
+        const elHeight = activeEl.clientHeight;
+
+        // Calculate target position to center the element
+        const targetScroll = elOffsetTop - (containerHeight / 2) + (elHeight / 2);
+
+        container.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+        });
       }
     }
   }, [activeLineIndex, isUserScrolling, viewMode]);
@@ -214,15 +225,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             key={i}
                             layout
                             onClick={() => onSeek(line.time)}
-                            initial={{ opacity: 0.5, scale: 0.95 }}
+                            initial={{ opacity: 0.5, scale: 0.98 }}
                             animate={{
-                                scale: isActive ? 1.1 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                                scale: isActive ? 1.05 : 0.98,
+                                opacity: isActive ? 1 : isPast ? 0.5 : 0.3,
+                                filter: isActive ? 'blur(0px)' : 'blur(1px)',
                                 y: 0,
-                                x: isActive ? 0 : 0
+                                x: isActive ? 16 : 0
                             }}
-                            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
                             className="cursor-pointer origin-left will-change-transform"
                         >
                              <p className={`font-black tracking-tight leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 transition-colors ${
@@ -278,14 +289,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         key={i}
                         layout
                         onClick={() => onSeek(line.time)}
-                        initial={{ opacity: 0.5, scale: 0.95 }}
+                        initial={{ opacity: 0.5, scale: 0.98 }}
                         animate={{
-                            scale: isActive ? 1.1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                            scale: isActive ? 1.05 : 0.98,
+                            opacity: isActive ? 1 : isPast ? 0.5 : 0.3,
+                            filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                            x: isActive ? 16 : 0,
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
                         }}
-                        transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
                          <p className={`font-black tracking-tight leading-tight ${
@@ -319,44 +331,65 @@ const LyricsView: React.FC<LyricsViewProps> = ({
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
     >
+      {/* Gradient Scrim for Readability */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-surface/40 via-surface/10 to-surface/40 pointer-events-none mix-blend-multiply" />
+      <div className="absolute inset-0 z-0 bg-black/10 pointer-events-none" />
+
       {/* Header Controls */}
-      <div className="flex items-center justify-between p-4 z-50">
-         {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-4 z-50 relative">
+         {/* Toggle View Mode (Strict M3 Outlined Segmented Button) */}
+         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-transparent isolate">
              <button
                onClick={() => setViewMode('synced')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
+               className={`flex-1 flex h-full items-center justify-center pl-3 pr-4 text-label-large font-medium transition-colors relative group ${
                    viewMode === 'synced'
                    ? 'bg-secondary-container text-on-secondary-container'
                    : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
-               <AnimatePresence>
-                 {viewMode === 'synced' && (
-                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
-                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
-                    </motion.span>
-                 )}
-               </AnimatePresence>
-               Synced
+               {/* Ripple/State Layer handled by CSS or separate element if strictly needed, but hover utility works for now */}
+               <div className={`flex items-center gap-2 transition-all ${viewMode === 'synced' ? '' : 'translate-x-0'}`}>
+                   <AnimatePresence mode="popLayout">
+                     {viewMode === 'synced' && (
+                        <motion.span
+                            initial={{ width: 0, opacity: 0, scale: 0 }}
+                            animate={{ width: 'auto', opacity: 1, scale: 1 }}
+                            exit={{ width: 0, opacity: 0, scale: 0 }}
+                            className="overflow-hidden flex items-center"
+                        >
+                            <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
+                        </motion.span>
+                     )}
+                   </AnimatePresence>
+                   <span>Synced</span>
+               </div>
              </button>
+
              <div className="w-px h-full bg-outline" />
+
              <button
                onClick={() => setViewMode('static')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
+               className={`flex-1 flex h-full items-center justify-center pl-3 pr-4 text-label-large font-medium transition-colors relative group ${
                    viewMode === 'static'
                    ? 'bg-secondary-container text-on-secondary-container'
                    : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
                }`}
              >
-                <AnimatePresence>
-                 {viewMode === 'static' && (
-                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
-                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
-                    </motion.span>
-                 )}
-               </AnimatePresence>
-               Static
+                <div className={`flex items-center gap-2 transition-all ${viewMode === 'static' ? '' : 'translate-x-0'}`}>
+                   <AnimatePresence mode="popLayout">
+                     {viewMode === 'static' && (
+                        <motion.span
+                            initial={{ width: 0, opacity: 0, scale: 0 }}
+                            animate={{ width: 'auto', opacity: 1, scale: 1 }}
+                            exit={{ width: 0, opacity: 0, scale: 0 }}
+                            className="overflow-hidden flex items-center"
+                        >
+                            <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
+                        </motion.span>
+                     )}
+                   </AnimatePresence>
+                   <span>Static</span>
+               </div>
              </button>
          </div>
 

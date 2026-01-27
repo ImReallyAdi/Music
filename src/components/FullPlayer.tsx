@@ -187,22 +187,28 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             {/* Gradient Overlay using Theme Colors */}
-             <motion.div
-                animate={{ background: `linear-gradient(to bottom, ${colors.primary}15, ${colors.background} 90%)` }}
-                transition={{ duration: 1 }}
-                className="absolute inset-0"
-             />
             {/* Blurry Art Background */}
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.2 }}
+              animate={{ opacity: 0.3 }}
               transition={{ duration: 1 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[120px] scale-150 brightness-75 saturate-150"
+              className="w-full h-full object-cover blur-[100px] scale-150 brightness-50 saturate-200"
               alt=""
             />
+             {/* Gradient Overlay using Theme Colors */}
+             <motion.div
+                animate={{
+                    background: `
+                        radial-gradient(circle at 10% 20%, ${colors.secondary}40 0%, transparent 50%),
+                        radial-gradient(circle at 90% 10%, ${colors.tertiary}40 0%, transparent 50%),
+                        linear-gradient(to bottom, transparent 0%, ${colors.background} 100%)
+                    `
+                }}
+                transition={{ duration: 1.5 }}
+                className="absolute inset-0 mix-blend-screen"
+             />
             {/* Noise Texture */}
             <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}
@@ -365,7 +371,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
               {/* Progress Slider */}
               <div className={`w-full flex flex-col gap-0 transition-all duration-300 ${isLyricsFullscreen ? 'z-50' : ''}`}>
-                 <div className="px-1 mb-1 opacity-80">
+                 <div className="px-1 mb-[-4px] opacity-80 relative z-10 pointer-events-none">
                      <Waveform isPlaying={playerState.isPlaying} color="var(--md-sys-color-primary)" barCount={40} />
                  </div>
                  {/* Custom styling for expressiveness */}
@@ -418,21 +424,25 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     <md-icon class="material-symbols-rounded">skip_previous</md-icon>
                   </md-icon-button>
                   
-                  <md-filled-icon-button
-                    onClick={togglePlay}
-                    style={{
-                        '--md-filled-icon-button-container-width': '72px',
-                        '--md-filled-icon-button-container-height': '72px',
-                        '--md-filled-icon-button-icon-size': '32px',
-                        '--md-sys-color-primary': 'var(--md-sys-color-primary)',
-                        '--md-sys-color-on-primary': 'var(--md-sys-color-on-primary)',
-                        borderRadius: '24px'
-                    }}
-                  >
-                    <md-icon class="material-symbols-rounded filled">
-                        {playerState.isPlaying ? 'pause' : 'play_arrow'}
-                    </md-icon>
-                  </md-filled-icon-button>
+                  <div className="relative group isolate">
+                      {/* Glow Effect */}
+                      <div className="absolute inset-2 bg-primary blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-full" />
+                      <md-filled-icon-button
+                        onClick={togglePlay}
+                        style={{
+                            '--md-filled-icon-button-container-width': '80px',
+                            '--md-filled-icon-button-container-height': '80px',
+                            '--md-filled-icon-button-icon-size': '36px',
+                            '--md-sys-color-primary': 'var(--md-sys-color-primary)',
+                            '--md-sys-color-on-primary': 'var(--md-sys-color-on-primary)',
+                            borderRadius: '28px',
+                        }}
+                      >
+                        <md-icon class="material-symbols-rounded filled">
+                            {playerState.isPlaying ? 'pause' : 'play_arrow'}
+                        </md-icon>
+                      </md-filled-icon-button>
+                  </div>
                   
                   <md-icon-button onClick={nextTrack} style={{ '--md-icon-size': '36px', '--md-icon-button-icon-color': 'var(--md-sys-color-on-surface)' }}>
                      <md-icon class="material-symbols-rounded">skip_next</md-icon>
