@@ -5,7 +5,6 @@ import { Track, Lyrics } from '../types';
 import { useToast } from './Toast';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
-
 interface LyricsViewProps {
   track: Track;
   currentTime: number;
@@ -193,7 +192,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         ref={containerRef}
         onWheel={handleUserScroll}
         onTouchMove={handleUserScroll}
-        className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient"
+        className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient relative z-10"
         style={{ scrollBehavior: 'smooth' }}
       >
         <div ref={scrollRef} className="flex flex-col gap-10 text-left max-w-4xl mx-auto">
@@ -217,8 +216,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             initial={{ opacity: 0.5, scale: 0.95 }}
                             animate={{
                                 scale: isActive ? 1.1 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                                opacity: isActive ? 1 : isPast ? 0.7 : 0.5,
+                                filter: isActive ? 'blur(0px)' : 'blur(0.5px)',
                                 y: 0,
                                 x: isActive ? 0 : 0
                             }}
@@ -281,8 +280,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         initial={{ opacity: 0.5, scale: 0.95 }}
                         animate={{
                             scale: isActive ? 1.1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
+                            opacity: isActive ? 1 : isPast ? 0.7 : 0.5,
+                            filter: isActive ? 'blur(0px)' : 'blur(0.5px)',
                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
                         }}
                         transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
@@ -319,10 +318,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
     >
+      {isFullscreen && (
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 z-0 pointer-events-none" />
+      )}
+
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
          {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
+         <div className="inline-flex h-10 items-center rounded-full border border-outline-variant overflow-hidden bg-surface-container-low/30 backdrop-blur-md shadow-sm">
              <button
                onClick={() => setViewMode('synced')}
                className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
@@ -340,7 +343,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                </AnimatePresence>
                Synced
              </button>
-             <div className="w-px h-full bg-outline" />
+             <div className="w-px h-full bg-outline-variant" />
              <button
                onClick={() => setViewMode('static')}
                className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${

@@ -187,24 +187,37 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             {/* Gradient Overlay using Theme Colors */}
-             <motion.div
-                animate={{ background: `linear-gradient(to bottom, ${colors.primary}15, ${colors.background} 90%)` }}
-                transition={{ duration: 1 }}
-                className="absolute inset-0"
-             />
+             {/* M3 Mesh Gradient Overlay */}
+             <div className="absolute inset-0 z-0">
+                <motion.div
+                    animate={{ backgroundColor: colors.primary }}
+                    transition={{ duration: 2 }}
+                    className="absolute top-[-20%] right-[-10%] w-[80vw] h-[80vw] rounded-full blur-[120px] opacity-20 mix-blend-screen"
+                />
+                <motion.div
+                    animate={{ backgroundColor: colors.secondary }}
+                    transition={{ duration: 2 }}
+                    className="absolute bottom-[-10%] left-[-20%] w-[90vw] h-[90vw] rounded-full blur-[120px] opacity-15 mix-blend-screen"
+                />
+                 <motion.div
+                    animate={{ backgroundColor: colors.background }}
+                    transition={{ duration: 2 }}
+                    className="absolute inset-0 opacity-80"
+                />
+             </div>
+
             {/* Blurry Art Background */}
             <motion.img
               key={currentTrack.coverArt}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.2 }}
+              animate={{ opacity: 0.15 }}
               transition={{ duration: 1 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[120px] scale-150 brightness-75 saturate-150"
+              className="absolute inset-0 w-full h-full object-cover blur-[100px] scale-125 brightness-110 saturate-150 z-0"
               alt=""
             />
             {/* Noise Texture */}
-            <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay"
+            <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay z-0"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}
             />
           </div>
@@ -384,11 +397,11 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                       '--md-slider-handle-height': '20px',
                       '--md-slider-active-track-color': 'var(--md-sys-color-primary)',
                       '--md-slider-inactive-track-color': 'var(--md-sys-color-surface-container-highest)',
-                      '--md-slider-active-track-height': '12px',
-                      '--md-slider-inactive-track-height': '12px',
+                      '--md-slider-active-track-height': '16px',
+                      '--md-slider-inactive-track-height': '16px',
                       '--md-slider-active-track-shape': '999px',
                       '--md-slider-inactive-track-shape': '999px',
-                      '--md-slider-handle-shape': '8px',
+                      '--md-slider-handle-shape': '20px',
                     }}
                  ></md-slider>
 
@@ -421,12 +434,12 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                   <md-filled-icon-button
                     onClick={togglePlay}
                     style={{
-                        '--md-filled-icon-button-container-width': '72px',
-                        '--md-filled-icon-button-container-height': '72px',
-                        '--md-filled-icon-button-icon-size': '32px',
+                        '--md-filled-icon-button-container-width': '80px',
+                        '--md-filled-icon-button-container-height': '80px',
+                        '--md-filled-icon-button-icon-size': '36px',
                         '--md-sys-color-primary': 'var(--md-sys-color-primary)',
                         '--md-sys-color-on-primary': 'var(--md-sys-color-on-primary)',
-                        borderRadius: '24px'
+                        borderRadius: '28px'
                     }}
                   >
                     <md-icon class="material-symbols-rounded filled">

@@ -188,8 +188,8 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
-                            Your <span className="text-primary">Mix</span>,<br/>
+                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none drop-shadow-sm">
+                            Your <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-primary to-tertiary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
                         <p className="text-headline-small text-on-surface-variant mt-6 max-w-lg font-medium opacity-90 leading-snug">
@@ -232,9 +232,9 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                               whileHover={{ scale: 1.15, rotate: 5 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
+                              className="absolute -bottom-4 -right-4 w-28 h-28 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
                            >
-                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '48px' }}>play_arrow</md-icon>
+                               <md-icon class="material-symbols-rounded filled" style={{ '--md-icon-size': '56px' }}>play_arrow</md-icon>
                            </motion.button>
                       </div>
                  </div>
