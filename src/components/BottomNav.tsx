@@ -31,7 +31,16 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, isVisibl
             className="fixed bottom-0 w-full z-40 bg-surface-container"
         >
           {/* @ts-ignore */}
-          <md-navigation-bar active-index={activeIndex} hide-inactive-labels="false">
+          <md-navigation-bar
+            active-index={activeIndex}
+            hide-inactive-labels="false"
+            style={{
+                '--md-navigation-bar-active-indicator-color': 'var(--md-sys-color-primary-container)',
+                '--md-navigation-bar-active-icon-color': 'var(--md-sys-color-on-primary-container)',
+                '--md-navigation-bar-active-label-text-color': 'var(--md-sys-color-primary)',
+                '--md-navigation-bar-indicator-shape': '20px',
+            }}
+          >
             {tabs.map((tab) => (
                <md-navigation-tab
                   key={tab.id}
