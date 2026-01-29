@@ -186,23 +186,45 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           className="fixed inset-0 z-[100] flex flex-col touch-none overflow-hidden pt-safe pb-safe"
         >
           {/* Dynamic Background */}
-          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-             {/* Gradient Overlay using Theme Colors */}
+          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none bg-background">
+             {/* Dynamic Mesh Gradients */}
              <motion.div
-                animate={{ background: `linear-gradient(to bottom, ${colors.primary}15, ${colors.background} 90%)` }}
-                transition={{ duration: 1 }}
-                className="absolute inset-0"
+                animate={{
+                    background: [
+                        `radial-gradient(circle at 20% 20%, ${colors.primary}30 0%, transparent 50%)`,
+                        `radial-gradient(circle at 80% 30%, ${colors.secondary}30 0%, transparent 50%)`,
+                        `radial-gradient(circle at 20% 20%, ${colors.primary}30 0%, transparent 50%)`
+                    ]
+                }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 mix-blend-screen"
              />
-            {/* Blurry Art Background */}
+             <motion.div
+                animate={{
+                    background: [
+                        `radial-gradient(circle at 80% 80%, ${colors.tertiary}20 0%, transparent 50%)`,
+                        `radial-gradient(circle at 20% 70%, ${colors.primary}20 0%, transparent 50%)`,
+                        `radial-gradient(circle at 80% 80%, ${colors.tertiary}20 0%, transparent 50%)`
+                    ]
+                }}
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute inset-0 mix-blend-screen"
+             />
+
+            {/* Blurry Art Background (Base) */}
             <motion.img
               key={currentTrack.coverArt}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.2 }}
-              transition={{ duration: 1 }}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 0.3, scale: 1.5 }}
+              transition={{ duration: 2 }}
               src={currentTrack.coverArt}
-              className="w-full h-full object-cover blur-[120px] scale-150 brightness-75 saturate-150"
+              className="absolute inset-0 w-full h-full object-cover blur-[100px] brightness-75 saturate-150"
               alt=""
             />
+
+            {/* Uniform Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/90" />
+
             {/* Noise Texture */}
             <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay"
                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}

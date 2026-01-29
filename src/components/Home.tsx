@@ -171,11 +171,19 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
         {/* --- HERO SECTION --- */}
         <section className="relative overflow-hidden rounded-[48px] bg-surface-container-low p-8 md:p-12 min-h-[360px] flex flex-col justify-between">
-             {/* Dynamic Background Mesh */}
-             <div className="absolute inset-0 z-0">
-                 <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/20 blur-[100px] rounded-full mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }} />
-                 <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-tertiary/20 blur-[80px] rounded-full mix-blend-screen" />
-                 <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-secondary/10 blur-[60px] rounded-full mix-blend-screen" />
+             {/* Dynamic Background Mesh - Softer M3 Gradients */}
+             <div className="absolute inset-0 z-0 opacity-60">
+                 <motion.div
+                    animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-primary-container blur-[128px] rounded-full mix-blend-normal"
+                 />
+                 <motion.div
+                    animate={{ x: [-20, 20, -20], y: [-20, 20, -20] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-tertiary-container blur-[100px] rounded-full mix-blend-normal opacity-80"
+                 />
+                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-secondary-container blur-[80px] rounded-full opacity-60" />
              </div>
 
              {/* Content */}
@@ -229,8 +237,11 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.15, rotate: 5 }}
+                              whileHover={{ scale: 1.1, rotate: 5 }}
                               whileTap={{ scale: 0.95 }}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 20 }}
                               onClick={handlePlayAll}
                               className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
                            >
