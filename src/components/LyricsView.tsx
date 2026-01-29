@@ -141,15 +141,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     };
   }, []);
 
-  // Auto Scroll logic
+  // "Buttery" Smooth Auto Scroll
   useEffect(() => {
-    if (viewMode === 'static') return;
+    if (viewMode === 'static' || isUserScrolling || activeLineIndex === -1 || !scrollRef.current || !containerRef.current) return;
 
-    if (activeLineIndex !== -1 && scrollRef.current && !isUserScrolling) {
-      const activeEl = scrollRef.current.children[activeLineIndex] as HTMLElement;
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    const activeEl = scrollRef.current.children[activeLineIndex] as HTMLElement;
+    if (activeEl) {
+        const containerHeight = containerRef.current.clientHeight;
+        const activeElHeight = activeEl.clientHeight;
+        const offsetTop = activeEl.offsetTop;
+
+        const targetScrollTop = offsetTop - (containerHeight / 2) + (activeElHeight / 2);
+
+        containerRef.current.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+        });
     }
   }, [activeLineIndex, isUserScrolling, viewMode]);
 
@@ -194,7 +201,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         onWheel={handleUserScroll}
         onTouchMove={handleUserScroll}
         className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient"
-        style={{ scrollBehavior: 'smooth' }}
       >
         <div ref={scrollRef} className="flex flex-col gap-10 text-left max-w-4xl mx-auto">
             {lyrics.lines.map((line, i) => {
@@ -207,6 +213,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                 
                 const adjustedTime = currentTime + (lyricOffset / 1000);
 
+                // Animation variants for active/inactive lines
+                const animateState = {
+                    scale: isActive ? 1.05 : 1,
+                    opacity: isActive ? 1 : 0.5,
+                    filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                    y: 0,
+                    x: isActive ? 20 : 0 // Subtle shift
+                };
+
                 // Word-level Sync Rendering
                 if (lyrics.isWordSynced && line.words && line.words.length > 0) {
                       return (
@@ -215,14 +230,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                             layout
                             onClick={() => onSeek(line.time)}
                             initial={{ opacity: 0.5, scale: 0.95 }}
-                            animate={{
-                                scale: isActive ? 1.1 : 0.95,
-                                opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                                filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
-                                y: 0,
-                                x: isActive ? 0 : 0
-                            }}
-                            transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                            animate={animateState}
+                            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }} // Smooth easing
                             className="cursor-pointer origin-left will-change-transform"
                         >
                              <p className={`font-black tracking-tight leading-tight flex flex-wrap gap-x-[0.35em] gap-y-1 transition-colors ${
@@ -279,20 +288,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         layout
                         onClick={() => onSeek(line.time)}
                         initial={{ opacity: 0.5, scale: 0.95 }}
-                        animate={{
-                            scale: isActive ? 1.1 : 0.95,
-                            opacity: isActive ? 1 : isPast ? 0.4 : 0.25,
-                            filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
-                            color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
-                        }}
-                        transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
+                        animate={animateState}
+                        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
                          <p className={`font-black tracking-tight leading-tight ${
                             isLongLine 
                                 ? 'text-2xl md:text-3xl lg:text-4xl'
                                 : 'text-3xl md:text-4xl lg:text-5xl'
-                         }`} style={{ fontWeight: isActive ? 900 : 700 }}>
+                         }`} style={{ fontWeight: isActive ? 900 : 700, color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)' }}>
                            {line.text}
                          </p>
                          {line.translation && (
@@ -315,20 +319,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         exit={{ opacity: 0 }}
         className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${
             isFullscreen
-            ? 'bg-transparent'  /* Allow FullPlayer background to show */
+            ? 'bg-transparent'
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
+        style={{
+             background: isFullscreen ? undefined : `linear-gradient(to bottom, var(--md-sys-color-surface-container-low), var(--md-sys-color-surface-container))`
+        }}
     >
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
-         {/* Toggle View Mode (M3 Segmented Button) */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline overflow-hidden bg-surface-container-low/50 backdrop-blur-sm">
+
+         {/* M3 Segmented Button - Custom Implementation */}
+         <div className="inline-flex h-10 items-center rounded-full border border-outline/50 overflow-hidden bg-surface-container-low/50 backdrop-blur-sm p-1 gap-1">
              <button
                onClick={() => setViewMode('synced')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
+               className={`flex h-full items-center px-4 rounded-full text-label-large font-medium transition-all relative ${
                    viewMode === 'synced'
-                   ? 'bg-secondary-container text-on-secondary-container'
-                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
+                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
                }`}
              >
                <AnimatePresence>
@@ -340,13 +348,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                </AnimatePresence>
                Synced
              </button>
-             <div className="w-px h-full bg-outline" />
+
              <button
                onClick={() => setViewMode('static')}
-               className={`flex h-full items-center px-5 text-label-large font-medium transition-all relative ${
+               className={`flex h-full items-center px-4 rounded-full text-label-large font-medium transition-all relative ${
                    viewMode === 'static'
-                   ? 'bg-secondary-container text-on-secondary-container'
-                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10 hover:text-on-surface'
+                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
                }`}
              >
                 <AnimatePresence>
