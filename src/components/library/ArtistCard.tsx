@@ -34,9 +34,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ name, subtitle, fallback
             image={image || fallbackCover}
             fallbackIcon="group"
             onClick={onClick}
-            // Make image round for artists
-            // I'll add a style override or specific class if I could, but LibraryCard is generic.
-            // For now, I'll stick to rounded square, or I can update LibraryCard to support 'variant' prop.
+            variant="circle"
         />
     );
 };

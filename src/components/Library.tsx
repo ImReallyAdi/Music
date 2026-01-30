@@ -84,7 +84,7 @@ const SettingsTab = ({ playerState, setPlayerState }: { playerState: PlayerState
             <md-list-item
                 type="button"
                 style={{
-                    borderRadius: '16px',
+                    '--md-list-item-container-shape': '16px',
                     '--md-list-item-leading-space': '0'
                 }}
             >
@@ -458,9 +458,9 @@ const Library: React.FC<LibraryProps> = ({
                                                 <md-list-item
                                                     type="button"
                                                     onClick={() => handlePlayTrack(track.id)}
-                                                    style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
+                                                    style={{ '--md-list-item-container-shape': '16px', marginBottom: '8px' }}
                                                 >
-                                                    <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
+                                                    <div slot="start" className="w-12 h-12 flex items-center justify-center rounded-[12px] overflow-hidden bg-surface-container-highest border border-outline-variant/10">
                                                         {track.coverArt ? (
                                                         <img src={track.coverArt} alt={track.title} className="w-full h-full object-cover"/>
                                                         ) : (

@@ -172,9 +172,9 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
         {/* --- HERO SECTION --- */}
         <section className="relative overflow-hidden rounded-[48px] bg-surface-container-low p-8 md:p-12 min-h-[360px] flex flex-col justify-between">
              {/* Dynamic Background Mesh - Softer M3 Gradients */}
-             <div className="absolute inset-0 z-0 opacity-60">
+             <div className="absolute inset-0 z-0 opacity-90 mix-blend-normal">
                  <motion.div
-                    animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+                    animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
                     transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-primary-container blur-[128px] rounded-full mix-blend-normal"
                  />

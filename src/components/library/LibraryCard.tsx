@@ -16,6 +16,7 @@ interface LibraryCardProps {
   actions?: React.ReactNode;
   active?: boolean;
   playing?: boolean;
+  variant?: 'square' | 'circle';
 }
 
 export const LibraryCard: React.FC<LibraryCardProps> = ({
@@ -29,21 +30,25 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({
   actions,
   active = false,
   playing = false,
+  variant = 'square',
 }) => {
+  const isCircle = variant === 'circle';
+  const shape = isCircle ? '9999px' : '24px';
+
   return (
     <motion.div
-      className="group relative h-full"
+      className="group relative h-full flex flex-col items-center"
       onClick={onClick}
       whileHover={{ y: -4 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
     >
       <md-elevated-card
         clickable
-        class="w-full h-full flex flex-col p-0 overflow-hidden"
-        style={{ '--md-elevated-card-container-shape': '24px' }}
+        class="w-full aspect-square flex flex-col p-0 overflow-hidden"
+        style={{ '--md-elevated-card-container-shape': shape }}
       >
           {/* Image Container */}
-          <div className="relative aspect-square w-full bg-surface-container-highest overflow-hidden">
+          <div className={`relative w-full h-full bg-surface-container-highest overflow-hidden ${isCircle ? 'rounded-full' : ''}`}>
             <div className="absolute inset-0 bg-surface-container-highest z-0" />
 
             {customImage ? (
@@ -89,15 +94,16 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({
           </div>
 
           {/* Metadata */}
-          <div className="flex flex-col gap-0.5 p-4">
-            <h3 className={`text-title-medium font-bold truncate w-full ${active ? 'text-primary' : 'text-on-surface'}`}>
-               {title}
-            </h3>
-            <p className="text-body-medium text-on-surface-variant truncate opacity-80">
-              {subtitle}
-            </p>
-          </div>
       </md-elevated-card>
+
+      <div className={`flex flex-col gap-0.5 mt-3 w-full ${isCircle ? 'text-center items-center' : 'px-1'}`}>
+        <h3 className={`text-title-medium font-bold truncate w-full ${active ? 'text-primary' : 'text-on-surface'}`}>
+           {title}
+        </h3>
+        <p className="text-body-medium text-on-surface-variant truncate opacity-80 w-full">
+          {subtitle}
+        </p>
+      </div>
     </motion.div>
   );
 };
