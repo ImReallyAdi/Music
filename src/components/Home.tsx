@@ -196,7 +196,7 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tighter leading-none">
+                        <h1 className="text-display-large font-black text-on-surface tracking-tight leading-none">
                             Your <span className="text-primary">Mix</span>,<br/>
                             Ready to Play.
                         </h1>
@@ -213,17 +213,17 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                            <motion.div
                               className="absolute inset-0 bg-surface-container-highest overflow-hidden shadow-elevation-3"
                               style={{
-                                  borderRadius: '42% 58% 70% 30% / 45% 45% 55% 55%',
+                                  borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
                                   backgroundImage: headerArt ? `url(${headerArt})` : undefined,
                                   backgroundSize: 'cover',
                                   backgroundPosition: 'center'
                               }}
                               animate={{
                                   borderRadius: [
-                                      '42% 58% 70% 30% / 45% 45% 55% 55%',
-                                      '40% 60% 60% 40% / 60% 30% 70% 40%',
-                                      '35% 65% 55% 45% / 55% 35% 65% 45%',
-                                      '42% 58% 70% 30% / 45% 45% 55% 55%'
+                                      '40% 60% 70% 30% / 40% 50% 60% 50%',
+                                      '30% 70% 70% 30% / 30% 30% 70% 70%',
+                                      '50% 50% 20% 80% / 25% 80% 20% 75%',
+                                      '40% 60% 70% 30% / 40% 50% 60% 50%'
                                   ]
                               }}
                               transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -237,15 +237,15 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.1, rotate: 5 }}
+                              whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ type: "spring", stiffness: 300, damping: 20 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-24 h-24 bg-primary text-on-primary rounded-full shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface"
+                              className="absolute -bottom-4 -right-4 w-20 h-20 bg-primary-container text-on-primary-container rounded-full shadow-elevation-3 flex items-center justify-center z-20 cursor-pointer border-[4px] border-surface-container-low"
                            >
-                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '48px' }}>play_arrow</md-icon>
+                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '40px' }}>play_arrow</md-icon>
                            </motion.button>
                       </div>
                  </div>
