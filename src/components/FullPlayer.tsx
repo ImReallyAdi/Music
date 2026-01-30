@@ -196,7 +196,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         `radial-gradient(circle at 20% 20%, var(--md-sys-color-primary-container) 0%, transparent 50%)`
                     ]
                 }}
-                style={{ opacity: 0.4 }}
+                style={{ opacity: 0.3 }}
                 transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute inset-0 mix-blend-screen"
              />
@@ -208,7 +208,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                         `radial-gradient(circle at 80% 80%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`
                     ]
                 }}
-                style={{ opacity: 0.4 }}
+                style={{ opacity: 0.3 }}
                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                 className="absolute inset-0 mix-blend-screen"
              />

@@ -175,6 +175,14 @@
     touch-action: pan-x pan-y;
   }
 
+  /* Material Icon Alignment Fix */
+  md-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+  }
+
   /* Force focus ring visibility for keyboard users */
   :focus-visible {
     outline: 2px solid var(--md-sys-color-primary);

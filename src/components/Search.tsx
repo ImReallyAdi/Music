@@ -279,9 +279,9 @@ const Search: React.FC<SearchProps> = ({
                                     <md-list-item
                                         type="button"
                                         onClick={() => handleTrackClick(t.id)}
-                                        style={{ borderRadius: '16px', marginBottom: '8px', '--md-list-item-leading-image-shape': '12px' }}
+                                        style={{ '--md-list-item-container-shape': '16px', marginBottom: '8px' }}
                                     >
-                                        <div slot="start" className="w-12 h-12 bg-surface-container-highest rounded-[12px] flex items-center justify-center overflow-hidden border border-outline-variant/10">
+                                        <div slot="start" className="w-12 h-12 flex items-center justify-center rounded-[12px] overflow-hidden bg-surface-container-highest border border-outline-variant/10">
                                             {t.coverArt ? (
                                             <img src={t.coverArt} alt={t.title} className="w-full h-full object-cover"/>
                                             ) : (
