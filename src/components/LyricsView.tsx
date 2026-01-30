@@ -216,8 +216,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                 // Animation variants for active/inactive lines
                 const animateState = {
                     scale: isActive ? 1.05 : 1,
-                    opacity: isActive ? 1 : 0.5,
-                    filter: isActive ? 'blur(0px)' : 'blur(1px)',
+                    opacity: isActive ? 1 : 0.4,
+                    filter: isActive ? 'blur(0px)' : 'blur(0.5px)',
                     y: 0,
                     x: isActive ? 20 : 0 // Subtle shift
                 };
@@ -292,11 +292,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                         transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
                         className="cursor-pointer origin-left will-change-transform"
                     >
-                         <p className={`font-black tracking-tight leading-tight ${
+                         <p className={`font-black tracking-tight leading-tight transition-all duration-500 ${
                             isLongLine 
-                                ? 'text-2xl md:text-3xl lg:text-4xl'
-                                : 'text-3xl md:text-4xl lg:text-5xl'
-                         }`} style={{ fontWeight: isActive ? 900 : 700, color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)' }}>
+                                ? (isActive ? 'text-3xl md:text-4xl lg:text-5xl' : 'text-2xl md:text-3xl lg:text-4xl')
+                                : (isActive ? 'text-4xl md:text-5xl lg:text-6xl' : 'text-3xl md:text-4xl lg:text-5xl')
+                         }`} style={{
+                             fontWeight: isActive ? 900 : 700,
+                             color: isActive ? 'var(--md-sys-color-on-surface)' : 'var(--md-sys-color-on-surface-variant)',
+                             transformOrigin: 'left center'
+                         }}>
                            {line.text}
                          </p>
                          {line.translation && (
@@ -326,11 +330,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({
              background: isFullscreen ? undefined : `linear-gradient(to bottom, var(--md-sys-color-surface-container-low), var(--md-sys-color-surface-container))`
         }}
     >
+      {/* Scrim */}
+      <div className="absolute inset-0 bg-surface/40 backdrop-blur-sm -z-10" />
+
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
 
          {/* M3 Segmented Button - Custom Implementation */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline/50 overflow-hidden bg-surface-container-low/50 backdrop-blur-sm p-1 gap-1">
+         <div className="inline-flex h-10 items-center rounded-full border border-outline-variant bg-surface-container-high p-1 gap-1">
              <button
                onClick={() => setViewMode('synced')}
                className={`flex h-full items-center px-4 rounded-full text-label-large font-medium transition-all relative ${

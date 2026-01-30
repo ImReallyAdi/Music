@@ -191,22 +191,24 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
              <motion.div
                 animate={{
                     background: [
-                        `radial-gradient(circle at 20% 20%, ${colors.primary}30 0%, transparent 50%)`,
-                        `radial-gradient(circle at 80% 30%, ${colors.secondary}30 0%, transparent 50%)`,
-                        `radial-gradient(circle at 20% 20%, ${colors.primary}30 0%, transparent 50%)`
+                        `radial-gradient(circle at 20% 20%, var(--md-sys-color-primary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 80% 30%, var(--md-sys-color-secondary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 20% 20%, var(--md-sys-color-primary-container) 0%, transparent 50%)`
                     ]
                 }}
+                style={{ opacity: 0.4 }}
                 transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute inset-0 mix-blend-screen"
              />
              <motion.div
                 animate={{
                     background: [
-                        `radial-gradient(circle at 80% 80%, ${colors.tertiary}20 0%, transparent 50%)`,
-                        `radial-gradient(circle at 20% 70%, ${colors.primary}20 0%, transparent 50%)`,
-                        `radial-gradient(circle at 80% 80%, ${colors.tertiary}20 0%, transparent 50%)`
+                        `radial-gradient(circle at 80% 80%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 20% 70%, var(--md-sys-color-primary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 80% 80%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`
                     ]
                 }}
+                style={{ opacity: 0.4 }}
                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                 className="absolute inset-0 mix-blend-screen"
              />
@@ -263,7 +265,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                             onClose={() => setIsLyricsFullscreen(false)}
                         />
                         {/* Gradient Fade for Bottom Controls */}
-                        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -402,15 +404,10 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{
                       width: '100%',
                       '--md-slider-handle-color': 'var(--md-sys-color-primary)',
-                      '--md-slider-handle-width': '20px',
-                      '--md-slider-handle-height': '20px',
                       '--md-slider-active-track-color': 'var(--md-sys-color-primary)',
                       '--md-slider-inactive-track-color': 'var(--md-sys-color-surface-container-highest)',
-                      '--md-slider-active-track-height': '12px',
-                      '--md-slider-inactive-track-height': '12px',
                       '--md-slider-active-track-shape': '999px',
                       '--md-slider-inactive-track-shape': '999px',
-                      '--md-slider-handle-shape': '8px',
                     }}
                  ></md-slider>
 
