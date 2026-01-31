@@ -187,40 +187,44 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         >
           {/* Dynamic Background */}
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none bg-background">
-             {/* Dynamic Mesh Gradients */}
+             {/* Dynamic Mesh Gradients - Enhanced for "Alive" feel */}
              <motion.div
                 animate={{
                     background: [
-                        `radial-gradient(circle at 20% 20%, var(--md-sys-color-primary-container) 0%, transparent 50%)`,
-                        `radial-gradient(circle at 80% 30%, var(--md-sys-color-secondary-container) 0%, transparent 50%)`,
-                        `radial-gradient(circle at 20% 20%, var(--md-sys-color-primary-container) 0%, transparent 50%)`
-                    ]
+                        `radial-gradient(circle at 0% 0%, var(--md-sys-color-primary-container) 0%, transparent 60%)`,
+                        `radial-gradient(circle at 100% 0%, var(--md-sys-color-secondary-container) 0%, transparent 60%)`,
+                        `radial-gradient(circle at 0% 100%, var(--md-sys-color-tertiary-container) 0%, transparent 60%)`,
+                        `radial-gradient(circle at 0% 0%, var(--md-sys-color-primary-container) 0%, transparent 60%)`
+                    ],
+                    scale: [1, 1.1, 1],
+                    opacity: [0.4, 0.6, 0.4]
                 }}
-                style={{ opacity: 0.3 }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 mix-blend-screen"
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 mix-blend-plus-lighter"
              />
+
+             {/* Secondary Flowing Mesh */}
              <motion.div
                 animate={{
                     background: [
-                        `radial-gradient(circle at 80% 80%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`,
-                        `radial-gradient(circle at 20% 70%, var(--md-sys-color-primary-container) 0%, transparent 50%)`,
-                        `radial-gradient(circle at 80% 80%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`
-                    ]
+                        `radial-gradient(circle at 100% 100%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 0% 50%, var(--md-sys-color-primary-container) 0%, transparent 50%)`,
+                        `radial-gradient(circle at 100% 100%, var(--md-sys-color-tertiary-container) 0%, transparent 50%)`
+                    ],
+                    rotate: [0, 180, 360]
                 }}
-                style={{ opacity: 0.3 }}
-                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute inset-0 mix-blend-screen"
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 mix-blend-plus-lighter opacity-50 origin-center"
              />
 
             {/* Blurry Art Background (Base) */}
             <motion.img
               key={currentTrack.coverArt}
-              initial={{ opacity: 0, scale: 1.1 }}
-              animate={{ opacity: 0.3, scale: 1.5 }}
-              transition={{ duration: 2 }}
+              initial={{ opacity: 0, scale: 1.2 }}
+              animate={{ opacity: 0.4, scale: 1.4 }}
+              transition={{ duration: 3, ease: "easeOut" }}
               src={currentTrack.coverArt}
-              className="absolute inset-0 w-full h-full object-cover blur-[100px] brightness-75 saturate-150"
+              className="absolute inset-0 w-full h-full object-cover blur-[80px] brightness-50 saturate-200"
               alt=""
             />
 
@@ -404,10 +408,14 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
                     style={{
                       width: '100%',
                       '--md-slider-handle-color': 'var(--md-sys-color-primary)',
+                      '--md-slider-handle-width': '20px',
+                      '--md-slider-handle-height': '20px',
                       '--md-slider-active-track-color': 'var(--md-sys-color-primary)',
                       '--md-slider-inactive-track-color': 'var(--md-sys-color-surface-container-highest)',
                       '--md-slider-active-track-shape': '999px',
                       '--md-slider-inactive-track-shape': '999px',
+                      '--md-slider-active-track-height': '12px',
+                      '--md-slider-inactive-track-height': '12px',
                     }}
                  ></md-slider>
 

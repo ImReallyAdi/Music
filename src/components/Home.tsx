@@ -196,56 +196,62 @@ const Home: React.FC<HomeProps> = ({ filteredTracks, playTrack, activeTab, isLoa
                      </div>
 
                      <div>
-                        <h1 className="text-display-large font-black text-on-surface tracking-tight leading-none">
-                            Your <span className="text-primary">Mix</span>,<br/>
-                            Ready to Play.
+                        <h1 className="text-[64px] md:text-[80px] font-black text-on-surface tracking-tighter leading-[0.9] drop-shadow-sm">
+                            Your <span className="text-primary relative inline-block">
+                                Mix
+                                <svg className="absolute -bottom-2 left-0 w-full h-3 text-tertiary opacity-40 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
+                                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="none" />
+                                </svg>
+                            </span>,<br/>
+                            Ready.
                         </h1>
-                        <p className="text-headline-small text-on-surface-variant mt-6 max-w-lg font-medium opacity-90 leading-snug">
-                            A dynamic selection of tracks tailored to your listening habits.
+                        <p className="text-title-large text-on-surface-variant mt-6 max-w-lg font-medium opacity-80 leading-relaxed">
+                            A dynamic selection of tracks tailored specially for you.
                         </p>
                      </div>
                  </div>
 
                  {/* Organic Blob Artwork & FAB */}
                  <div className="relative self-end md:self-center shrink-0">
-                      <div className="relative w-48 h-48 md:w-64 md:h-64">
+                      <div className="relative w-48 h-48 md:w-72 md:h-72">
                           {/* Blob Shape */}
                            <motion.div
                               className="absolute inset-0 bg-surface-container-highest overflow-hidden shadow-elevation-3"
                               style={{
-                                  borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+                                  borderRadius: '48% 52% 68% 32% / 42% 58% 42% 58%',
                                   backgroundImage: headerArt ? `url(${headerArt})` : undefined,
                                   backgroundSize: 'cover',
                                   backgroundPosition: 'center'
                               }}
                               animate={{
                                   borderRadius: [
-                                      '40% 60% 70% 30% / 40% 50% 60% 50%',
-                                      '30% 70% 70% 30% / 30% 30% 70% 70%',
-                                      '50% 50% 20% 80% / 25% 80% 20% 75%',
-                                      '40% 60% 70% 30% / 40% 50% 60% 50%'
+                                      '48% 52% 68% 32% / 42% 58% 42% 58%',
+                                      '38% 62% 62% 38% / 52% 38% 62% 48%',
+                                      '58% 42% 38% 62% / 48% 52% 48% 52%',
+                                      '48% 52% 68% 32% / 42% 58% 42% 58%'
                                   ]
                               }}
-                              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
                            >
+                              <div className="absolute inset-0 bg-primary/10 mix-blend-overlay" />
                               {!headerArt && (
-                                  <div className="w-full h-full flex items-center justify-center bg-primary-container text-on-primary-container">
-                                      <md-icon class="material-symbols-rounded" style={{ fontSize: '64px' }}>music_note</md-icon>
+                                  <div className="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface-variant/50">
+                                      <md-icon class="material-symbols-rounded" style={{ fontSize: '80px' }}>music_note</md-icon>
                                   </div>
                               )}
                            </motion.div>
 
                            {/* Floating Play FAB */}
                            <motion.button
-                              whileHover={{ scale: 1.1 }}
+                              whileHover={{ scale: 1.1, rotate: 5 }}
                               whileTap={{ scale: 0.95 }}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                              initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.2 }}
                               onClick={handlePlayAll}
-                              className="absolute -bottom-4 -right-4 w-20 h-20 bg-primary-container text-on-primary-container rounded-full shadow-elevation-3 flex items-center justify-center z-20 cursor-pointer border-[4px] border-surface-container-low"
+                              className="absolute -bottom-2 -right-2 md:-bottom-4 md:-right-4 w-20 h-20 md:w-24 md:h-24 bg-primary-container text-on-primary-container rounded-[28px] shadow-elevation-4 flex items-center justify-center z-20 cursor-pointer border-[6px] border-surface-container-low hover:shadow-elevation-5 transition-shadow"
                            >
-                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '40px' }}>play_arrow</md-icon>
+                               <md-icon class="material-symbols-rounded filled" style={{ fontSize: '48px' }}>play_arrow</md-icon>
                            </motion.button>
                       </div>
                  </div>
