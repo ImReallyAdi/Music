@@ -200,9 +200,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         ref={containerRef}
         onWheel={handleUserScroll}
         onTouchMove={handleUserScroll}
-        className="w-full h-full overflow-y-auto px-6 py-[50vh] no-scrollbar mask-image-gradient"
+        className="w-full h-full overflow-y-auto px-6 pt-[20vh] pb-[40vh] no-scrollbar mask-image-gradient"
       >
-        <div ref={scrollRef} className="flex flex-col gap-10 text-left max-w-4xl mx-auto">
+        <div ref={scrollRef} className="flex flex-col gap-10 text-left max-w-4xl mx-auto min-h-full justify-center">
             {lyrics.lines.map((line, i) => {
                 const isActive = i === activeLineIndex;
                 const isPast = i < activeLineIndex;
@@ -215,11 +215,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({
 
                 // Animation variants for active/inactive lines
                 const animateState = {
-                    scale: isActive ? 1.05 : 1,
-                    opacity: isActive ? 1 : 0.4,
-                    filter: isActive ? 'blur(0px)' : 'blur(0.5px)',
+                    scale: isActive ? 1.1 : 0.95,
+                    opacity: isActive ? 1 : 0.5,
+                    filter: isActive ? 'blur(0px)' : 'blur(1.5px)',
                     y: 0,
-                    x: isActive ? 20 : 0 // Subtle shift
+                    x: 0
                 };
 
                 // Word-level Sync Rendering
@@ -323,54 +323,45 @@ const LyricsView: React.FC<LyricsViewProps> = ({
         exit={{ opacity: 0 }}
         className={`absolute inset-0 z-20 flex flex-col overflow-hidden ${
             isFullscreen
-            ? 'bg-transparent'
+            ? 'bg-transparent' // Let FullPlayer background show through, but add a tint
             : 'bg-surface/30 backdrop-blur-md rounded-[32px] md:rounded-[40px]'
         }`}
         style={{
              background: isFullscreen ? undefined : `linear-gradient(to bottom, var(--md-sys-color-surface-container-low), var(--md-sys-color-surface-container))`
         }}
     >
+      {/* Adaptive Tint Overlay */}
+      <div className="absolute inset-0 bg-primary-container/10 pointer-events-none -z-20" />
+
       {/* Scrim */}
-      <div className="absolute inset-0 bg-surface/40 backdrop-blur-sm -z-10" />
+      <div className="absolute inset-0 bg-surface/30 backdrop-blur-md -z-10" />
 
       {/* Header Controls */}
       <div className="flex items-center justify-between p-4 z-50">
 
-         {/* M3 Segmented Button - Custom Implementation */}
-         <div className="inline-flex h-10 items-center rounded-full border border-outline-variant bg-surface-container-high p-1 gap-1">
+         {/* M3 Segmented Button */}
+         <div className="inline-flex h-10 items-center rounded-full border border-outline bg-surface-container-low overflow-hidden">
              <button
                onClick={() => setViewMode('synced')}
-               className={`flex h-full items-center px-4 rounded-full text-label-large font-medium transition-all relative ${
+               className={`flex h-full items-center px-5 text-label-large font-bold transition-colors border-r border-outline-variant ${
                    viewMode === 'synced'
-                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
+                   ? 'bg-secondary-container text-on-secondary-container'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10'
                }`}
              >
-               <AnimatePresence>
-                 {viewMode === 'synced' && (
-                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
-                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
-                    </motion.span>
-                 )}
-               </AnimatePresence>
+               {viewMode === 'synced' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
                Synced
              </button>
 
              <button
                onClick={() => setViewMode('static')}
-               className={`flex h-full items-center px-4 rounded-full text-label-large font-medium transition-all relative ${
+               className={`flex h-full items-center px-5 text-label-large font-bold transition-colors ${
                    viewMode === 'static'
-                   ? 'bg-secondary-container text-on-secondary-container shadow-sm'
-                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
+                   ? 'bg-secondary-container text-on-secondary-container'
+                   : 'bg-transparent text-on-surface-variant hover:bg-on-surface/10'
                }`}
              >
-                <AnimatePresence>
-                 {viewMode === 'static' && (
-                    <motion.span initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden mr-2 flex items-center">
-                        <md-icon class="material-symbols-rounded" style={{fontSize: '18px'}}>check</md-icon>
-                    </motion.span>
-                 )}
-               </AnimatePresence>
+                {viewMode === 'static' && <md-icon class="material-symbols-rounded mr-2" style={{fontSize: '18px'}}>check</md-icon>}
                Static
              </button>
          </div>
